@@ -191,6 +191,9 @@ Inputs:
 Review checklist:
 
 - Tokenization identifies the intended glossable units.
+- No token is punctuation or whitespace only.
+- **Single-character tokens are preferred** for ordinary words and particles; reject overly coarse phrase tokens (for example `國之大事` instead of `國` / `之` / `大事`).
+- Multi-character tokens are appropriate only for names, titles, places, and fixed compounds (`孫子`, `大事`, `死生`, `存亡`, `兵者` in topic use).
 - Token boundaries are pedagogically useful.
 - Multi-character names, places, idioms, titles, and fixed expressions are not split incorrectly.
 - Offsets preserve the original segment text.
@@ -214,8 +217,8 @@ Inputs:
 Review checklist:
 
 - Gloss sense selection is correct in the local context.
-- Homonyms and polysemous words are disambiguated correctly.
-- Pinyin is accurate.
+- Homonyms and polysemous words are disambiguated correctly; **pinyin matches the contextual reading** (tone included), not merely a default homograph reading.
+- Pinyin is accurate for the chosen sense.
 - New glosses are necessary and not duplicates of existing entries.
 
 Failure behavior:

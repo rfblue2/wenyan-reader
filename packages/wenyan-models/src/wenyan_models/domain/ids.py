@@ -6,7 +6,6 @@ ParagraphId = NewType("ParagraphId", str)
 SegmentId = NewType("SegmentId", str)
 Slug = NewType("Slug", str)
 ContentHash = NewType("ContentHash", str)
-PromptVersion = NewType("PromptVersion", str)
 
 
 def document_id(value: str) -> DocumentId:
@@ -37,12 +36,6 @@ def slug(value: str) -> Slug:
     if not value.strip():
         raise ValueError("slug must be non-empty")
     return Slug(value)
-
-
-def prompt_version(value: str) -> PromptVersion:
-    if not value.strip():
-        raise ValueError("prompt version must be non-empty")
-    return PromptVersion(value)
 
 
 def parse_content_hash(value: str) -> ContentHash:

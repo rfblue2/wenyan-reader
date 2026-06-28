@@ -220,6 +220,7 @@ uv run mypy packages/wenyan-models/src src/wenyan
 
 ## Testing
 
+- Run with `uv run python -m pytest` (not bare `python`); see [AGENTS.md](../../AGENTS.md#running-tests).
 - Construct test data with `Model.model_validate({...})` or `Model(**kwargs)` — not untyped dicts passed deep into jobs.
 - Use `model_dump()` / `model_dump_json()` for golden-file comparisons.
 - Unit-test ports via their adapters; test jobs with fake or mock port implementations.

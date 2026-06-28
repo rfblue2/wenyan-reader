@@ -33,9 +33,9 @@ def _build_llm_client(config: PreprocessingConfig, repo_root: Path) -> LLMClient
     if provider == "anthropic":
         if not config.anthropic_api_key:
             raise ValueError("ANTHROPIC_API_KEY is required when models.provider is anthropic")
-        return AnthropicLLMClient(config.anthropic_api_key, model)
+        return AnthropicLLMClient(config.anthropic_api_key, model, retry=config.retry)
     if provider == "minimax":
         if not config.minimax_api_key:
             raise ValueError("MINIMAX_API_KEY is required when models.provider is minimax")
-        return MiniMaxLLMClient(config.minimax_api_key, model)
+        return MiniMaxLLMClient(config.minimax_api_key, model, retry=config.retry)
     return MockLLMClient(repo_root / "tests" / "fixtures" / "llm")

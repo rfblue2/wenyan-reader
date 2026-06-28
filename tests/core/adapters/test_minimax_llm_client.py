@@ -17,12 +17,12 @@ def test_minimax_client_uses_anthropic_compatible_endpoint(monkeypatch) -> None:
         def json(self) -> dict[str, object]:
             return {"content": [{"type": "text", "text": '{"answer": "ok"}'}]}
 
-    def fake_post(url: str, **kwargs: object) -> FakeResponse:
+    def fake_post(self, url: str, **kwargs: object) -> FakeResponse:
         captured["url"] = url
         captured["json"] = kwargs.get("json")
         return FakeResponse()
 
-    monkeypatch.setattr("wenyan.core.adapters.anthropic_llm_client.httpx.post", fake_post)
+    monkeypatch.setattr("httpx.Client.post", fake_post)
 
     client = MiniMaxLLMClient("test-key", "MiniMax-M2.5-highspeed")
     result = client.complete_model(_FakePrompt(), _SampleModel)
@@ -36,7 +36,6 @@ def test_minimax_client_uses_anthropic_compatible_endpoint(monkeypatch) -> None:
 
 
 class _FakePrompt:
-    prompt_version = "test-v1"
     template_name = "test"
 
     def render(self, _context: object) -> str:

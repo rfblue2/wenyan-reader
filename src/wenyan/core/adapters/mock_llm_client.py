@@ -8,12 +8,14 @@ from pydantic import BaseModel, TypeAdapter
 from wenyan.core.adapters.prompt_template import RenderedPrompt
 from wenyan.core.ports.llm_client import LLMClient, StructuredPrompt
 from wenyan_models.artifacts.paragraph import ParagraphDraft, ParagraphDraftSegment
+from wenyan_models.artifacts.segment import TokenizationArtifact
 from wenyan_models.artifacts.structure import ChapterProposal, ChapterProposalItem, ParagraphProposal, ParagraphProposalItem
 from wenyan_models.domain.ids import (
     chapter_id,
     paragraph_id,
     segment_id,
 )
+from wenyan_models.text.tokenization import drop_punctuation_tokens
 
 
 class LLMParseError(RuntimeError):
@@ -29,24 +31,24 @@ class MockLLMClient(LLMClient):
         prompt: StructuredPrompt,
         model: type[T],
     ) -> T:
-        version = str(prompt.prompt_version)
-        if version == "chapter-structure-v1":
+        name = prompt.template_name
+        if name == "chapter-structure":
             return self._chapter_proposal(prompt, model)
-        if version == "paragraph-structure-v1":
+        if name == "paragraph-structure":
             return self._paragraph_proposal(prompt, model)
-        if version == "paragraph-segmentation-v1":
+        if name == "paragraph-segmentation":
             return self._paragraph_draft(prompt, model)
-        if version == "segment-tokenization-v1":
-            return self._tokenization(prompt, model)
-        if version == "segment-tokenization-review-v1":
-            return self._tokenization_review(prompt, model)
-        if version == "segment-gloss-v1":
+        if name == "segment-tokenization":
+            return self._tokenization(prompt, model, "segment-tokenization.json")
+        if name == "segment-tokenization-review":
+            return self._tokenization_review(prompt, model, "segment-tokenization-review.json")
+        if name == "segment-gloss":
             return self._glosses(prompt, model)
-        if version == "segment-gloss-review-v1":
+        if name == "segment-gloss-review":
             return self._gloss_review(prompt, model)
-        fixture_path = self._fixture_dir / f"{version}.json"
+        fixture_path = self._fixture_dir / f"{name}.json"
         if not fixture_path.is_file():
-            raise LLMParseError(f"no fixture for prompt version: {version}")
+            raise LLMParseError(f"no fixture for prompt template: {name}")
         payload = json.loads(fixture_path.read_text(encoding="utf-8"))
         return TypeAdapter(model).validate_python(payload)
 
@@ -78,7 +80,6 @@ class MockLLMClient(LLMClient):
             {
                 "documentId": _context_value(rendered, "document_id"),
                 "model": "mock",
-                "promptVersion": "chapter-structure-v1",
                 "inputHash": _context_value(rendered, "input_hash"),
                 "attempts": 1,
                 "sourceHash": _context_value(rendered, "source_hash"),
@@ -100,7 +101,6 @@ class MockLLMClient(LLMClient):
                 "documentId": _context_value(rendered, "document_id"),
                 "chapterId": _context_value(rendered, "chapter_id"),
                 "model": "mock",
-                "promptVersion": "paragraph-structure-v1",
                 "inputHash": _context_value(rendered, "input_hash"),
                 "attempts": 1,
                 "chapterTextHash": _context_value(rendered, "chapter_text_hash"),
@@ -116,16 +116,11 @@ class MockLLMClient(LLMClient):
         else:
             rendered = prompt.render({})
             text = _extract_section(rendered, "Paragraph text:", "PARAGRAPH_ID:")
-        segments = tuple(
-            ParagraphDraftSegment(id=segment_id(str(uuid.uuid4())), text=line)
-            for line in text.splitlines()
-            if line.strip()
-        ) or (ParagraphDraftSegment(id=segment_id(str(uuid.uuid4())), text=text),)
+        segments = _segments_from_sentences(text)
         draft = ParagraphDraft.model_validate(
             {
                 "paragraphId": _context_value(rendered, "paragraph_id"),
                 "model": "mock",
-                "promptVersion": "paragraph-segmentation-v1",
                 "inputHash": _context_value(rendered, "input_hash"),
                 "attempts": 1,
                 "segments": [segment.model_dump(by_alias=True) for segment in segments],
@@ -133,8 +128,13 @@ class MockLLMClient(LLMClient):
         )
         return draft  # type: ignore[return-value]
 
-    def _tokenization[T: BaseModel](self, prompt: StructuredPrompt, model: type[T]) -> T:
-        fixture_path = self._fixture_dir / "segment-tokenization-v1.json"
+    def _tokenization[T: BaseModel](
+        self,
+        prompt: StructuredPrompt,
+        model: type[T],
+        fixture_name: str,
+    ) -> T:
+        fixture_path = self._fixture_dir / fixture_name
         payload = json.loads(fixture_path.read_text(encoding="utf-8"))
         if isinstance(prompt, RenderedPrompt):
             payload["segmentId"] = prompt.context_value("segment_id")
@@ -143,10 +143,20 @@ class MockLLMClient(LLMClient):
             rendered = prompt.render({})
             payload["segmentId"] = _context_value(rendered, "segment_id")
             payload["text"] = _context_value(rendered, "segment_text")
-        return TypeAdapter(model).validate_python(payload)
+        artifact = TypeAdapter(model).validate_python(payload)
+        if isinstance(artifact, TokenizationArtifact):
+            return artifact.model_copy(
+                update={"tokens": drop_punctuation_tokens(artifact.tokens)},
+            )  # type: ignore[return-value]
+        return artifact
 
-    def _tokenization_review[T: BaseModel](self, prompt: StructuredPrompt, model: type[T]) -> T:
-        fixture_path = self._fixture_dir / "segment-tokenization-review-v1.json"
+    def _tokenization_review[T: BaseModel](
+        self,
+        prompt: StructuredPrompt,
+        model: type[T],
+        fixture_name: str,
+    ) -> T:
+        fixture_path = self._fixture_dir / fixture_name
         payload = json.loads(fixture_path.read_text(encoding="utf-8"))
         if isinstance(prompt, RenderedPrompt):
             payload["segmentId"] = prompt.context_value("segment_id")
@@ -158,19 +168,77 @@ class MockLLMClient(LLMClient):
         return TypeAdapter(model).validate_python(payload)
 
     def _glosses[T: BaseModel](self, prompt: StructuredPrompt, model: type[T]) -> T:
-        fixture_path = self._fixture_dir / "segment-gloss-v1.json"
-        payload = json.loads(fixture_path.read_text(encoding="utf-8"))
         if isinstance(prompt, RenderedPrompt):
-            payload["segmentId"] = prompt.context_value("segment_id")
-            payload["inputHash"] = prompt.context_value("input_hash")
+            segment_id_value = prompt.context_value("segment_id")
+            input_hash = prompt.context_value("input_hash")
+            tokenization = json.loads(prompt.context_value("tokenization_json"))
+            candidate_glosses = json.loads(prompt.context_value("candidate_glosses_json"))
         else:
             rendered = prompt.render({})
-            payload["segmentId"] = _context_value(rendered, "segment_id")
-            payload["inputHash"] = _context_value(rendered, "input_hash")
+            segment_id_value = _context_value(rendered, "segment_id")
+            input_hash = _context_value(rendered, "input_hash")
+            tokenization = json.loads(_extract_section(rendered, "Tokenization:", "Candidate glosses:"))
+            candidate_glosses = json.loads(
+                _extract_section(rendered, "Candidate glosses:", "SEGMENT_ID:"),
+            )
+        candidates_by_key = {
+            (
+                entry["surface"],
+                entry["pinyin"].strip().lower(),
+                " ".join(entry["gloss"].strip().lower().split()),
+            ): entry["id"]
+            for entry in candidate_glosses
+        }
+        gloss_decisions: list[dict[str, str]] = []
+        new_glosses: list[dict[str, str]] = []
+        new_gloss_ids: list[str] = []
+        for token in tokenization["tokens"]:
+            surface = token["surface"]
+            gloss_id = str(uuid.uuid4())
+            entry = {
+                "id": gloss_id,
+                "surface": surface,
+                "pinyin": surface.lower(),
+                "gloss": f"gloss for {surface}",
+            }
+            key = (
+                surface,
+                entry["pinyin"].strip().lower(),
+                " ".join(entry["gloss"].strip().lower().split()),
+            )
+            existing_id = candidates_by_key.get(key)
+            if existing_id is not None:
+                gloss_decisions.append(
+                    {
+                        "tokenId": token["id"],
+                        "glossId": existing_id,
+                        "decision": "reuse-existing",
+                    },
+                )
+                continue
+            gloss_decisions.append(
+                {
+                    "tokenId": token["id"],
+                    "glossId": gloss_id,
+                    "decision": "create-new",
+                },
+            )
+            new_gloss_ids.append(gloss_id)
+            new_glosses.append(entry)
+            candidates_by_key[key] = gloss_id
+        payload = {
+            "segmentId": segment_id_value,
+            "model": "mock",
+            "inputHash": input_hash,
+            "attempts": 1,
+            "glossDecisions": gloss_decisions,
+            "newGlossIds": new_gloss_ids,
+            "newGlosses": new_glosses,
+        }
         return TypeAdapter(model).validate_python(payload)
 
     def _gloss_review[T: BaseModel](self, prompt: StructuredPrompt, model: type[T]) -> T:
-        fixture_path = self._fixture_dir / "segment-gloss-review-v1.json"
+        fixture_path = self._fixture_dir / "segment-gloss-review.json"
         payload = json.loads(fixture_path.read_text(encoding="utf-8"))
         if isinstance(prompt, RenderedPrompt):
             payload["segmentId"] = prompt.context_value("segment_id")
@@ -180,6 +248,19 @@ class MockLLMClient(LLMClient):
             payload["segmentId"] = _context_value(rendered, "segment_id")
             payload["inputHash"] = _context_value(rendered, "review_input_hash")
         return TypeAdapter(model).validate_python(payload)
+
+
+def _segments_from_sentences(text: str) -> tuple[ParagraphDraftSegment, ...]:
+    stripped = text.strip()
+    if not stripped:
+        return (ParagraphDraftSegment(id=segment_id(str(uuid.uuid4())), text=text),)
+    parts = [part for part in re.split(r"(?<=[。！？；])", stripped) if part]
+    if not parts:
+        return (ParagraphDraftSegment(id=segment_id(str(uuid.uuid4())), text=stripped),)
+    return tuple(
+        ParagraphDraftSegment(id=segment_id(str(uuid.uuid4())), text=part)
+        for part in parts
+    )
 
 
 def _paragraph_spans_from_blank_lines(text: str) -> tuple[ParagraphProposalItem, ...]:

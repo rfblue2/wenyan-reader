@@ -4,7 +4,6 @@ from wenyan_models.artifacts.base import (
     DEFAULT_ARTIFACT_CONFIG,
     ContentHashField,
     ParagraphIdField,
-    PromptVersionField,
     SegmentIdField,
 )
 from wenyan_models.domain.enums import ValidationStatus
@@ -23,7 +22,6 @@ class ParagraphDraft(BaseModel):
 
     paragraph_id: ParagraphIdField = Field(alias="paragraphId")
     model: str
-    prompt_version: PromptVersionField = Field(alias="promptVersion")
     input_hash: ContentHashField = Field(alias="inputHash")
     attempts: int
     segments: tuple[ParagraphDraftSegment, ...]

@@ -135,3 +135,17 @@ def _preview_text(text: str, *, limit: int = 40) -> str:
     if len(compact) <= limit:
         return compact
     return f"{compact[: limit - 1]}…"
+
+
+def iter_segments_in_document_order(
+    artifacts: ArtifactStore,
+    document_id: DocumentId,
+) -> list[SegmentId]:
+    segment_ids: list[SegmentId] = []
+    for _chapter, paragraph in _iter_paragraphs(artifacts, document_id):
+        draft_ref = paragraph_draft_ref(document_id, paragraph.id)
+        if not artifacts.exists(draft_ref):
+            continue
+        draft = artifacts.read(draft_ref, ParagraphDraft)
+        segment_ids.extend(segment.id for segment in draft.segments)
+    return segment_ids

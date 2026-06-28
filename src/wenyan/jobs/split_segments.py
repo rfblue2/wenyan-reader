@@ -14,7 +14,7 @@ from wenyan_models.artifacts.paragraph import ParagraphDraft, ParagraphValidatio
 from wenyan_models.artifacts.segment import SegmentInput
 from wenyan_models.domain.enums import ValidationStatus
 from wenyan_models.artifacts.structure import ChapterProposal, ParagraphProposal
-from wenyan_models.domain.ids import DocumentId, ParagraphId, chapter_id, prompt_version, segment_id
+from wenyan_models.domain.ids import DocumentId, ParagraphId, chapter_id, segment_id
 from wenyan_models.domain.results import JobFailure, JobOutcome, Promoted, Skipped
 
 
@@ -43,20 +43,15 @@ def run_split_segments(
     paragraph_start = chapter.start + paragraph_item.start
     paragraph_end = chapter.start + paragraph_item.end
     draft_ref = paragraph_draft_ref(document_id, paragraph_id_value)
-    prompt_version_value = prompt_version("paragraph-segmentation-v1")
     paragraph_text = ctx.normalized_text.read_slice(document_id, paragraph_start, paragraph_end)
     input_hash = sha256_text(paragraph_text)
     if ctx.artifacts.exists(draft_ref) and not options.force:
         existing = ctx.artifacts.read(draft_ref, ParagraphDraft)
-        if (
-            existing.input_hash == input_hash
-            and existing.prompt_version == prompt_version_value
-        ):
+        if existing.input_hash == input_hash:
             return Skipped(reason="paragraph draft is current")
     template = load_prompt_template(
         ctx.repo_root / ctx.config.prompts.root,
         "paragraph-segmentation",
-        "v1",
     )
     context = {
         "paragraph_text": PromptTextSlice(document_id, paragraph_start, paragraph_end),
@@ -71,7 +66,6 @@ def run_split_segments(
         update={
             "paragraph_id": paragraph_id_value,
             "input_hash": input_hash,
-            "prompt_version": prompt_version_value,
             "model": ctx.config.models.active_model,
             "attempts": 1,
         },

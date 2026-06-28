@@ -8,14 +8,14 @@ from wenyan_models.artifacts.structure import ChapterProposal
 def test_mock_returns_chapter_proposal(tmp_path: Path) -> None:
   prompts = tmp_path / "prompts"
   prompts.mkdir()
-  (prompts / "chapter-structure-v1.md").write_text(
+  (prompts / "chapter-structure.md").write_text(
       "Document text:\n{{document_text}}\n\n"
       "DOCUMENT_ID: {{document_id}}\n"
       "INPUT_HASH: {{input_hash}}\n"
       "SOURCE_HASH: {{source_hash}}\n",
       encoding="utf-8",
   )
-  template = load_prompt_template(prompts, "chapter-structure", "v1")
+  template = load_prompt_template(prompts, "chapter-structure")
   context = {
       "document_text": "始計第一\n\n正文\n\n作戰第二\n\n更多",
       "document_id": "9ad841a6-f20f-4f43-9805-166ab2d98e7f",

@@ -19,10 +19,10 @@ The JSON must validate against this schema:
 Rules:
 - Use camelCase property names exactly as in the schema.
 - Echo identifier and hash fields from the user message (PARAGRAPH_ID, INPUT_HASH, SEGMENT_ID, DOCUMENT_ID, CHAPTER_ID, and similar labels) into the matching JSON properties.
-- Set promptVersion to the value from the task section in the user message.
 - Set model to "pending" and attempts to 1 unless the user message specifies otherwise.
 - Generate new UUID v4 strings for id fields you must create.
 - Text spans must be exact substrings of the source text; do not normalize or rewrite characters.
+- For tokenization artifacts, never create tokens for punctuation or whitespace; gloss only meaningful text. Prefer single-character tokens; use multi-character tokens only for names and fixed compounds.
 - For review artifacts, status must be exactly "approved" or "rejected" as defined in the schema.
 - Omit optional properties when empty rather than inventing placeholder content.
 """

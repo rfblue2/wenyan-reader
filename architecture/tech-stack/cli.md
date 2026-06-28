@@ -149,12 +149,21 @@ Chained multi-command execution lives in `core/run/`. LLM-facing work lives in `
 
 ## Testing
 
+Run tests through uv (see [AGENTS.md](../../AGENTS.md#running-tests)):
+
+```bash
+uv run python -m pytest
+uv run python -m pytest tests/jobs/ -q
+```
+
 Use pytest with a temporary workspace fixture:
 
 - Build minimal artifact trees on disk and assert effective status results.
 - Test atomic write behavior and stale detection after upstream deletion.
 - Test CLI parsing and exit codes through Typer's `CliRunner`.
-- Keep LLM calls behind interfaces so job tests use fixtures instead of live API calls.
+- Keep LLM calls behind interfaces so job tests use fixtures instead of live API calls. `tmp_workspace` sets `models.provider: mock` and clears LLM-related env vars.
+
+If a run appears hung, re-run with a bounded timeout or a single test file — a broken system `python` shim is a common cause, not a slow mock LLM.
 
 Golden-file tests are useful for machine-readable status payloads. Use the examples in the CLI spec as fixtures.
 

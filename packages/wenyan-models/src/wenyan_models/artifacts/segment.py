@@ -8,7 +8,6 @@ from wenyan_models.artifacts.base import (
     ContentHashField,
     DocumentIdField,
     ParagraphIdField,
-    PromptVersionField,
     SegmentIdField,
 )
 from wenyan_models.domain.enums import ReviewStatus
@@ -44,7 +43,6 @@ class TokenizationArtifact(BaseModel):
 
     segment_id: SegmentIdField = Field(alias="segmentId")
     model: str
-    prompt_version: PromptVersionField = Field(alias="promptVersion")
     input_hash: ContentHashField = Field(alias="inputHash")
     attempts: int
     text: str
@@ -56,7 +54,6 @@ class TokenizationReviewArtifact(BaseModel):
 
     segment_id: SegmentIdField = Field(alias="segmentId")
     model: str
-    prompt_version: PromptVersionField = Field(alias="promptVersion")
     input_hash: ContentHashField = Field(alias="inputHash")
     attempts: int
     status: ReviewStatus
@@ -85,7 +82,6 @@ class GlossesArtifact(BaseModel):
 
     segment_id: SegmentIdField = Field(alias="segmentId")
     model: str
-    prompt_version: PromptVersionField = Field(alias="promptVersion")
     input_hash: ContentHashField = Field(alias="inputHash")
     attempts: int
     gloss_decisions: tuple[GlossDecision, ...] = Field(default=(), alias="glossDecisions")
@@ -98,7 +94,6 @@ class GlossReviewArtifact(BaseModel):
 
     segment_id: SegmentIdField = Field(alias="segmentId")
     model: str
-    prompt_version: PromptVersionField = Field(alias="promptVersion")
     input_hash: ContentHashField = Field(alias="inputHash")
     attempts: int
     status: ReviewStatus

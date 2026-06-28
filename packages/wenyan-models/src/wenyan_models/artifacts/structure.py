@@ -6,7 +6,6 @@ from wenyan_models.artifacts.base import (
     ContentHashField,
     DocumentIdField,
     ParagraphIdField,
-    PromptVersionField,
 )
 from wenyan_models.domain.enums import ValidationStatus
 from wenyan_models.domain.validation import CheckResult
@@ -27,7 +26,6 @@ class ChapterProposal(BaseModel):
 
     document_id: DocumentIdField = Field(alias="documentId")
     model: str
-    prompt_version: PromptVersionField = Field(alias="promptVersion")
     input_hash: ContentHashField = Field(alias="inputHash")
     attempts: int
     source_hash: ContentHashField = Field(alias="sourceHash")
@@ -49,7 +47,6 @@ class ParagraphProposal(BaseModel):
     document_id: DocumentIdField = Field(alias="documentId")
     chapter_id: ChapterIdField = Field(alias="chapterId")
     model: str
-    prompt_version: PromptVersionField = Field(alias="promptVersion")
     input_hash: ContentHashField = Field(alias="inputHash")
     attempts: int
     chapter_text_hash: ContentHashField = Field(alias="chapterTextHash")

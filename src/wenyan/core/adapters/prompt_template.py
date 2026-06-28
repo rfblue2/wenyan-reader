@@ -9,19 +9,13 @@ from pydantic import BaseModel, ConfigDict
 from wenyan.core.ports.llm_client import StructuredPrompt
 from wenyan.core.ports.normalized_text_store import NormalizedTextStore
 from wenyan.core.ports.prompt_context import PromptContextValue, PromptTextSlice
-from wenyan_models.domain.ids import PromptVersion, prompt_version
 
 
 class PromptTemplate(BaseModel):
     model_config = ConfigDict(frozen=True, populate_by_name=True, extra="forbid")
 
     name: str
-    version: str
     body: str
-
-    @property
-    def prompt_version(self) -> PromptVersion:
-        return prompt_version(self.version)
 
     @property
     def template_name(self) -> str:
@@ -39,10 +33,6 @@ class RenderedPrompt(StructuredPrompt):
     template: PromptTemplate
     context: Mapping[str, PromptContextValue]
     normalized_text: NormalizedTextStore | None = None
-
-    @property
-    def prompt_version(self) -> PromptVersion:
-        return self.template.prompt_version
 
     @property
     def template_name(self) -> str:
@@ -67,12 +57,11 @@ class RenderedPrompt(StructuredPrompt):
         raise TypeError(f"unsupported prompt context value: {type(value)!r}")
 
 
-def load_prompt_template(prompts_root: Path, template_name: str, version: str) -> PromptTemplate:
-    path = prompts_root / f"{template_name}-{version}.md"
+def load_prompt_template(prompts_root: Path, template_name: str) -> PromptTemplate:
+    path = prompts_root / f"{template_name}.md"
     if not path.is_file():
         raise ValueError(f"prompt template not found: {path}")
     return PromptTemplate(
         name=template_name,
-        version=f"{template_name}-{version}",
         body=path.read_text(encoding="utf-8"),
     )

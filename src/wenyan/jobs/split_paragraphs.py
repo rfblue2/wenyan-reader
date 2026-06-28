@@ -9,7 +9,7 @@ from wenyan.core.ports.artifact_store import ArtifactWrite
 from wenyan.core.ports.prompt_context import PromptTextSlice
 from wenyan.jobs.context import JobContext, JobOptions
 from wenyan_models.artifacts.structure import ChapterProposal, ParagraphProposal, SpanValidationArtifact
-from wenyan_models.domain.ids import ChapterId, DocumentId, paragraph_id, prompt_version
+from wenyan_models.domain.ids import ChapterId, DocumentId, paragraph_id
 from wenyan_models.domain.results import JobFailure, JobOutcome, Promoted, Skipped
 from wenyan_models.domain.spans import ParagraphSpan
 
@@ -29,20 +29,15 @@ def run_split_paragraphs(
         return JobFailure(code="missing-chapter", message="chapter not found in proposal")
     chapter_length = chapter.end - chapter.start
     proposal_ref = paragraph_proposal_ref(document_id, chapter_id)
-    prompt_version_value = prompt_version("paragraph-structure-v1")
     chapter_text = ctx.normalized_text.read_slice(document_id, chapter.start, chapter.end)
     input_hash = sha256_text(chapter_text)
     if ctx.artifacts.exists(proposal_ref) and not options.force:
         existing = ctx.artifacts.read(proposal_ref, ParagraphProposal)
-        if (
-            existing.input_hash == input_hash
-            and existing.prompt_version == prompt_version_value
-        ):
+        if existing.input_hash == input_hash:
             return Skipped(reason="paragraph proposal is current")
     template = load_prompt_template(
         ctx.repo_root / ctx.config.prompts.root,
         "paragraph-structure",
-        "v1",
     )
     context = {
         "chapter_text": PromptTextSlice(document_id, chapter.start, chapter.end),
@@ -61,7 +56,6 @@ def run_split_paragraphs(
             "chapter_id": chapter_id,
             "input_hash": input_hash,
             "chapter_text_hash": input_hash,
-            "prompt_version": prompt_version_value,
             "model": ctx.config.models.active_model,
             "attempts": 1,
         },

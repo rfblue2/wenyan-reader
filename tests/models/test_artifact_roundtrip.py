@@ -1,6 +1,6 @@
 from wenyan_models.artifacts import ChapterProposal, NormalizedDocument
 from wenyan_models.domain.enums import ValidationStatus
-from wenyan_models.domain.ids import chapter_id, document_id, parse_content_hash, prompt_version
+from wenyan_models.domain.ids import chapter_id, document_id, parse_content_hash
 
 
 def test_normalized_document_round_trip() -> None:
@@ -28,7 +28,6 @@ def test_chapter_proposal_round_trip() -> None:
     payload = {
         "documentId": "9ad841a6-f20f-4f43-9805-166ab2d98e7f",
         "model": "claude-opus-4-8",
-        "promptVersion": "chapter-structure-v1",
         "inputHash": "sha256:input",
         "attempts": 1,
         "sourceHash": "sha256:source",
@@ -46,7 +45,6 @@ def test_chapter_proposal_round_trip() -> None:
     restored = ChapterProposal.model_validate(model.model_dump(by_alias=True))
     assert restored == model
     assert restored.chapters[0].id == chapter_id("6c708ee9-95c0-4d23-8a4f-8cb5fd62c605")
-    assert restored.prompt_version == prompt_version("chapter-structure-v1")
     assert restored.input_hash == parse_content_hash("sha256:input")
 
 

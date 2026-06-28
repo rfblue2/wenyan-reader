@@ -1,7 +1,12 @@
 from pathlib import Path
 
 from wenyan.bootstrap import build_job_context
-from wenyan.core.ports.artifact_ref import segment_gloss_review_ref, segment_glosses_ref
+from wenyan.core.ports.artifact_ref import (
+    glossary_draft_ref,
+    segment_gloss_review_ref,
+    segment_glosses_ref,
+    segment_tokenization_ref,
+)
 from wenyan.jobs.context import JobOptions
 from wenyan.jobs.gloss_segment import run_gloss_segment
 from wenyan.jobs.ingest_document import run_ingest_document
@@ -10,7 +15,12 @@ from wenyan.jobs.review_segment_tokenization import run_review_segment_tokenizat
 from wenyan.jobs.split_paragraphs import run_split_paragraphs
 from wenyan.jobs.split_segments import run_split_segments
 from wenyan.jobs.tokenize_segment import run_tokenize_segment
-from wenyan_models.artifacts.segment import GlossReviewArtifact, GlossesArtifact
+from wenyan_models.artifacts.glossary import GlossaryDraft
+from wenyan_models.artifacts.segment import (
+    GlossReviewArtifact,
+    GlossesArtifact,
+    TokenizationArtifact,
+)
 from wenyan_models.domain.enums import ReviewStatus
 from wenyan_models.domain.results import JobFailure, Promoted, Skipped, outcome_exit_code
 from wenyan_models.domain.targets import single_segment_target
@@ -68,8 +78,12 @@ def test_gloss_segment_writes_artifact(tmp_workspace: Path) -> None:
     glosses_ref = segment_glosses_ref(doc_id, segment_id_value)
     assert ctx.artifacts.exists(glosses_ref)
     glosses = ctx.artifacts.read(glosses_ref, GlossesArtifact)
-    assert len(glosses.gloss_decisions) == 2
-    assert len(glosses.new_glosses) == 2
+    tokenization = ctx.artifacts.read(
+        segment_tokenization_ref(doc_id, segment_id_value),
+        TokenizationArtifact,
+    )
+    assert len(glosses.gloss_decisions) == len(tokenization.tokens)
+    assert len(glosses.new_glosses) == len(glosses.new_gloss_ids)
 
 
 def test_gloss_segment_skips_current_artifact(tmp_workspace: Path) -> None:
@@ -119,3 +133,16 @@ def test_review_segment_gloss_rejects(tmp_workspace: Path, monkeypatch) -> None:
         GlossReviewArtifact,
     )
     assert review.status == ReviewStatus.REJECTED
+
+
+def test_review_segment_gloss_updates_glossary_draft(tmp_workspace: Path) -> None:
+    ctx, (doc_id, segment_id_value) = _prepare_segment_with_approved_tokenization(tmp_workspace)
+    run_gloss_segment(ctx, doc_id, single_segment_target(segment_id_value), JobOptions())
+
+    outcome = run_review_segment_gloss(ctx, doc_id, segment_id_value, JobOptions())
+    assert outcome_exit_code(outcome) == 0
+
+    draft = ctx.artifacts.read(glossary_draft_ref(doc_id), GlossaryDraft)
+    glosses = ctx.artifacts.read(segment_glosses_ref(doc_id, segment_id_value), GlossesArtifact)
+    assert len(draft.glosses) == len(glosses.new_glosses)
+    assert {entry.id for entry in draft.glosses} == set(glosses.new_gloss_ids)

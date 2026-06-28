@@ -3,7 +3,8 @@ from wenyan.core.adapters.prompt_template import RenderedPrompt, load_prompt_tem
 from wenyan.core.ports.artifact_ref import segment_input_ref, segment_tokenization_ref
 from wenyan.jobs.context import JobContext, JobOptions
 from wenyan_models.artifacts.segment import SegmentInput, TokenizationArtifact
-from wenyan_models.domain.ids import DocumentId, SegmentId, prompt_version, segment_id
+from wenyan_models.text.tokenization import drop_punctuation_tokens
+from wenyan_models.domain.ids import DocumentId, SegmentId, segment_id
 from wenyan_models.domain.results import JobFailure, JobOutcome, Promoted, Skipped
 from wenyan_models.domain.targets import ParagraphBatch, SegmentTarget, SingleSegment
 
@@ -43,19 +44,14 @@ def _tokenize_one(
         return JobFailure(code="missing-input", message="segment input is missing")
     segment_input = ctx.artifacts.read(input_ref, SegmentInput)
     tokenization_ref = segment_tokenization_ref(document_id, segment_id_value)
-    prompt_version_value = prompt_version("segment-tokenization-v1")
     input_hash = sha256_text(segment_input.segment_text)
     if ctx.artifacts.exists(tokenization_ref) and not options.force:
         existing = ctx.artifacts.read(tokenization_ref, TokenizationArtifact)
-        if (
-            existing.input_hash == input_hash
-            and existing.prompt_version == prompt_version_value
-        ):
+        if existing.input_hash == input_hash:
             return Skipped(reason="tokenization is current")
     template = load_prompt_template(
         ctx.repo_root / ctx.config.prompts.root,
         "segment-tokenization",
-        "v1",
     )
     context = {
         "segment_text": segment_input.segment_text,
@@ -67,9 +63,9 @@ def _tokenize_one(
         update={
             "segment_id": segment_id_value,
             "input_hash": input_hash,
-            "prompt_version": prompt_version_value,
             "model": ctx.config.models.active_model,
             "attempts": 1,
+            "tokens": drop_punctuation_tokens(tokenization.tokens),
         },
     )
     if options.dry_run:

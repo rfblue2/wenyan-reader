@@ -1,3 +1,7 @@
+from wenyan.core.gloss.glossary_draft import (
+    load_candidate_glosses,
+    normalize_gloss_reuse,
+)
 import json
 
 from wenyan.core.adapters.hashing import sha256_text
@@ -10,13 +14,14 @@ from wenyan.core.ports.artifact_ref import (
 )
 from wenyan.jobs.context import JobContext, JobOptions
 from wenyan_models.artifacts.segment import (
+    GlossEntry,
     GlossesArtifact,
     SegmentInput,
     TokenizationArtifact,
     TokenizationReviewArtifact,
 )
 from wenyan_models.domain.enums import ReviewStatus
-from wenyan_models.domain.ids import DocumentId, SegmentId, prompt_version, segment_id
+from wenyan_models.domain.ids import DocumentId, SegmentId, segment_id
 from wenyan_models.domain.results import JobFailure, JobOutcome, Promoted, Skipped
 from wenyan_models.domain.targets import ParagraphBatch, SegmentTarget, SingleSegment
 
@@ -60,36 +65,36 @@ def _gloss_one(
         return JobFailure(code="missing-input", message="segment input is missing")
     segment_input = ctx.artifacts.read(input_ref, SegmentInput)
     glosses_ref = segment_glosses_ref(document_id, segment_id_value)
-    prompt_version_value = prompt_version("segment-gloss-v1")
     input_hash = sha256_text(tokenization_review.model_dump_json(by_alias=True))
     if ctx.artifacts.exists(glosses_ref) and not options.force:
         existing = ctx.artifacts.read(glosses_ref, GlossesArtifact)
-        if (
-            existing.input_hash == input_hash
-            and existing.prompt_version == prompt_version_value
-        ):
+        if existing.input_hash == input_hash:
             return Skipped(reason="glosses are current")
     template = load_prompt_template(
         ctx.repo_root / ctx.config.prompts.root,
         "segment-gloss",
-        "v1",
     )
+    candidate_glosses = load_candidate_glosses(ctx.artifacts, document_id, segment_id_value)
+    segment_candidates = tuple(
+        GlossEntry.model_validate(dict(item)) for item in segment_input.candidate_glosses
+    )
+    all_candidates = _merge_gloss_entries(candidate_glosses, segment_candidates)
     context = {
         "segment_id": str(segment_id_value),
         "segment_text": tokenization.text,
         "input_hash": str(input_hash),
         "tokenization_json": tokenization.model_dump_json(by_alias=True),
         "candidate_glosses_json": json.dumps(
-            [dict(item) for item in segment_input.candidate_glosses],
+            [entry.model_dump(by_alias=True) for entry in all_candidates],
             ensure_ascii=False,
         ),
     }
     glosses = ctx.llm.complete_model(RenderedPrompt(template, context), GlossesArtifact)
+    glosses = normalize_gloss_reuse(glosses, tokenization, all_candidates)
     glosses = glosses.model_copy(
         update={
             "segment_id": segment_id_value,
             "input_hash": input_hash,
-            "prompt_version": prompt_version_value,
             "model": ctx.config.models.active_model,
             "attempts": 1,
         },
@@ -142,3 +147,13 @@ def _resolve_segment_ids(
             draft = ctx.artifacts.read(draft_ref, ParagraphDraft)
             return [segment_id(str(segment.id)) for segment in draft.segments]
     return []
+
+
+def _merge_gloss_entries(
+    *groups: tuple[GlossEntry, ...],
+) -> tuple[GlossEntry, ...]:
+    by_id: dict[str, GlossEntry] = {}
+    for group in groups:
+        for entry in group:
+            by_id[entry.id] = entry
+    return tuple(by_id.values())

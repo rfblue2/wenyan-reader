@@ -38,3 +38,18 @@ Most project details live in the architecture docs. Start there before making de
 - When changing CLI behavior, update the CLI spec and any affected workflow examples.
 - When changing artifact shapes or status semantics, update the artifact documentation.
 - After doc edits, check terminology against the vocabulary above.
+
+## Running Tests
+
+Always invoke pytest through **uv** — do not use bare `python` or `python3`:
+
+```bash
+uv run python -m pytest
+uv run python -m pytest tests/jobs/test_gloss_segment.py -q
+```
+
+- **Why uv:** On some machines, `python` resolves to a broken pyenv shim (for example a missing `libintl.8.dylib`) and pytest may hang or fail before collecting tests.
+- **No live LLM:** Job and pipeline tests use `build_job_context(tmp_workspace)` with `models.provider: mock` and `MockLLMClient` fixtures under `tests/fixtures/llm/`. The `tmp_workspace` fixture clears `WENYAN_MODEL_PROVIDER`, `WENYAN_MODEL`, and API key env vars so a developer `.env` does not leak in.
+- **Bounded waits:** If a test run seems stuck, do not poll indefinitely. Re-run with a subprocess timeout (60–120s) or a narrow path to tell a hung interpreter from a slow test. A healthy full suite finishes in seconds.
+
+See also [CLI Tech Stack — Testing](architecture/tech-stack/cli.md#testing).

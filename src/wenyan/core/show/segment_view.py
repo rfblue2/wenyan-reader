@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from wenyan.core.gloss.glossary_draft import load_glossary_draft
 from wenyan.core.ports.artifact_ref import (
     segment_glosses_ref,
     segment_input_ref,
@@ -93,10 +94,17 @@ def _build_token_rows(
     if artifacts.exists(glosses_ref):
         glosses = artifacts.read(glosses_ref, GlossesArtifact)
     candidate_glosses: tuple[dict[str, object], ...] = ()
+    glossary_draft = load_glossary_draft(artifacts, document_id)
+    candidate_entries = list(glossary_draft.glosses)
     input_ref = segment_input_ref(document_id, segment_id)
     if artifacts.exists(input_ref):
         segment_input = artifacts.read(input_ref, SegmentInput)
-        candidate_glosses = segment_input.candidate_glosses
+        candidate_entries.extend(
+            GlossEntry.model_validate(dict(item)) for item in segment_input.candidate_glosses
+        )
+    candidate_glosses = tuple(
+        entry.model_dump(by_alias=True) for entry in _unique_gloss_entries(candidate_entries)
+    )
     decisions_by_token = (
         {decision.token_id: decision for decision in glosses.gloss_decisions}
         if glosses is not None
@@ -140,6 +148,13 @@ def _resolve_gloss_entry(
         if candidate.get("id") == gloss_id:
             return GlossEntry.model_validate(candidate)
     return None
+
+
+def _unique_gloss_entries(entries: list[GlossEntry]) -> tuple[GlossEntry, ...]:
+    by_id: dict[str, GlossEntry] = {}
+    for entry in entries:
+        by_id[entry.id] = entry
+    return tuple(by_id.values())
 
 
 def _build_review_items(

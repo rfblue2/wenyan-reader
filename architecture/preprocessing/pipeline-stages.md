@@ -44,7 +44,7 @@ Scope: paragraph.
 
 LLM use: yes, bounded to one paragraph at a time.
 
-Split the paragraph into bite-sized reading segments. Segments should usually be one sentence or a small pair of tightly connected sentences. The goal is pedagogical readability, not mechanical sentence splitting.
+Split the paragraph into reader segments. Segments should usually be one full sentence. Combine consecutive very short sentences when they read better together; split only very long sentences (roughly over 48 characters) at natural clause boundaries. Do not split on commas alone within a sentence. The goal is pedagogical readability, not mechanical comma splitting.
 
 Deterministic validation should verify that segment strings concatenate back to the paragraph text, modulo explicitly allowed paragraph separators.
 
@@ -56,17 +56,15 @@ Scope: segment.
 
 LLM use: yes.
 
-Identify glossable units within each segment.
+Identify glossable units within each segment. Punctuation and whitespace are not tokens; they remain in the segment text for display but are never glossed.
 
-Most tokens will be single characters, but tokenization must support n-grams for:
+**Default to one character per token** for ordinary words and grammatical particles. Use multi-character tokens only when the reader should gloss a span as one unit:
 
-- Names.
-- Places.
-- Titles.
-- Idioms.
-- Fixed expressions.
-- Multi-character words.
-- Contextual phrases that should be glossed as a unit.
+- Personal names, titles, and place names (`孫子`)
+- Fixed binomes or compounds whose sense is not merely the sum of parts (`大事`, `死生`, `存亡`)
+- Established idioms or set phrases in context (`兵者` as a topic label)
+
+Do not merge across `之` or similar particles (`國/之/大事`, not `國之大事`). Do not produce long phrase tokens spanning multiple content words.
 
 Each token occurrence receives offsets into the segment text and later points to a document-level `glossId`.
 
@@ -80,7 +78,8 @@ Create or reuse document-level gloss entries.
 
 Recommended priority:
 
-- Reuse an existing gloss entry when the same sense has already appeared.
+- Reuse an existing gloss entry when the same sense has already appeared; use `reuse-existing` with the document glossary id.
+- Create `create-new` only for senses not already in the glossary.
 - Use deterministic dictionaries or curated lexicons when available.
 - Use LLM assistance for unresolved or context-sensitive cases.
 - Create separate gloss entries for distinct senses of the same surface form.

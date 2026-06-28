@@ -1,0 +1,26 @@
+{
+  "segmentId": "d70e05cc-a271-43e6-9abd-40c97c83bb96",
+  "model": "mock",
+  "inputHash": "sha256:token-input",
+  "attempts": 1,
+  "text": "孫子曰：兵者，國之大事，死生之地，存亡之道，不可不察也。",
+  "tokens": [
+    {"id": "t01", "surface": "孫子", "start": 0, "end": 2},
+    {"id": "t02", "surface": "曰", "start": 2, "end": 3},
+    {"id": "t03", "surface": "兵者", "start": 4, "end": 6},
+    {"id": "t04", "surface": "國", "start": 7, "end": 8},
+    {"id": "t05", "surface": "之", "start": 8, "end": 9},
+    {"id": "t06", "surface": "大事", "start": 9, "end": 11},
+    {"id": "t07", "surface": "死生", "start": 12, "end": 14},
+    {"id": "t08", "surface": "之", "start": 14, "end": 15},
+    {"id": "t09", "surface": "地", "start": 15, "end": 16},
+    {"id": "t10", "surface": "存亡", "start": 17, "end": 19},
+    {"id": "t11", "surface": "之", "start": 19, "end": 20},
+    {"id": "t12", "surface": "道", "start": 20, "end": 21},
+    {"id": "t13", "surface": "不", "start": 22, "end": 23},
+    {"id": "t14", "surface": "可", "start": 23, "end": 24},
+    {"id": "t15", "surface": "不", "start": 24, "end": 25},
+    {"id": "t16", "surface": "察", "start": 25, "end": 26},
+    {"id": "t17", "surface": "也", "start": 26, "end": 27}
+  ]
+}

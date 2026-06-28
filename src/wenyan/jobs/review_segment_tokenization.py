@@ -4,7 +4,7 @@ from wenyan.core.ports.artifact_ref import segment_tokenization_ref, segment_tok
 from wenyan.jobs.context import JobContext, JobOptions
 from wenyan_models.artifacts.segment import TokenizationArtifact, TokenizationReviewArtifact
 from wenyan_models.domain.enums import ReviewStatus
-from wenyan_models.domain.ids import DocumentId, SegmentId, prompt_version
+from wenyan_models.domain.ids import DocumentId, SegmentId
 from wenyan_models.domain.results import JobFailure, JobOutcome, Promoted, Skipped
 
 
@@ -19,19 +19,14 @@ def run_review_segment_tokenization(
         return JobFailure(code="missing-input", message="tokenization artifact is missing")
     tokenization = ctx.artifacts.read(tokenization_ref, TokenizationArtifact)
     review_ref = segment_tokenization_review_ref(document_id, segment_id_value)
-    prompt_version_value = prompt_version("segment-tokenization-review-v1")
     input_hash = sha256_text(tokenization.model_dump_json(by_alias=True))
     if ctx.artifacts.exists(review_ref) and not options.force:
         existing = ctx.artifacts.read(review_ref, TokenizationReviewArtifact)
-        if (
-            existing.input_hash == input_hash
-            and existing.prompt_version == prompt_version_value
-        ):
+        if existing.input_hash == input_hash:
             return Skipped(reason="tokenization review is current")
     template = load_prompt_template(
         ctx.repo_root / ctx.config.prompts.root,
         "segment-tokenization-review",
-        "v1",
     )
     context = {
         "segment_id": str(segment_id_value),
@@ -43,7 +38,6 @@ def run_review_segment_tokenization(
         update={
             "segment_id": segment_id_value,
             "input_hash": input_hash,
-            "prompt_version": prompt_version_value,
             "model": ctx.config.models.active_model,
             "attempts": 1,
         },
