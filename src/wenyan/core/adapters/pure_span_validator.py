@@ -1,11 +1,12 @@
 from collections.abc import Sequence
 
+from wenyan.core.ports.span_validator import SpanValidator
 from wenyan_models.domain.enums import ValidationStatus
 from wenyan_models.domain.spans import ChapterSpan, ParagraphSpan, SegmentShell, TextSpan
 from wenyan_models.domain.validation import CheckResult, SpanValidationResult
 
 
-class PureSpanValidator:
+class PureSpanValidator(SpanValidator):
     def validate_chapters(
         self,
         text: str,

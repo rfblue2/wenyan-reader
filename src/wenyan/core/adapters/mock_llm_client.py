@@ -6,7 +6,7 @@ from pathlib import Path
 from pydantic import BaseModel, TypeAdapter
 
 from wenyan.core.adapters.prompt_template import RenderedPrompt
-from wenyan.core.ports.llm_client import StructuredPrompt
+from wenyan.core.ports.llm_client import LLMClient, StructuredPrompt
 from wenyan_models.artifacts.paragraph import ParagraphDraft, ParagraphDraftSegment
 from wenyan_models.artifacts.structure import ChapterProposal, ChapterProposalItem, ParagraphProposal, ParagraphProposalItem
 from wenyan_models.domain.ids import (
@@ -20,7 +20,7 @@ class LLMParseError(RuntimeError):
     pass
 
 
-class MockLLMClient:
+class MockLLMClient(LLMClient):
     def __init__(self, fixture_dir: Path) -> None:
         self._fixture_dir = fixture_dir
 

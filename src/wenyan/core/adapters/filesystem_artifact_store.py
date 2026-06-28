@@ -7,10 +7,10 @@ from pydantic import BaseModel
 
 from wenyan.core.adapters.paths import artifact_path
 from wenyan.core.ports.artifact_ref import ArtifactRef
-from wenyan.core.ports.artifact_store import ArtifactWrite
+from wenyan.core.ports.artifact_store import ArtifactStore, ArtifactWrite
 
 
-class FilesystemArtifactStore:
+class FilesystemArtifactStore(ArtifactStore):
     def __init__(self, repo_root: Path) -> None:
         self._repo_root = repo_root
 

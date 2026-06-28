@@ -5,6 +5,7 @@ from pathlib import Path
 import yaml
 from pydantic import BaseModel, ConfigDict, Field
 
+from wenyan.core.ports.source_registry import SourceRegistry
 from wenyan_models.domain.ids import DocumentId, Slug, document_id, slug
 from wenyan_models.sources import DocumentYaml, RegistryEntry
 
@@ -26,7 +27,7 @@ class _RegistryFile(BaseModel):
     documents: tuple[_RegistryDocument, ...]
 
 
-class YamlSourceRegistry:
+class YamlSourceRegistry(SourceRegistry):
     def __init__(self, repo_root: Path) -> None:
         self._repo_root = repo_root
         self._registry_path = repo_root / "sources" / "registry.yaml"

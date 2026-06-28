@@ -1,10 +1,10 @@
 from wenyan.core.ports.artifact_ref import normalized_document_ref
 from wenyan.core.ports.artifact_store import ArtifactStore
-from wenyan.core.ports.graph_validator import GraphValidationReport, ValidationIssue
+from wenyan.core.ports.graph_validator import GraphValidationReport, GraphValidator, ValidationIssue
 from wenyan_models.domain.ids import ChapterId, DocumentId, ParagraphId, SegmentId
 
 
-class FilesystemGraphValidator:
+class FilesystemGraphValidator(GraphValidator):
     def __init__(self, artifacts: ArtifactStore) -> None:
         self._artifacts = artifacts
 

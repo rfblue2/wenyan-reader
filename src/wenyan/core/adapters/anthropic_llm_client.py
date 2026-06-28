@@ -3,10 +3,10 @@ import httpx
 from pydantic import BaseModel, TypeAdapter
 
 from wenyan.core.adapters.mock_llm_client import LLMParseError
-from wenyan.core.ports.llm_client import StructuredPrompt
+from wenyan.core.ports.llm_client import LLMClient, StructuredPrompt
 
 
-class AnthropicLLMClient:
+class AnthropicLLMClient(LLMClient):
     def __init__(self, api_key: str, model: str) -> None:
         self._api_key = api_key
         self._model = model

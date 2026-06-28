@@ -5,14 +5,15 @@ from wenyan.core.ports.artifact_ref import (
     normalized_document_ref,
 )
 from wenyan.core.ports.artifact_store import ArtifactStore
+from wenyan.core.ports.status_reader import StatusReader
 from wenyan_models.artifacts.normalized import NormalizedDocument
 from wenyan_models.artifacts.structure import ChapterProposal
 from wenyan_models.domain.enums import UnitStatus
-from wenyan_models.domain.ids import ChapterId, DocumentId, SegmentId
+from wenyan_models.domain.ids import ChapterId, DocumentId, ParagraphId, SegmentId
 from wenyan_models.status.document import DocumentStatus
 
 
-class FilesystemStatusReader:
+class FilesystemStatusReader(StatusReader):
     def __init__(self, artifacts: ArtifactStore, repo_root: Path) -> None:
         self._artifacts = artifacts
         self._repo_root = repo_root
@@ -68,7 +69,7 @@ class FilesystemStatusReader:
     def paragraph_status(
         self,
         document_id_value: DocumentId,
-        paragraph_id: object,
+        paragraph_id: ParagraphId,
     ) -> DocumentStatus:
         return self.document_status(document_id_value)
 

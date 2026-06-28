@@ -4,6 +4,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict
 
+from wenyan.core.ports.llm_client import StructuredPrompt
 from wenyan_models.domain.ids import PromptVersion, prompt_version
 
 
@@ -30,7 +31,7 @@ class PromptTemplate(BaseModel):
 
 
 @dataclass(frozen=True)
-class RenderedPrompt:
+class RenderedPrompt(StructuredPrompt):
     template: PromptTemplate
     context: Mapping[str, str]
 
