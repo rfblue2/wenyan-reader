@@ -53,10 +53,43 @@ def test_minimax_api_key_from_env(tmp_path, monkeypatch: pytest.MonkeyPatch) -> 
     assert config.minimax_api_key == "minimax-secret"
 
 
-def test_local_override_merges_yaml(tmp_path) -> None:
+def test_dotenv_loads_provider_and_api_key(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
     config_dir = tmp_path / "config"
     config_dir.mkdir()
     (config_dir / "preprocessing.yaml").write_text(_BASE_YAML, encoding="utf-8")
+    monkeypatch.delenv("WENYAN_MODEL_PROVIDER", raising=False)
+    monkeypatch.delenv("MINIMAX_API_KEY", raising=False)
+    (tmp_path / ".env").write_text(
+        "WENYAN_MODEL_PROVIDER=minimax\nMINIMAX_API_KEY=secret-from-dotenv\n",
+        encoding="utf-8",
+    )
+
+    config = load_preprocessing_config(tmp_path)
+
+    assert config.models.provider == "minimax"
+    assert config.minimax_api_key == "secret-from-dotenv"
+
+
+def test_dotenv_does_not_override_existing_env(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
+    config_dir = tmp_path / "config"
+    config_dir.mkdir()
+    (config_dir / "preprocessing.yaml").write_text(_BASE_YAML, encoding="utf-8")
+    monkeypatch.setenv("WENYAN_MODEL_PROVIDER", "mock")
+    (tmp_path / ".env").write_text("WENYAN_MODEL_PROVIDER=minimax\n", encoding="utf-8")
+
+    config = load_preprocessing_config(tmp_path)
+
+    assert config.models.provider == "mock"
+
+
+def test_local_override_merges_yaml(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
+    config_dir = tmp_path / "config"
+    config_dir.mkdir()
+    (config_dir / "preprocessing.yaml").write_text(_BASE_YAML, encoding="utf-8")
+    monkeypatch.delenv("WENYAN_MODEL_PROVIDER", raising=False)
+    monkeypatch.delenv("WENYAN_MODEL", raising=False)
+    monkeypatch.delenv("MINIMAX_API_KEY", raising=False)
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     override_dir = tmp_path / ".wenyan"
     override_dir.mkdir()
     (override_dir / "config.yaml").write_text(

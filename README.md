@@ -34,7 +34,7 @@ export ANTHROPIC_API_KEY=...
 
 Each provider has a default model in `config/preprocessing.yaml` (`anthropic.model`, `minimax.model`). Override with `WENYAN_MODEL` only when you need a different model ID for the active provider.
 
-Copy [`.env.example`](.env.example) to `.env` in the repo root and fill in your keys there — `.env` is gitignored and `uv run` loads it automatically. Never commit API keys.
+Copy [`.env.example`](.env.example) to `.env` in the repo root and fill in your keys there — `.env` is gitignored and the wenyan CLI loads it automatically. Never commit API keys.
 
 ## Quickstart: preprocess 孙子兵法
 

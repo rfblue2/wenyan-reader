@@ -46,7 +46,11 @@ def install_sunzi_chapter_proposal(ctx: JobContext, document_id: DocumentId) -> 
 
 
 @pytest.fixture
-def tmp_workspace(tmp_path: Path) -> Path:
+def tmp_workspace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    monkeypatch.delenv("WENYAN_MODEL_PROVIDER", raising=False)
+    monkeypatch.delenv("WENYAN_MODEL", raising=False)
+    monkeypatch.delenv("MINIMAX_API_KEY", raising=False)
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     workspace = tmp_path / "repo"
     shutil.copytree(REPO_ROOT / "sources", workspace / "sources")
     if (REPO_ROOT / "prompts").is_dir():

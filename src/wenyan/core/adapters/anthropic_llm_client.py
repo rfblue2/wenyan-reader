@@ -1,8 +1,9 @@
 
 import httpx
-from pydantic import BaseModel, TypeAdapter
+from pydantic import BaseModel
 
 from wenyan.core.adapters.mock_llm_client import LLMParseError
+from wenyan.core.adapters.structured_output import build_structured_system_prompt, parse_model_json
 from wenyan.core.ports.llm_client import LLMClient, StructuredPrompt
 
 
@@ -33,6 +34,7 @@ class AnthropicLLMClient(LLMClient):
             json={
                 "model": self._model,
                 "max_tokens": 4096,
+                "system": build_structured_system_prompt(model),
                 "messages": [{"role": "user", "content": prompt.render({})}],
             },
             timeout=120.0,
@@ -46,8 +48,4 @@ class AnthropicLLMClient(LLMClient):
         ]
         if not text_blocks:
             raise LLMParseError("anthropic response missing text content")
-        try:
-            parsed = TypeAdapter(model).validate_json(text_blocks[0])
-        except Exception as exc:  # noqa: BLE001
-            raise LLMParseError(str(exc)) from exc
-        return parsed
+        return parse_model_json(text_blocks[0], model)

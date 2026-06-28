@@ -8,6 +8,7 @@ from wenyan_models.config import PreprocessingConfig
 
 
 def load_preprocessing_config(repo_root: Path) -> PreprocessingConfig:
+    _load_repo_dotenv(repo_root)
     merged = _load_yaml(repo_root / "config" / "preprocessing.yaml")
     override_path = _override_path(repo_root)
     if override_path is not None:
@@ -35,6 +36,28 @@ def _load_yaml(path: Path) -> dict[str, Any]:
     if not isinstance(loaded, dict):
         raise ValueError(f"expected mapping in {path}")
     return loaded
+
+
+def _load_repo_dotenv(repo_root: Path) -> None:
+    dotenv_path = repo_root / ".env"
+    if not dotenv_path.is_file():
+        return
+    for raw_line in dotenv_path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("export "):
+            line = line[7:].strip()
+        key, _, value = line.partition("=")
+        key = key.strip()
+        if not key:
+            continue
+        value = value.strip()
+        if (value.startswith('"') and value.endswith('"')) or (
+            value.startswith("'") and value.endswith("'")
+        ):
+            value = value[1:-1]
+        os.environ.setdefault(key, value)
 
 
 def _env_overrides(merged: dict[str, Any]) -> dict[str, Any]:

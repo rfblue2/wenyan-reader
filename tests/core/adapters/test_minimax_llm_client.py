@@ -8,7 +8,7 @@ class _SampleModel(BaseModel):
 
 
 def test_minimax_client_uses_anthropic_compatible_endpoint(monkeypatch) -> None:
-    captured: dict[str, str] = {}
+    captured: dict[str, object] = {}
 
     class FakeResponse:
         def raise_for_status(self) -> None:
@@ -17,8 +17,9 @@ def test_minimax_client_uses_anthropic_compatible_endpoint(monkeypatch) -> None:
         def json(self) -> dict[str, object]:
             return {"content": [{"type": "text", "text": '{"answer": "ok"}'}]}
 
-    def fake_post(url: str, **_kwargs: object) -> FakeResponse:
+    def fake_post(url: str, **kwargs: object) -> FakeResponse:
         captured["url"] = url
+        captured["json"] = kwargs.get("json")
         return FakeResponse()
 
     monkeypatch.setattr("wenyan.core.adapters.anthropic_llm_client.httpx.post", fake_post)
@@ -27,6 +28,10 @@ def test_minimax_client_uses_anthropic_compatible_endpoint(monkeypatch) -> None:
     result = client.complete_model(_FakePrompt(), _SampleModel)
 
     assert captured["url"] == f"{MINIMAX_ANTHROPIC_BASE_URL}/v1/messages"
+    request_json = captured["json"]
+    assert isinstance(request_json, dict)
+    assert "system" in request_json
+    assert "JSON object only" in str(request_json["system"])
     assert result.answer == "ok"
 
 
