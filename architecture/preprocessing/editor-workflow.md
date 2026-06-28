@@ -173,14 +173,14 @@ The editor reviews the packaged reader files through normal code review before a
 
 ## User Flow: Chain A Larger Run
 
-Once the editor trusts the earlier boundaries, they can run larger chunks through the CLI:
+Once the editor trusts the earlier boundaries, they can chain segment work:
 
 ```shell
-```shell
-wenyan preprocess run <document-id> --chapter <chapter-id> --through split-paragraphs
-wenyan preprocess run <document-id> --paragraph <paragraph-id> --through review-segment-context
-wenyan preprocess run <document-id> --through package-document
+wenyan preprocess run <document-id>
+wenyan preprocess run <document-id> --next-paragraph
 ```
+
+`run` with no flags processes the next incomplete segment through all subjobs. `--next-paragraph` prepares segment structure for the next paragraph that lacks a draft.
 
 The editor still uses status output to decide where to inspect next:
 

@@ -26,7 +26,7 @@ _LLM_PROMPTS: tuple[tuple[str, str, tuple[str, ...]], ...] = (
     (
         "segment-tokenization-review",
         "v1",
-        ("tokenization_json", "segment_id", "input_hash"),
+        ("tokenization_json", "segment_id", "review_input_hash"),
     ),
 )
 

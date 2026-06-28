@@ -146,9 +146,11 @@ class MockLLMClient(LLMClient):
         payload = json.loads(fixture_path.read_text(encoding="utf-8"))
         if isinstance(prompt, RenderedPrompt):
             payload["segmentId"] = prompt.context_value("segment_id")
+            payload["inputHash"] = prompt.context_value("review_input_hash")
         else:
             rendered = prompt.render({})
             payload["segmentId"] = _context_value(rendered, "segment_id")
+            payload["inputHash"] = _context_value(rendered, "review_input_hash")
         return TypeAdapter(model).validate_python(payload)
 
 

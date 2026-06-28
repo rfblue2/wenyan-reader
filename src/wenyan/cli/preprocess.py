@@ -11,6 +11,7 @@ from wenyan.core.adapters.filesystem_graph_validator import FilesystemGraphValid
 from wenyan.core.adapters.filesystem_status_reader import FilesystemStatusReader
 from wenyan.jobs.context import JobOptions
 from wenyan.jobs.ingest_document import run_ingest_document
+from wenyan.jobs.run_preprocess import RunPlan, run_preprocess
 from wenyan.jobs.review_segment_tokenization import run_review_segment_tokenization
 from wenyan.jobs.split_paragraphs import run_split_paragraphs
 from wenyan.jobs.split_segments import run_split_segments
@@ -169,6 +170,57 @@ def review_segment_tokenization_cmd(
         typer.echo(json.dumps({"outcome": outcome.model_dump(by_alias=True)}))
     else:
         typer.echo(_outcome_message(outcome))
+    raise typer.Exit(outcome_exit_code(outcome))
+
+
+@preprocess_app.command("run")
+def run_cmd(
+    document: Annotated[str, typer.Argument(help="Document UUID or slug")],
+    segment: Annotated[str | None, typer.Option("--segment", help="Segment UUID")] = None,
+    next_segment: Annotated[
+        bool,
+        typer.Option(
+            "--next-segment",
+            help="Process the next incomplete segment through all subjobs (default)",
+        ),
+    ] = False,
+    next_paragraph: Annotated[
+        bool,
+        typer.Option(
+            "--next-paragraph",
+            help="Prepare segment structure for the next paragraph lacking a draft",
+        ),
+    ] = False,
+    force: bool = force_option,
+    dry_run: bool = dry_run_option,
+    as_json: bool = json_option,
+) -> None:
+    """Run preprocessing for the next segment, a named segment, or the next paragraph."""
+    ctx = build_job_context(_repo_root())
+    entry = ctx.registry.resolve(document)
+    doc_id = entry.document_id or document_id(document)
+    use_next_segment = next_segment or (not next_paragraph and segment is None)
+    outcome = run_preprocess(
+        ctx,
+        doc_id,
+        segment_id_value=segment_id(segment) if segment else None,
+        next_segment=use_next_segment,
+        next_paragraph=next_paragraph,
+        options=_job_options(force, dry_run),
+    )
+    if as_json:
+        typer.echo(json.dumps({"outcome": outcome.model_dump(by_alias=True)}))
+    else:
+        match outcome:
+            case Promoted(artifact=plan):
+                stages = ", ".join(plan.stages_run) if plan.stages_run else "none"
+                target = plan.segment_id or plan.paragraph_id or doc_id
+                preview = f" ({plan.text_preview})" if plan.text_preview else ""
+                typer.echo(f"complete ({stages}) for {target}{preview}")
+            case Skipped(reason=reason):
+                typer.echo(reason)
+            case JobFailure(message=message):
+                typer.echo(message, err=True)
     raise typer.Exit(outcome_exit_code(outcome))
 
 

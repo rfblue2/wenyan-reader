@@ -35,7 +35,7 @@ def run_review_segment_tokenization(
     )
     context = {
         "segment_id": str(segment_id_value),
-        "input_hash": str(input_hash),
+        "review_input_hash": str(input_hash),
         "tokenization_json": tokenization.model_dump_json(by_alias=True),
     }
     review = ctx.llm.complete_model(RenderedPrompt(template, context), TokenizationReviewArtifact)

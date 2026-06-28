@@ -296,14 +296,17 @@ Also runs document-level consistency review before promoting package files.
 ### `run`
 
 ```shell
-wenyan preprocess run <document-id> --chapter <chapter-id> --through split-paragraphs
-wenyan preprocess run <document-id> --paragraph <paragraph-id> --through review-segment-context
-wenyan preprocess run <document-id> --through package-document
+wenyan preprocess run <document-id>
+wenyan preprocess run <document-id> --next-segment
+wenyan preprocess run <document-id> --segment <segment-id>
+wenyan preprocess run <document-id> --next-paragraph
 ```
 
-Scope: document, chapter, paragraph, or segment depending on options.
+Scope: one segment (default), one named segment, or one paragraph structure pass.
 
-Runs multiple preprocessing commands in dependency order. Chained execution should preserve checkpoint boundaries: reuse successful jobs, stop at validation or review failures by default, respect concurrency and rate limits, and keep resumability at the focused subjob level.
+Runs preprocessing commands in dependency order. With no segment flags, processes the next incomplete segment through all segment subjobs (tokenization, gloss, grammar, context, and each review pass). Reuses successful artifacts, stops at validation or review failures, and stops with a clear error when a required subjob command is not implemented yet.
+
+`--next-paragraph` runs `split-segments` once for the first paragraph that lacks a segment draft.
 
 ### `status`
 
