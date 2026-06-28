@@ -23,6 +23,8 @@ Rules:
 - Set model to "pending" and attempts to 1 unless the user message specifies otherwise.
 - Generate new UUID v4 strings for id fields you must create.
 - Text spans must be exact substrings of the source text; do not normalize or rewrite characters.
+- For review artifacts, status must be exactly "approved" or "rejected" as defined in the schema.
+- Omit optional properties when empty rather than inventing placeholder content.
 """
 
 
