@@ -6,7 +6,7 @@ from typing import Literal
 
 from wenyan.core.ports.artifact_ref import chapter_proposal_ref, paragraph_draft_ref, paragraph_proposal_ref
 from wenyan.core.ports.artifact_store import ArtifactStore
-from wenyan.core.status.derivation import find_paragraph_chapter
+from wenyan.core.status.derivation import find_paragraph_chapter, find_segment_location
 from wenyan_models.artifacts.paragraph import ParagraphDraft
 from wenyan_models.artifacts.structure import ChapterProposal, ParagraphProposal
 from wenyan_models.domain.ids import ChapterId, DocumentId, ParagraphId, SegmentId, chapter_id, paragraph_id, segment_id
@@ -95,25 +95,40 @@ def build_display_context(
     chapter_handle = scope.chapter_handle
     paragraph_handle = scope.paragraph_handle
     chapter_id_value = scope.chapter_id
+    paragraph_id_value = scope.paragraph_id
+    if scope.segment_id is not None and (chapter_id_value is None or paragraph_id_value is None):
+        location = find_segment_location(artifacts, document_id, scope.segment_id)
+        if location is not None:
+            chapter_id_value, paragraph_id_value, _ = location
     if chapter_id_value is None and scope.paragraph_id is not None:
         chapter_id_value = find_paragraph_chapter(artifacts, document_id, scope.paragraph_id)
+        paragraph_id_value = scope.paragraph_id
     if chapter_id_value is not None and chapter_handle is None:
         chapter_handle = _chapter_handle_for_id(artifacts, document_id, chapter_id_value)
-    if scope.paragraph_id is not None and chapter_id_value is not None and paragraph_handle is None:
+    if paragraph_id_value is not None and chapter_id_value is not None and paragraph_handle is None:
         paragraph_handle = _paragraph_handle_for_id(
             artifacts,
             document_id,
             chapter_id_value,
-            scope.paragraph_id,
+            paragraph_id_value,
         )
-    if scope.segment_id is not None and scope.paragraph_id is not None and paragraph_handle is None:
-        paragraph_handle = _paragraph_handle_for_id(
-            artifacts,
-            document_id,
-            chapter_id_value,
-            scope.paragraph_id,
-        ) if chapter_id_value else None
     return chapter_handle, paragraph_handle
+
+
+def segment_handle_for_id(
+    artifacts: ArtifactStore,
+    document_id: DocumentId,
+    paragraph_id: ParagraphId,
+    segment_id_value: SegmentId,
+) -> str:
+    draft_ref = paragraph_draft_ref(document_id, paragraph_id)
+    if not artifacts.exists(draft_ref):
+        return str(segment_id_value)
+    draft = artifacts.read(draft_ref, ParagraphDraft)
+    for ordinal, segment in enumerate(draft.segments, start=1):
+        if segment.id == segment_id_value:
+            return str(ordinal)
+    return str(segment_id_value)
 
 
 def _chapter_handle_for_id(

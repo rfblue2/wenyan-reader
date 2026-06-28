@@ -45,7 +45,9 @@ A segment is **finished** when all eight subjobs have approved review artifacts:
 | --- | --- |
 | `split-paragraphs`, `split-segments` | Implemented |
 | `tokenize-segment`, `review-segment-tokenization` | Implemented |
-| Gloss, grammar, context subjobs and reviews | Stubbed |
+| `gloss-segment`, `review-segment-gloss` | Implemented |
+| Grammar, context subjobs and reviews | Stubbed |
+| `show` | Implemented |
 | `run` | Chains all subjobs; stops with `not-implemented` when the next subjob is missing |
 
 ## LLM backend
@@ -72,6 +74,15 @@ uv run wenyan preprocess ...
 uv run wenyan preprocess status <slug> --json
 uv run wenyan preprocess validate-artifacts <slug>
 ```
+
+### Inspect segment outputs (glosses, reviews)
+
+```shell
+uv run wenyan preprocess show <slug> --chapter 1 --paragraph 1 --segment 1
+uv run wenyan preprocess show <slug> --segment <segment-uuid> --json
+```
+
+Use ordinals with `--chapter` / `--paragraph` as needed, or pass a segment UUID directly.
 
 ### Shorthand: finish the next segment
 
@@ -128,7 +139,7 @@ uv run wenyan preprocess run <slug> --segment <segment-id>
 
 - **Never** load an entire large `normalized-text.txt` into context.
 - **Always** run `validate-artifacts` after a batch of segment work.
-- **Stop** on non-zero CLI exit and show the editor the relevant review or failure artifact.
+- **Stop** on non-zero CLI exit and run `show` (or read `*-review.json`) for the blocked segment.
 - **Prefer** `run <slug>` over hand-picking UUIDs when the editor wants to continue incrementally.
 
 ## Reference

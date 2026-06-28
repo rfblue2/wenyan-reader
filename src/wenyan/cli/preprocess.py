@@ -7,10 +7,13 @@ import typer
 from wenyan.bootstrap import build_job_context
 from wenyan.cli import preprocess_app
 from wenyan.cli.options import dry_run_option, force_option, json_option
+from wenyan.cli.show_output import ShowDisplayContext, render_segment_show
 from wenyan.cli.status_output import StatusDisplayContext, render_status
-from wenyan.cli.status_scope import build_display_context, resolve_status_scope
+from wenyan.cli.status_scope import build_display_context, resolve_status_scope, segment_handle_for_id
 from wenyan.core.adapters.filesystem_graph_validator import FilesystemGraphValidator
 from wenyan.core.adapters.filesystem_status_reader import FilesystemStatusReader
+from wenyan.core.show.segment_view import build_segment_show_view
+from wenyan.core.status.derivation import find_segment_location
 from wenyan.jobs.context import JobOptions
 from wenyan.jobs.ingest_document import run_ingest_document
 from wenyan.jobs.run_preprocess import RunPlan, run_preprocess
@@ -356,6 +359,87 @@ def status_cmd(
     raise typer.Exit(0)
 
 
+@preprocess_app.command("show")
+def show_cmd(
+    document: Annotated[str, typer.Argument(help="Document UUID or slug")],
+    segment: Annotated[
+        str,
+        typer.Option("--segment", help="Segment UUID or number (requires --paragraph for numbers)"),
+    ],
+    chapter: Annotated[
+        str | None,
+        typer.Option(
+            "--chapter",
+            help="Chapter UUID, number (e.g. 1), or title (e.g. 始計第一)",
+        ),
+    ] = None,
+    paragraph: Annotated[
+        str | None,
+        typer.Option(
+            "--paragraph",
+            help="Paragraph UUID or number (requires --chapter for numbers)",
+        ),
+    ] = None,
+    as_json: bool = json_option,
+) -> None:
+    """Show a segment's source text and generated artifacts in an editor-friendly format."""
+    ctx = build_job_context(_repo_root())
+    entry = ctx.registry.resolve(document)
+    if entry.document_id is None:
+        raise typer.Exit(1)
+    doc_id = entry.document_id
+    document_ref = entry.slug or document
+    try:
+        scope = resolve_status_scope(
+            ctx.artifacts,
+            doc_id,
+            document_ref,
+            chapter=chapter,
+            paragraph=paragraph,
+            segment=segment,
+        )
+        if scope.segment_id is None:
+            raise ValueError("--segment is required")
+        chapter_handle, paragraph_handle = build_display_context(ctx.artifacts, doc_id, scope)
+        segment_handle = scope.segment_handle
+        if segment_handle is None:
+            paragraph_id_value = scope.paragraph_id
+            if paragraph_id_value is None:
+                location = find_segment_location(ctx.artifacts, doc_id, scope.segment_id)
+                if location is not None:
+                    _, paragraph_id_value, _ = location
+            if paragraph_id_value is not None:
+                segment_handle = segment_handle_for_id(
+                    ctx.artifacts,
+                    doc_id,
+                    paragraph_id_value,
+                    scope.segment_id,
+                )
+        payload = build_segment_show_view(
+            ctx.artifacts,
+            _repo_root(),
+            document_id=doc_id,
+            document_ref=document_ref,
+            segment_id=scope.segment_id,
+            chapter_handle=chapter_handle,
+            paragraph_handle=paragraph_handle,
+            segment_handle=segment_handle,
+        )
+        display = ShowDisplayContext(
+            chapter_handle=chapter_handle,
+            paragraph_handle=paragraph_handle,
+            segment_handle=segment_handle,
+        )
+    except ValueError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(1) from exc
+    if as_json:
+        typer.echo(payload.model_dump_json(by_alias=True))
+    else:
+        typer.echo(render_segment_show(payload, display), nl=False)
+    raise typer.Exit(0)
+
+
 @preprocess_app.command("validate-artifacts")
 def validate_artifacts_cmd(
     document: Annotated[str, typer.Argument(help="Document UUID or slug")],
@@ -383,7 +467,6 @@ _STUB_HELP: dict[str, str] = {
     "review-segment-context": "Review context notes for usefulness and grounding.",
     "assemble-paragraph": "Assemble completed segment outputs into a reader paragraph file.",
     "package-document": "Build validated reader package files under content/documents/.",
-    "show": "Show a segment's source text and accepted or blocked artifacts.",
     "review-report": "Print the latest review report for a segment or component.",
 }
 

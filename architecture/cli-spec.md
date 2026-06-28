@@ -358,12 +358,19 @@ The command should return a non-zero exit code when it finds invalid, dangling, 
 ### `show`
 
 ```shell
-wenyan preprocess show <document-id> --segment <segment-id>
+wenyan preprocess show <document-id> --segment <segment-id> [--chapter <ref>] [--paragraph <ref>] [--json]
 ```
 
 Scope: one segment.
 
-Shows the source segment, accepted artifacts, and blocked or failed component details in an editor-friendly format.
+Shows the segment source text and generated artifacts in an editor-friendly terminal layout:
+
+- Location header with chapter/paragraph/segment handles (ordinals when resolvable) and UUIDs.
+- Gloss table joining token surfaces with pinyin, gloss text, and reuse/create decisions when `glosses.json` exists; token surfaces only when only tokenization exists.
+- Review status and findings for each present review artifact.
+- Component summary matching `status --segment`.
+
+Use `--json` for a structured `SegmentShowView` payload suitable for agents and tooling.
 
 ### `review-report`
 
