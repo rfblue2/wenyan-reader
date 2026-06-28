@@ -1,0 +1,12 @@
+title: 孙子兵法
+language: zh-Hant
+script: traditional
+provenance: local
+normalization:
+  encoding: utf-8
+  punctuationPolicy: preserve-source
+sourceHeadings:
+  pattern: chapter-title
+  examples:
+    - 始計第一
+    - 作戰第二
