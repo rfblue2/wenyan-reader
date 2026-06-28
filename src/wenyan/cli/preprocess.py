@@ -12,7 +12,6 @@ from wenyan.core.adapters.filesystem_status_reader import FilesystemStatusReader
 from wenyan.jobs.context import JobOptions
 from wenyan.jobs.ingest_document import run_ingest_document
 from wenyan.jobs.review_segment_tokenization import run_review_segment_tokenization
-from wenyan.jobs.split_chapters import run_split_chapters
 from wenyan.jobs.split_paragraphs import run_split_paragraphs
 from wenyan.jobs.split_segments import run_split_segments
 from wenyan.jobs.tokenize_segment import run_tokenize_segment
@@ -64,25 +63,6 @@ def ingest_document_cmd(
     ctx = build_job_context(_repo_root())
     outcome = run_ingest_document(ctx, source, _job_options(force, dry_run))
     _emit_json_or_text(outcome, as_json)
-    raise typer.Exit(outcome_exit_code(outcome))
-
-
-@preprocess_app.command("split-chapters")
-def split_chapters_cmd(
-    document: Annotated[str, typer.Argument(help="Document UUID or slug")],
-    force: bool = force_option,
-    dry_run: bool = dry_run_option,
-    as_json: bool = json_option,
-) -> None:
-    """Propose chapter spans for a normalized document and validate coverage."""
-    ctx = build_job_context(_repo_root())
-    entry = ctx.registry.resolve(document)
-    doc_id = entry.document_id or document_id(document)
-    outcome = run_split_chapters(ctx, doc_id, _job_options(force, dry_run))
-    if as_json:
-        typer.echo(json.dumps({"outcome": outcome.model_dump(by_alias=True)}))
-    else:
-        typer.echo(_outcome_message(outcome))
     raise typer.Exit(outcome_exit_code(outcome))
 
 
@@ -221,7 +201,7 @@ def validate_artifacts_cmd(
     entry = ctx.registry.resolve(document)
     if entry.document_id is None:
         raise typer.Exit(1)
-    validator = FilesystemGraphValidator(ctx.artifacts)
+    validator = FilesystemGraphValidator(ctx.artifacts, ctx.repo_root)
     report = validator.validate_document(entry.document_id)
     if as_json:
         typer.echo(report.model_dump_json(by_alias=True))

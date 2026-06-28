@@ -72,10 +72,13 @@ class YamlSourceRegistry(SourceRegistry):
         return DocumentYaml.model_validate(loaded)
 
     def read_source_text(self, slug_value: Slug) -> str:
+        return self.source_text_path(slug_value).read_text(encoding="utf-8")
+
+    def source_text_path(self, slug_value: Slug) -> Path:
         path = self._repo_root / "sources" / "documents" / str(slug_value) / "source.txt"
         if not path.is_file():
             raise ValueError(f"source.txt not found for slug: {slug_value}")
-        return path.read_text(encoding="utf-8")
+        return path
 
     def source_slug_from_path(self, source_dir: Path) -> Slug:
         documents_root = (self._repo_root / "sources" / "documents").resolve()

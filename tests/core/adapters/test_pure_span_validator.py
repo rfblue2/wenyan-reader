@@ -6,10 +6,9 @@ from wenyan_models.domain.spans import ChapterSpan, ParagraphSpan, SegmentShell
 
 
 def test_ordered_spans_pass() -> None:
-    text = "abcdef"
     validator = PureSpanValidator()
     result = validator.validate_chapters(
-        text,
+        6,
         [
             ChapterSpan(id=chapter_id("c1"), title="one", start=0, end=3),
             ChapterSpan(id=chapter_id("c2"), title="two", start=3, end=6),
@@ -19,10 +18,9 @@ def test_ordered_spans_pass() -> None:
 
 
 def test_gap_fails() -> None:
-    text = "abcdef"
     validator = PureSpanValidator()
     result = validator.validate_paragraphs(
-        text,
+        6,
         [ParagraphSpan(id=paragraph_id("p1"), start=0, end=2), ParagraphSpan(id=paragraph_id("p2"), start=3, end=6)],
     )
     assert result.status == ValidationStatus.FAILED
@@ -30,10 +28,9 @@ def test_gap_fails() -> None:
 
 
 def test_overlap_fails() -> None:
-    text = "abcdef"
     validator = PureSpanValidator()
     result = validator.validate_segments(
-        text,
+        6,
         [
             SegmentShell(id=segment_id("s1"), start=0, end=4),
             SegmentShell(id=segment_id("s2"), start=3, end=6),

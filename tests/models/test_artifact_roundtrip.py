@@ -9,7 +9,9 @@ def test_normalized_document_round_trip() -> None:
         "title": "孙子兵法",
         "sourceHash": "sha256:abc",
         "normalizedHash": "sha256:def",
-        "text": "始計第一",
+        "textPath": "normalized-text.txt",
+        "characterCount": 4,
+        "textIndex": {"stride": 65536, "byteOffsets": [0]},
         "normalization": {
             "encoding": "utf-8",
             "punctuationPolicy": "preserve-source",

@@ -46,12 +46,14 @@ The repo includes [孙子兵法](sources/documents/sunzi-bingfa/) (`sunzi-bingfa
 uv run wenyan preprocess ingest-document sources/documents/sunzi-bingfa
 ```
 
-This assigns a document UUID, updates `sources/registry.yaml`, and writes `preprocess/documents/<document-id>/normalized-document.json`.
+This assigns a document UUID, updates `sources/registry.yaml`, and writes `preprocess/documents/<document-id>/normalized-document.json` and `normalized-text.txt`.
 
-### 2. Discover chapters
+### 2. Define chapter structure (interactive)
+
+Work with a local agent using the [preparing-source-structure](.cursor/skills/preparing-source-structure/SKILL.md) skill to normalize and agree on chapter boundaries. The agent writes `preprocess/documents/<document-id>/structure/chapter-proposal.json`.
 
 ```shell
-uv run wenyan preprocess split-chapters sunzi-bingfa
+uv run wenyan preprocess validate-artifacts sunzi-bingfa
 uv run wenyan preprocess status sunzi-bingfa --json
 ```
 

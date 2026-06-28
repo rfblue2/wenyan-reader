@@ -27,7 +27,6 @@ Commands that perform preprocessing should use verbs:
 
 ```shell
 wenyan preprocess ingest-document <document-source>
-wenyan preprocess split-chapters <document-id>
 wenyan preprocess split-paragraphs <document-id> --chapter <chapter-id>
 wenyan preprocess split-segments <document-id> --paragraph <paragraph-id>
 wenyan preprocess review-paragraph-structure <document-id> --paragraph <paragraph-id>
@@ -95,20 +94,7 @@ Primary output:
 
 - `preprocess/documents/document-id/normalized-document.json`
 
-### `split-chapters`
-
-```shell
-wenyan preprocess split-chapters <document-id>
-```
-
-Scope: normalized document.
-
-Builds a chapter-discovery prompt from the normalized full document, uses source headings as evidence when available, proposes chapter spans, and validates that chapter spans reconstruct the document exactly.
-
-Primary outputs:
-
-- `structure/chapter-proposal.json`
-- `structure/chapter-proposal.validation.json`
+Chapter structure is prepared interactively before downstream preprocessing. See the `preparing-source-structure` project skill and `structure/chapter-proposal.json` in [Intermediate Artifacts](preprocessing/intermediate-artifacts.md).
 
 ### `split-paragraphs`
 
@@ -310,7 +296,6 @@ Also runs document-level consistency review before promoting package files.
 ### `run`
 
 ```shell
-wenyan preprocess run <document-id> --through split-chapters
 wenyan preprocess run <document-id> --chapter <chapter-id> --through split-paragraphs
 wenyan preprocess run <document-id> --paragraph <paragraph-id> --through review-segment-context
 wenyan preprocess run <document-id> --through package-document

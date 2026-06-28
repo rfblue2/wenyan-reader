@@ -9,27 +9,27 @@ from wenyan_models.domain.validation import CheckResult, SpanValidationResult
 class PureSpanValidator(SpanValidator):
     def validate_chapters(
         self,
-        text: str,
+        text_length: int,
         chapters: Sequence[ChapterSpan],
     ) -> SpanValidationResult:
-        return _validate_spans(text, chapters)
+        return _validate_spans(text_length, chapters)
 
     def validate_paragraphs(
         self,
-        text: str,
+        text_length: int,
         paragraphs: Sequence[ParagraphSpan],
     ) -> SpanValidationResult:
-        return _validate_spans(text, paragraphs)
+        return _validate_spans(text_length, paragraphs)
 
     def validate_segments(
         self,
-        text: str,
+        text_length: int,
         segments: Sequence[SegmentShell],
     ) -> SpanValidationResult:
-        return _validate_spans(text, segments)
+        return _validate_spans(text_length, segments)
 
 
-def _validate_spans(text: str, spans: Sequence[TextSpan]) -> SpanValidationResult:
+def _validate_spans(text_length: int, spans: Sequence[TextSpan]) -> SpanValidationResult:
     if not spans:
         return SpanValidationResult(
             status=ValidationStatus.FAILED,
@@ -39,17 +39,13 @@ def _validate_spans(text: str, spans: Sequence[TextSpan]) -> SpanValidationResul
     checks: list[CheckResult] = []
     if ordered[0].start != 0:
         checks.append(CheckResult(code="start", message="spans must start at 0"))
-    if ordered[-1].end != len(text):
+    if ordered[-1].end != text_length:
         checks.append(CheckResult(code="end", message="spans must end at text length"))
     for index, span in enumerate(ordered):
-        if span.start < 0 or span.end > len(text) or span.start >= span.end:
+        if span.start < 0 or span.end > text_length or span.start >= span.end:
             checks.append(CheckResult(code="bounds", message="invalid span bounds"))
         if index > 0 and span.start != ordered[index - 1].end:
             checks.append(CheckResult(code="gap", message="spans must be contiguous"))
     if checks:
-        return SpanValidationResult(status=ValidationStatus.FAILED, checks=tuple(checks))
-    reconstructed = "".join(text[span.start : span.end] for span in ordered)
-    if reconstructed != text:
-        checks.append(CheckResult(code="reconstruct", message="spans do not reconstruct text"))
         return SpanValidationResult(status=ValidationStatus.FAILED, checks=tuple(checks))
     return SpanValidationResult(status=ValidationStatus.PASSED)

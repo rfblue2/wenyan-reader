@@ -1,0 +1,98 @@
+{
+  "model": "editor",
+  "promptVersion": "editor-chapter-structure-v1",
+  "attempts": 1,
+  "chapters": [
+    {
+      "id": "481af6b4-c6e1-481f-acd3-b13cc4454ad0",
+      "title": "始計第一",
+      "start": 0,
+      "end": 448,
+      "rationale": "Editor agreed chapter boundary at source heading."
+    },
+    {
+      "id": "0e2de989-93ae-437a-9439-4a0a4df7ef2e",
+      "title": "作戰第二",
+      "start": 448,
+      "end": 878,
+      "rationale": "Editor agreed chapter boundary at source heading."
+    },
+    {
+      "id": "c81abefd-4d8c-4400-9215-c3924fe9a873",
+      "title": "謀攻第三",
+      "start": 878,
+      "end": 1411,
+      "rationale": "Editor agreed chapter boundary at source heading."
+    },
+    {
+      "id": "d4e717cd-10e8-4eef-b3b5-9eeec0c9cb45",
+      "title": "軍形第四",
+      "start": 1411,
+      "end": 1795,
+      "rationale": "Editor agreed chapter boundary at source heading."
+    },
+    {
+      "id": "0c4d09c2-bfea-4cbd-8ef4-dd9fae5718f0",
+      "title": "兵勢第五",
+      "start": 1795,
+      "end": 2232,
+      "rationale": "Editor agreed chapter boundary at source heading."
+    },
+    {
+      "id": "15a25b44-af62-4f31-9bda-16258067ad48",
+      "title": "虛實第六",
+      "start": 2232,
+      "end": 2957,
+      "rationale": "Editor agreed chapter boundary at source heading."
+    },
+    {
+      "id": "190b2a71-c85a-4325-a6cd-5b6b9cab139b",
+      "title": "軍爭第七",
+      "start": 2957,
+      "end": 3545,
+      "rationale": "Editor agreed chapter boundary at source heading."
+    },
+    {
+      "id": "b420335d-7c04-447d-9e65-a9f1fd0855e4",
+      "title": "九變第八",
+      "start": 3545,
+      "end": 3840,
+      "rationale": "Editor agreed chapter boundary at source heading."
+    },
+    {
+      "id": "ba992529-9dbe-4b91-97c4-b387edc82920",
+      "title": "行軍第九",
+      "start": 3840,
+      "end": 4606,
+      "rationale": "Editor agreed chapter boundary at source heading."
+    },
+    {
+      "id": "ba298c01-329a-414a-bca7-5bc437cc8591",
+      "title": "地形第十",
+      "start": 4606,
+      "end": 5293,
+      "rationale": "Editor agreed chapter boundary at source heading."
+    },
+    {
+      "id": "e7b83231-7724-4128-824e-44c954f76e6f",
+      "title": "九地第十一",
+      "start": 5293,
+      "end": 6597,
+      "rationale": "Editor agreed chapter boundary at source heading."
+    },
+    {
+      "id": "c929457a-2052-4f5d-b3e1-0c439f590567",
+      "title": "火攻第十二",
+      "start": 6597,
+      "end": 6952,
+      "rationale": "Editor agreed chapter boundary at source heading."
+    },
+    {
+      "id": "6a04fbd2-d2f4-4103-b245-0d8173e19a85",
+      "title": "用間第十三",
+      "start": 6952,
+      "end": 7518,
+      "rationale": "Editor agreed chapter boundary at source heading."
+    }
+  ]
+}

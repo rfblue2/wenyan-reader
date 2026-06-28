@@ -45,6 +45,7 @@ Commands that produce multiple coupled artifacts should promote them as a unit. 
 ```text
 preprocess/documents/document-id/
   normalized-document.json
+  normalized-text.txt
   structure/
     chapter-proposal.json
     chapter-proposal.validation.json
@@ -96,7 +97,12 @@ Segment subjob outputs are the resumability unit. The paragraph assembler reads 
   "title": "三國志",
   "sourceHash": "sha256:...",
   "normalizedHash": "sha256:...",
-  "text": "normalized full document text",
+  "textPath": "normalized-text.txt",
+  "characterCount": 5238091,
+  "textIndex": {
+    "stride": 65536,
+    "byteOffsets": [0, 196832, ...]
+  },
   "normalization": {
     "encoding": "utf-8",
     "punctuationPolicy": "preserve-source",
@@ -105,16 +111,19 @@ Segment subjob outputs are the resumability unit. The paragraph assembler reads 
 }
 ```
 
+The normalized text itself lives in a sibling sidecar file (`normalized-text.txt` by default). The manifest stays small; jobs read only the character spans they need via the byte-offset index. Ingest streams source text into the sidecar without holding the full document in memory.
+
 ## Chapter Proposal
 
-`chapter-proposal.json` is produced by an LLM pass over the full document or over bounded full-document chunks when the document is too large for one request.
+`chapter-proposal.json` records editor-agreed chapter boundaries. It is written interactively (see the `preparing-source-structure` project skill), not by a preprocessing CLI command.
 
 ```json
 {
   "documentId": "9ad841a6-f20f-4f43-9805-166ab2d98e7f",
-  "model": "claude-opus-4.8",
-  "promptVersion": "chapter-structure-v1",
+  "model": "editor",
+  "promptVersion": "editor-chapter-structure-v1",
   "sourceHash": "sha256:...",
+  "inputHash": "sha256:...",
   "chapters": [
     {
       "id": "6c708ee9-95c0-4d23-8a4f-8cb5fd62c605",

@@ -180,11 +180,12 @@ Jobs depend on protocols, not concrete classes:
 Each command module exposes one typed entrypoint:
 
 ```python
-def run_split_chapters(
+def run_split_paragraphs(
     ctx: JobContext,
     document_id: DocumentId,
+    chapter_id: ChapterId,
     options: JobOptions,
-) -> JobOutcome[ChapterProposal]: ...
+) -> JobOutcome[ParagraphProposal]: ...
 ```
 
 - `JobContext` — frozen dataclass of port instances (see exceptions above).

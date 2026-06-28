@@ -4,12 +4,16 @@ from wenyan.core.ports.artifact_ref import ArtifactRef
 from wenyan_models.domain.enums import ArtifactKind
 
 
-def document_root(repo_root: Path, ref: ArtifactRef) -> Path:
-    return repo_root / "preprocess" / "documents" / str(ref.document_id)
+def document_root(repo_root: Path, document_id) -> Path:
+    return repo_root / "preprocess" / "documents" / str(document_id)
+
+
+def normalized_text_path(repo_root: Path, document_id) -> Path:
+    return document_root(repo_root, document_id) / "normalized-text.txt"
 
 
 def artifact_path(repo_root: Path, ref: ArtifactRef) -> Path:
-    root = document_root(repo_root, ref)
+    root = document_root(repo_root, ref.document_id)
     match ref.kind:
         case ArtifactKind.NORMALIZED_DOCUMENT:
             return root / "normalized-document.json"

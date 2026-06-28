@@ -2,15 +2,14 @@ from wenyan.core.adapters.hashing import sha256_text
 from wenyan.core.adapters.prompt_template import RenderedPrompt, load_prompt_template
 from wenyan.core.ports.artifact_ref import (
     chapter_proposal_ref,
-    normalized_document_ref,
     paragraph_draft_ref,
     paragraph_draft_validation_ref,
     paragraph_proposal_ref,
     segment_input_ref,
 )
 from wenyan.core.ports.artifact_store import ArtifactWrite
+from wenyan.core.ports.prompt_context import PromptTextSlice
 from wenyan.jobs.context import JobContext, JobOptions
-from wenyan_models.artifacts.normalized import NormalizedDocument
 from wenyan_models.artifacts.paragraph import ParagraphDraft, ParagraphValidationArtifact
 from wenyan_models.artifacts.segment import SegmentInput
 from wenyan_models.domain.enums import ValidationStatus
@@ -25,10 +24,6 @@ def run_split_segments(
     paragraph_id_value: ParagraphId,
     options: JobOptions,
 ) -> JobOutcome[ParagraphDraft]:
-    normalized = ctx.artifacts.read(
-        normalized_document_ref(document_id),
-        NormalizedDocument,
-    )
     chapter_proposal = ctx.artifacts.read(chapter_proposal_ref(document_id), ChapterProposal)
     paragraph_proposal = _find_paragraph_proposal(ctx, document_id, chapter_proposal, paragraph_id_value)
     if paragraph_proposal is None:
@@ -45,9 +40,11 @@ def run_split_segments(
     )
     if paragraph_item is None:
         return JobFailure(code="missing-paragraph", message="paragraph not in proposal")
-    paragraph_text = normalized.text[chapter.start + paragraph_item.start : chapter.start + paragraph_item.end]
+    paragraph_start = chapter.start + paragraph_item.start
+    paragraph_end = chapter.start + paragraph_item.end
     draft_ref = paragraph_draft_ref(document_id, paragraph_id_value)
     prompt_version_value = prompt_version("paragraph-segmentation-v1")
+    paragraph_text = ctx.normalized_text.read_slice(document_id, paragraph_start, paragraph_end)
     input_hash = sha256_text(paragraph_text)
     if ctx.artifacts.exists(draft_ref) and not options.force:
         existing = ctx.artifacts.read(draft_ref, ParagraphDraft)
@@ -62,11 +59,14 @@ def run_split_segments(
         "v1",
     )
     context = {
-        "paragraph_text": paragraph_text,
+        "paragraph_text": PromptTextSlice(document_id, paragraph_start, paragraph_end),
         "paragraph_id": str(paragraph_id_value),
         "input_hash": str(input_hash),
     }
-    draft = ctx.llm.complete_model(RenderedPrompt(template, context), ParagraphDraft)
+    draft = ctx.llm.complete_model(
+        RenderedPrompt(template, context, normalized_text=ctx.normalized_text),
+        ParagraphDraft,
+    )
     draft = draft.model_copy(
         update={
             "paragraph_id": paragraph_id_value,

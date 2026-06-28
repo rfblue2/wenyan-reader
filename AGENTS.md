@@ -33,6 +33,7 @@ Most project details live in the architecture docs. Start there before making de
 ## Editing Guidance
 
 - Follow [Coding Style](architecture/coding-style.md) for Python layer boundaries, Pydantic usage, ports, and static typing.
+- For interactive source normalization and chapter boundaries, use the [preparing-source-structure](.cursor/skills/preparing-source-structure/SKILL.md) skill.
 - Keep architecture docs concise and cross-link rather than duplicating large sections.
 - When changing CLI behavior, update the CLI spec and any affected workflow examples.
 - When changing artifact shapes or status semantics, update the artifact documentation.

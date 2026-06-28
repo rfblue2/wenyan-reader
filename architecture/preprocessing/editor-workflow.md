@@ -74,19 +74,19 @@ The editor then checks the normalized text and source metadata before asking the
 
 
 
-### 2. Generate Chapter Structure
+### 2. Define Chapter Structure (interactive)
 
-The editor runs:
+Chapter boundaries are prepared interactively with a local agent using the [preparing-source-structure](../../.cursor/skills/preparing-source-structure/SKILL.md) skill. The agent and editor write `preprocess/documents/<document-id>/structure/chapter-proposal.json` after agreeing on boundaries.
 
 ```shell
-wenyan preprocess split-chapters <document-id>
 wenyan preprocess status <document-id>
+wenyan preprocess validate-artifacts <document-id>
 ```
 
 The editor reviews the chapter list before processing individual chapters.
 
-- Inspect chapter boundaries and titles.
-- Accept, edit, or rerun chapter discovery before moving deeper.
+- Inspect chapter boundaries and titles in `chapter-proposal.json`.
+- Revise the proposal with the agent before moving deeper.
 
 
 
@@ -176,7 +176,7 @@ The editor reviews the packaged reader files through normal code review before a
 Once the editor trusts the earlier boundaries, they can run larger chunks through the CLI:
 
 ```shell
-wenyan preprocess run <document-id> --through split-chapters
+```shell
 wenyan preprocess run <document-id> --chapter <chapter-id> --through split-paragraphs
 wenyan preprocess run <document-id> --paragraph <paragraph-id> --through review-segment-context
 wenyan preprocess run <document-id> --through package-document
