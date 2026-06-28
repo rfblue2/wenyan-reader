@@ -1,15 +1,12 @@
-from typing import Literal
-
 from pydantic import BaseModel, Field
 
 from wenyan_models.artifacts.base import DEFAULT_ARTIFACT_CONFIG, DocumentIdField
-from wenyan_models.domain.enums import ComponentKind, UnitStatus
-
-
-class ScopeDocument(BaseModel):
-    model_config = DEFAULT_ARTIFACT_CONFIG
-
-    type: Literal["document"] = "document"
+from wenyan_models.domain.enums import UnitStatus
+from wenyan_models.status.common import (
+    ChapterProgress,
+    ScopeDocument,
+    StatusCounts,
+)
 
 
 class DocumentSourceStatus(BaseModel):
@@ -21,22 +18,13 @@ class DocumentSourceStatus(BaseModel):
     normalized_hash: str = Field(alias="normalizedHash")
 
 
-class StatusCounts(BaseModel):
-    model_config = DEFAULT_ARTIFACT_CONFIG
-
-    complete: int = 0
-    in_progress: int = Field(default=0, alias="inProgress")
-    pending: int = 0
-    failed: int = 0
-    blocked: int = 0
-
-
 class ChapterStatusItem(BaseModel):
     model_config = DEFAULT_ARTIFACT_CONFIG
 
     chapter_id: str = Field(alias="chapterId")
     title: str
     status: UnitStatus
+    progress: ChapterProgress | None = None
 
 
 class DocumentStatus(BaseModel):
@@ -48,11 +36,3 @@ class DocumentStatus(BaseModel):
     source: DocumentSourceStatus
     counts: StatusCounts
     chapters: tuple[ChapterStatusItem, ...] = ()
-
-
-class ComponentStatusItem(BaseModel):
-    model_config = DEFAULT_ARTIFACT_CONFIG
-
-    kind: ComponentKind
-    status: UnitStatus
-    artifact_path: str | None = Field(default=None, alias="artifactPath")

@@ -16,7 +16,7 @@ from wenyan_models.artifacts.segment import (
     GlossReviewArtifact,
     TokenizationReviewArtifact,
 )
-from wenyan_models.domain.enums import ComponentKind, ReviewStatus
+from wenyan_models.domain.enums import ComponentKind, ReviewStatus, UnitStatus
 from wenyan_models.domain.ids import DocumentId, SegmentId
 
 SEGMENT_SUBJOBS: tuple[ComponentKind, ...] = (
@@ -70,21 +70,73 @@ def pending_segment_subjobs(
     return tuple(pending)
 
 
+def component_artifact_ref(
+    document_id: DocumentId,
+    segment_id: SegmentId,
+    component: ComponentKind,
+) -> ArtifactRef | None:
+    if component in _DRAFT_REF:
+        return _DRAFT_REF[component](document_id, segment_id)
+    if component in _REVIEW_REF:
+        return _REVIEW_REF[component](document_id, segment_id)
+    return None
+
+
+def component_unit_status(
+    artifacts: ArtifactStore,
+    document_id: DocumentId,
+    segment_id: SegmentId,
+    component: ComponentKind,
+) -> UnitStatus:
+    if component in _DRAFT_REF:
+        ref = _DRAFT_REF[component](document_id, segment_id)
+        return UnitStatus.COMPLETE if artifacts.exists(ref) else UnitStatus.PENDING
+    if component in _REVIEW_REF:
+        draft_component = _DRAFT_FOR_REVIEW[component]
+        if not artifacts.exists(_DRAFT_REF[draft_component](document_id, segment_id)):
+            return UnitStatus.PENDING
+        review_ref = _REVIEW_REF[component](document_id, segment_id)
+        if not artifacts.exists(review_ref):
+            return UnitStatus.PENDING
+        review_model = _REVIEW_MODEL.get(component)
+        if review_model is None:
+            return UnitStatus.PENDING
+        review = artifacts.read(review_ref, review_model)
+        if review.status == ReviewStatus.APPROVED:
+            return UnitStatus.COMPLETE
+        return UnitStatus.BLOCKED
+    return UnitStatus.PENDING
+
+
+def read_review_component(
+    artifacts: ArtifactStore,
+    document_id: DocumentId,
+    segment_id: SegmentId,
+    component: ComponentKind,
+) -> TokenizationReviewArtifact | GlossReviewArtifact | None:
+    if component not in _REVIEW_REF:
+        return None
+    review_ref = _REVIEW_REF[component](document_id, segment_id)
+    if not artifacts.exists(review_ref):
+        return None
+    review_model = _REVIEW_MODEL.get(component)
+    if review_model is None:
+        return None
+    return artifacts.read(review_ref, review_model)
+
+
+_DRAFT_FOR_REVIEW: dict[ComponentKind, ComponentKind] = {
+    ComponentKind.REVIEW_SEGMENT_TOKENIZATION: ComponentKind.TOKENIZE_SEGMENT,
+    ComponentKind.REVIEW_SEGMENT_GLOSS: ComponentKind.GLOSS_SEGMENT,
+    ComponentKind.REVIEW_SEGMENT_GRAMMAR: ComponentKind.ANNOTATE_SEGMENT_GRAMMAR,
+    ComponentKind.REVIEW_SEGMENT_CONTEXT: ComponentKind.ANNOTATE_SEGMENT_CONTEXT,
+}
+
+
 def _component_is_complete(
     artifacts: ArtifactStore,
     document_id: DocumentId,
     segment_id: SegmentId,
     component: ComponentKind,
 ) -> bool:
-    if component in _DRAFT_REF:
-        return artifacts.exists(_DRAFT_REF[component](document_id, segment_id))
-    if component in _REVIEW_REF:
-        review_ref = _REVIEW_REF[component](document_id, segment_id)
-        if not artifacts.exists(review_ref):
-            return False
-        review_model = _REVIEW_MODEL.get(component)
-        if review_model is None:
-            return False
-        review = artifacts.read(review_ref, review_model)
-        return review.status == ReviewStatus.APPROVED
-    return False
+    return component_unit_status(artifacts, document_id, segment_id, component) == UnitStatus.COMPLETE

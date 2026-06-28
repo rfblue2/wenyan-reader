@@ -7,6 +7,8 @@ import typer
 from wenyan.bootstrap import build_job_context
 from wenyan.cli import preprocess_app
 from wenyan.cli.options import dry_run_option, force_option, json_option
+from wenyan.cli.status_output import StatusDisplayContext, render_status
+from wenyan.cli.status_scope import build_display_context, resolve_status_scope
 from wenyan.core.adapters.filesystem_graph_validator import FilesystemGraphValidator
 from wenyan.core.adapters.filesystem_status_reader import FilesystemStatusReader
 from wenyan.jobs.context import JobOptions
@@ -26,6 +28,7 @@ from wenyan_models.domain.ids import (
 )
 from wenyan_models.domain.results import JobFailure, Promoted, Skipped, outcome_exit_code
 from wenyan_models.domain.targets import paragraph_batch_target, single_segment_target
+from wenyan_models.status.payload import StatusPayload
 
 T = TypeVar("T")
 
@@ -285,6 +288,27 @@ def run_cmd(
 @preprocess_app.command("status")
 def status_cmd(
     document: Annotated[str, typer.Argument(help="Document UUID or slug")],
+    chapter: Annotated[
+        str | None,
+        typer.Option(
+            "--chapter",
+            help="Chapter UUID, number (e.g. 1), or title (e.g. 始計第一)",
+        ),
+    ] = None,
+    paragraph: Annotated[
+        str | None,
+        typer.Option(
+            "--paragraph",
+            help="Paragraph UUID or number (requires --chapter for numbers)",
+        ),
+    ] = None,
+    segment: Annotated[
+        str | None,
+        typer.Option(
+            "--segment",
+            help="Segment UUID or number (requires --paragraph for numbers)",
+        ),
+    ] = None,
     as_json: bool = json_option,
 ) -> None:
     """Report preprocessing progress for a document and its child units."""
@@ -293,11 +317,42 @@ def status_cmd(
     if entry.document_id is None:
         raise typer.Exit(1)
     reader = FilesystemStatusReader(ctx.artifacts, _repo_root())
-    payload = reader.document_status(entry.document_id)
+    doc_id = entry.document_id
+    document_ref = entry.slug or document
+    payload: StatusPayload
+    try:
+        scope = resolve_status_scope(
+            ctx.artifacts,
+            doc_id,
+            document_ref,
+            chapter=chapter,
+            paragraph=paragraph,
+            segment=segment,
+        )
+        match scope.level:
+            case "segment":
+                assert scope.segment_id is not None
+                payload = reader.segment_status(doc_id, scope.segment_id)
+            case "paragraph":
+                assert scope.paragraph_id is not None
+                payload = reader.paragraph_status(doc_id, scope.paragraph_id)
+            case "chapter":
+                assert scope.chapter_id is not None
+                payload = reader.chapter_status(doc_id, scope.chapter_id)
+            case "document":
+                payload = reader.document_status(doc_id)
+        chapter_handle, paragraph_handle = build_display_context(ctx.artifacts, doc_id, scope)
+        display = StatusDisplayContext(
+            chapter_handle=chapter_handle,
+            paragraph_handle=paragraph_handle,
+        )
+    except ValueError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(1) from exc
     if as_json:
         typer.echo(payload.model_dump_json(by_alias=True))
     else:
-        typer.echo(payload.title)
+        typer.echo(render_status(payload, display), nl=False)
     raise typer.Exit(0)
 
 
