@@ -56,3 +56,19 @@ def test_sunzi_pipeline(tmp_workspace: Path) -> None:
         JobOptions(),
     )
     assert outcome_exit_code(review_outcome) == 0
+
+    gloss_outcome = run_gloss_segment(
+        ctx,
+        doc_id,
+        single_segment_target(segment_id_value),
+        JobOptions(),
+    )
+    assert outcome_exit_code(gloss_outcome) == 0
+
+    gloss_review_outcome = run_review_segment_gloss(
+        ctx,
+        doc_id,
+        segment_id_value,
+        JobOptions(),
+    )
+    assert outcome_exit_code(gloss_review_outcome) == 0
