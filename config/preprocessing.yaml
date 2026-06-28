@@ -1,0 +1,9 @@
+models:
+  primary: claude-opus-4-8
+retry:
+  maxAttempts: 3
+  backoffSeconds: 2
+concurrency:
+  default: 4
+prompts:
+  root: prompts
