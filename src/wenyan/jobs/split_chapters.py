@@ -51,7 +51,7 @@ def run_split_chapters(
             "input_hash": input_hash,
             "source_hash": normalized.source_hash,
             "prompt_version": prompt_version_value,
-            "model": ctx.config.models.primary,
+            "model": ctx.config.models.active_model,
             "attempts": 1,
         },
     )

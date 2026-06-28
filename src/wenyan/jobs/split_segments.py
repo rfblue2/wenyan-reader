@@ -72,7 +72,7 @@ def run_split_segments(
             "paragraph_id": paragraph_id_value,
             "input_hash": input_hash,
             "prompt_version": prompt_version_value,
-            "model": ctx.config.models.primary,
+            "model": ctx.config.models.active_model,
             "attempts": 1,
         },
     )

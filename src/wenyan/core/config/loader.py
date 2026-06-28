@@ -12,7 +12,7 @@ def load_preprocessing_config(repo_root: Path) -> PreprocessingConfig:
     override_path = _override_path(repo_root)
     if override_path is not None:
         merged = _deep_merge(merged, _load_yaml(override_path))
-    merged = _deep_merge(merged, _env_overrides())
+    merged = _deep_merge(merged, _env_overrides(merged))
     return PreprocessingConfig.model_validate(merged)
 
 
@@ -37,12 +37,20 @@ def _load_yaml(path: Path) -> dict[str, Any]:
     return loaded
 
 
-def _env_overrides() -> dict[str, Any]:
+def _env_overrides(merged: dict[str, Any]) -> dict[str, Any]:
     overrides: dict[str, Any] = {}
-    if primary := os.environ.get("WENYAN_MODEL_PRIMARY"):
-        overrides.setdefault("models", {})["primary"] = primary
+    models: dict[str, Any] = {}
+    if provider := os.environ.get("WENYAN_MODEL_PROVIDER"):
+        models["provider"] = provider
+    if model := os.environ.get("WENYAN_MODEL"):
+        effective_provider = models.get("provider") or merged.get("models", {}).get("provider", "mock")
+        models.setdefault(effective_provider, {})["model"] = model
+    if models:
+        overrides["models"] = models
     if api_key := os.environ.get("ANTHROPIC_API_KEY"):
         overrides["anthropic_api_key"] = api_key
+    if api_key := os.environ.get("MINIMAX_API_KEY"):
+        overrides["minimax_api_key"] = api_key
     return overrides
 
 

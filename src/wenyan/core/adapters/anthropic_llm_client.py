@@ -7,9 +7,16 @@ from wenyan.core.ports.llm_client import LLMClient, StructuredPrompt
 
 
 class AnthropicLLMClient(LLMClient):
-    def __init__(self, api_key: str, model: str) -> None:
+    def __init__(
+        self,
+        api_key: str,
+        model: str,
+        *,
+        base_url: str = "https://api.anthropic.com",
+    ) -> None:
         self._api_key = api_key
         self._model = model
+        self._messages_url = f"{base_url.rstrip('/')}/v1/messages"
 
     def complete_model[T: BaseModel](
         self,
@@ -17,7 +24,7 @@ class AnthropicLLMClient(LLMClient):
         model: type[T],
     ) -> T:
         response = httpx.post(
-            "https://api.anthropic.com/v1/messages",
+            self._messages_url,
             headers={
                 "x-api-key": self._api_key,
                 "anthropic-version": "2023-06-01",

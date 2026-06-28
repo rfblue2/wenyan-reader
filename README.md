@@ -16,12 +16,25 @@ From the repository root:
 uv sync
 ```
 
-By default the CLI uses a **mock LLM** (deterministic, no API key). For live model calls:
+By default the CLI uses the **mock** model provider (deterministic, no API key). For live model calls, set `models.provider` in config or use environment variables:
+
+**MiniMax** (cost-effective for development):
 
 ```shell
-export WENYAN_LLM_CLIENT=anthropic
+export WENYAN_MODEL_PROVIDER=minimax
+export MINIMAX_API_KEY=...
+```
+
+**Anthropic** (higher-quality preprocessing):
+
+```shell
+export WENYAN_MODEL_PROVIDER=anthropic
 export ANTHROPIC_API_KEY=...
 ```
+
+Each provider has a default model in `config/preprocessing.yaml` (`anthropic.model`, `minimax.model`). Override with `WENYAN_MODEL` only when you need a different model ID for the active provider.
+
+Copy [`.env.example`](.env.example) to `.env` in the repo root and fill in your keys there — `.env` is gitignored and `uv run` loads it automatically. Never commit API keys.
 
 ## Quickstart: preprocess 孙子兵法
 

@@ -63,7 +63,7 @@ def run_split_paragraphs(
             "input_hash": input_hash,
             "chapter_text_hash": input_hash,
             "prompt_version": prompt_version_value,
-            "model": ctx.config.models.primary,
+            "model": ctx.config.models.active_model,
             "attempts": 1,
         },
     )

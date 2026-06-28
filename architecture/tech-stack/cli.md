@@ -135,7 +135,7 @@ All runtime settings flow through a centralized `PreprocessingConfig` in `core/c
 
 Resolution order (highest precedence first):
 
-1. Environment variables (`ANTHROPIC_API_KEY`, `WENYAN_MODEL_PRIMARY`, `WENYAN_CONFIG`, …)
+1. Environment variables (`MINIMAX_API_KEY`, `ANTHROPIC_API_KEY`, `WENYAN_MODEL_PROVIDER`, `WENYAN_MODEL`, `WENYAN_CONFIG`, …)
 2. Local override file (`.wenyan/config.yaml` or the path from `WENYAN_CONFIG`)
 3. Repo defaults (`config/preprocessing.yaml`)
 
