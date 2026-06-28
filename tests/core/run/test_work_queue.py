@@ -96,4 +96,4 @@ def test_run_segment_stops_at_unimplemented_subjob(tmp_workspace: Path) -> None:
     )
     assert outcome.kind == "failure"
     assert outcome.code == "not-implemented"  # type: ignore[union-attr]
-    assert "gloss-segment" in outcome.message  # type: ignore[union-attr]
+    assert "annotate-segment-grammar" in outcome.message  # type: ignore[union-attr]

@@ -1,6 +1,8 @@
 from wenyan_models.artifacts.normalized import NormalizedDocument
 from wenyan_models.artifacts.paragraph import ParagraphDraft, ParagraphValidationArtifact
 from wenyan_models.artifacts.segment import (
+    GlossReviewArtifact,
+    GlossesArtifact,
     SegmentInput,
     TokenizationArtifact,
     TokenizationReviewArtifact,
@@ -17,6 +19,8 @@ __all__ = [
     "ParagraphDraft",
     "ParagraphProposal",
     "ParagraphValidationArtifact",
+    "GlossReviewArtifact",
+    "GlossesArtifact",
     "SegmentInput",
     "SpanValidationArtifact",
     "TokenizationArtifact",

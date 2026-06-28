@@ -1,0 +1,37 @@
+{
+  "segmentId": "d70e05cc-a271-43e6-9abd-40c97c83bb96",
+  "model": "mock",
+  "promptVersion": "segment-gloss-v1",
+  "inputHash": "sha256:gloss-input",
+  "attempts": 1,
+  "glossDecisions": [
+    {
+      "tokenId": "t1",
+      "glossId": "a1b2c3d4-e5f6-4789-a012-3456789abcde",
+      "decision": "create-new"
+    },
+    {
+      "tokenId": "t2",
+      "glossId": "b2c3d4e5-f6a7-4890-b123-456789abcdef0",
+      "decision": "create-new"
+    }
+  ],
+  "newGlossIds": [
+    "a1b2c3d4-e5f6-4789-a012-3456789abcde",
+    "b2c3d4e5-f6a7-4890-b123-456789abcdef0"
+  ],
+  "newGlosses": [
+    {
+      "id": "a1b2c3d4-e5f6-4789-a012-3456789abcde",
+      "surface": "孫子",
+      "pinyin": "Sunzi",
+      "gloss": "Sun Tzu"
+    },
+    {
+      "id": "b2c3d4e5-f6a7-4890-b123-456789abcdef0",
+      "surface": "曰",
+      "pinyin": "yue",
+      "gloss": "to say"
+    }
+  ]
+}

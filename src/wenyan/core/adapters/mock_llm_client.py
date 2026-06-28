@@ -40,6 +40,10 @@ class MockLLMClient(LLMClient):
             return self._tokenization(prompt, model)
         if version == "segment-tokenization-review-v1":
             return self._tokenization_review(prompt, model)
+        if version == "segment-gloss-v1":
+            return self._glosses(prompt, model)
+        if version == "segment-gloss-review-v1":
+            return self._gloss_review(prompt, model)
         fixture_path = self._fixture_dir / f"{version}.json"
         if not fixture_path.is_file():
             raise LLMParseError(f"no fixture for prompt version: {version}")
@@ -143,6 +147,30 @@ class MockLLMClient(LLMClient):
 
     def _tokenization_review[T: BaseModel](self, prompt: StructuredPrompt, model: type[T]) -> T:
         fixture_path = self._fixture_dir / "segment-tokenization-review-v1.json"
+        payload = json.loads(fixture_path.read_text(encoding="utf-8"))
+        if isinstance(prompt, RenderedPrompt):
+            payload["segmentId"] = prompt.context_value("segment_id")
+            payload["inputHash"] = prompt.context_value("review_input_hash")
+        else:
+            rendered = prompt.render({})
+            payload["segmentId"] = _context_value(rendered, "segment_id")
+            payload["inputHash"] = _context_value(rendered, "review_input_hash")
+        return TypeAdapter(model).validate_python(payload)
+
+    def _glosses[T: BaseModel](self, prompt: StructuredPrompt, model: type[T]) -> T:
+        fixture_path = self._fixture_dir / "segment-gloss-v1.json"
+        payload = json.loads(fixture_path.read_text(encoding="utf-8"))
+        if isinstance(prompt, RenderedPrompt):
+            payload["segmentId"] = prompt.context_value("segment_id")
+            payload["inputHash"] = prompt.context_value("input_hash")
+        else:
+            rendered = prompt.render({})
+            payload["segmentId"] = _context_value(rendered, "segment_id")
+            payload["inputHash"] = _context_value(rendered, "input_hash")
+        return TypeAdapter(model).validate_python(payload)
+
+    def _gloss_review[T: BaseModel](self, prompt: StructuredPrompt, model: type[T]) -> T:
+        fixture_path = self._fixture_dir / "segment-gloss-review-v1.json"
         payload = json.loads(fixture_path.read_text(encoding="utf-8"))
         if isinstance(prompt, RenderedPrompt):
             payload["segmentId"] = prompt.context_value("segment_id")

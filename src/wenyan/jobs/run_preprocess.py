@@ -8,6 +8,8 @@ from wenyan.core.run.work_queue import (
     find_next_segment_work,
 )
 from wenyan.jobs.context import JobContext, JobOptions
+from wenyan.jobs.gloss_segment import run_gloss_segment
+from wenyan.jobs.review_segment_gloss import run_review_segment_gloss
 from wenyan.jobs.review_segment_tokenization import run_review_segment_tokenization
 from wenyan.jobs.split_segments import run_split_segments
 from wenyan.jobs.tokenize_segment import run_tokenize_segment
@@ -30,6 +32,20 @@ _IMPLEMENTED_SUBJOBS: dict[
     ),
     ComponentKind.REVIEW_SEGMENT_TOKENIZATION: (
         lambda ctx, doc_id, segment_id, options: run_review_segment_tokenization(
+            ctx,
+            doc_id,
+            segment_id,
+            options,
+        )
+    ),
+    ComponentKind.GLOSS_SEGMENT: lambda ctx, doc_id, segment_id, options: run_gloss_segment(
+        ctx,
+        doc_id,
+        single_segment_target(segment_id),
+        options,
+    ),
+    ComponentKind.REVIEW_SEGMENT_GLOSS: (
+        lambda ctx, doc_id, segment_id, options: run_review_segment_gloss(
             ctx,
             doc_id,
             segment_id,

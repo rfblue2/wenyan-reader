@@ -13,6 +13,7 @@ from wenyan.core.ports.artifact_ref import (
 )
 from wenyan.core.ports.artifact_store import ArtifactStore
 from wenyan_models.artifacts.segment import (
+    GlossReviewArtifact,
     TokenizationReviewArtifact,
 )
 from wenyan_models.domain.enums import ComponentKind, ReviewStatus
@@ -45,6 +46,7 @@ _REVIEW_REF: dict[ComponentKind, Callable[[DocumentId, SegmentId], ArtifactRef]]
 
 _REVIEW_MODEL = {
     ComponentKind.REVIEW_SEGMENT_TOKENIZATION: TokenizationReviewArtifact,
+    ComponentKind.REVIEW_SEGMENT_GLOSS: GlossReviewArtifact,
 }
 
 

@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 from wenyan_models.artifacts.base import (
@@ -50,6 +52,48 @@ class TokenizationArtifact(BaseModel):
 
 
 class TokenizationReviewArtifact(BaseModel):
+    model_config = DEFAULT_ARTIFACT_CONFIG
+
+    segment_id: SegmentIdField = Field(alias="segmentId")
+    model: str
+    prompt_version: PromptVersionField = Field(alias="promptVersion")
+    input_hash: ContentHashField = Field(alias="inputHash")
+    attempts: int
+    status: ReviewStatus
+    findings: tuple[dict[str, object], ...] = ()
+
+
+class GlossEntry(BaseModel):
+    model_config = DEFAULT_ARTIFACT_CONFIG
+
+    id: str
+    surface: str
+    pinyin: str
+    gloss: str
+
+
+class GlossDecision(BaseModel):
+    model_config = DEFAULT_ARTIFACT_CONFIG
+
+    token_id: str = Field(alias="tokenId")
+    gloss_id: str = Field(alias="glossId")
+    decision: Literal["reuse-existing", "create-new"]
+
+
+class GlossesArtifact(BaseModel):
+    model_config = DEFAULT_ARTIFACT_CONFIG
+
+    segment_id: SegmentIdField = Field(alias="segmentId")
+    model: str
+    prompt_version: PromptVersionField = Field(alias="promptVersion")
+    input_hash: ContentHashField = Field(alias="inputHash")
+    attempts: int
+    gloss_decisions: tuple[GlossDecision, ...] = Field(default=(), alias="glossDecisions")
+    new_gloss_ids: tuple[str, ...] = Field(default=(), alias="newGlossIds")
+    new_glosses: tuple[GlossEntry, ...] = Field(default=(), alias="newGlosses")
+
+
+class GlossReviewArtifact(BaseModel):
     model_config = DEFAULT_ARTIFACT_CONFIG
 
     segment_id: SegmentIdField = Field(alias="segmentId")

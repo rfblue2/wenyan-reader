@@ -12,6 +12,8 @@ from wenyan.core.adapters.filesystem_status_reader import FilesystemStatusReader
 from wenyan.jobs.context import JobOptions
 from wenyan.jobs.ingest_document import run_ingest_document
 from wenyan.jobs.run_preprocess import RunPlan, run_preprocess
+from wenyan.jobs.gloss_segment import run_gloss_segment
+from wenyan.jobs.review_segment_gloss import run_review_segment_gloss
 from wenyan.jobs.review_segment_tokenization import run_review_segment_tokenization
 from wenyan.jobs.split_paragraphs import run_split_paragraphs
 from wenyan.jobs.split_segments import run_split_segments
@@ -173,6 +175,62 @@ def review_segment_tokenization_cmd(
     raise typer.Exit(outcome_exit_code(outcome))
 
 
+@preprocess_app.command("gloss-segment")
+def gloss_segment_cmd(
+    document: Annotated[str, typer.Argument(help="Document UUID or slug")],
+    segment: Annotated[str | None, typer.Option("--segment", help="Single segment UUID")] = None,
+    paragraph: Annotated[
+        str | None,
+        typer.Option("--paragraph", help="Run all pending segments under this paragraph"),
+    ] = None,
+    force: bool = force_option,
+    dry_run: bool = dry_run_option,
+    as_json: bool = json_option,
+) -> None:
+    """Select or propose glosses for reviewed token occurrences."""
+    if (segment is None) == (paragraph is None):
+        raise typer.BadParameter("provide exactly one of --segment or --paragraph")
+    ctx = build_job_context(_repo_root())
+    entry = ctx.registry.resolve(document)
+    doc_id = entry.document_id or document_id(document)
+    target = (
+        single_segment_target(segment_id(segment))
+        if segment is not None
+        else paragraph_batch_target(paragraph_id(paragraph or ""))
+    )
+    outcome = run_gloss_segment(ctx, doc_id, target, _job_options(force, dry_run))
+    if as_json:
+        typer.echo(json.dumps({"outcome": outcome.model_dump(by_alias=True)}))
+    else:
+        typer.echo(_outcome_message(outcome))
+    raise typer.Exit(outcome_exit_code(outcome))
+
+
+@preprocess_app.command("review-segment-gloss")
+def review_segment_gloss_cmd(
+    document: Annotated[str, typer.Argument(help="Document UUID or slug")],
+    segment: Annotated[str, typer.Option("--segment", help="Segment UUID")],
+    force: bool = force_option,
+    dry_run: bool = dry_run_option,
+    as_json: bool = json_option,
+) -> None:
+    """Review gloss sense selection and homonym handling for one segment."""
+    ctx = build_job_context(_repo_root())
+    entry = ctx.registry.resolve(document)
+    doc_id = entry.document_id or document_id(document)
+    outcome = run_review_segment_gloss(
+        ctx,
+        doc_id,
+        segment_id(segment),
+        _job_options(force, dry_run),
+    )
+    if as_json:
+        typer.echo(json.dumps({"outcome": outcome.model_dump(by_alias=True)}))
+    else:
+        typer.echo(_outcome_message(outcome))
+    raise typer.Exit(outcome_exit_code(outcome))
+
+
 @preprocess_app.command("run")
 def run_cmd(
     document: Annotated[str, typer.Argument(help="Document UUID or slug")],
@@ -264,8 +322,6 @@ def validate_artifacts_cmd(
 
 _STUB_HELP: dict[str, str] = {
     "review-paragraph-structure": "Review segment boundaries and paragraph structure quality.",
-    "gloss-segment": "Select or propose glosses for reviewed token occurrences.",
-    "review-segment-gloss": "Review gloss sense selection and homonym handling.",
     "annotate-segment-grammar": "Draft grammar notes anchored to segment tokens.",
     "review-segment-grammar": "Review grammar notes for accuracy and usefulness.",
     "annotate-segment-context": "Draft segment-local context notes with source grounding.",

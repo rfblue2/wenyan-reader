@@ -4,6 +4,8 @@ from pathlib import Path
 from wenyan.bootstrap import build_job_context
 from wenyan.jobs.context import JobOptions
 from wenyan.jobs.ingest_document import run_ingest_document
+from wenyan.jobs.gloss_segment import run_gloss_segment
+from wenyan.jobs.review_segment_gloss import run_review_segment_gloss
 from wenyan.jobs.review_segment_tokenization import run_review_segment_tokenization
 from wenyan.jobs.split_paragraphs import run_split_paragraphs
 from wenyan.jobs.split_segments import run_split_segments
