@@ -4,7 +4,6 @@ from wenyan_models.artifacts.base import (
     DEFAULT_ARTIFACT_CONFIG,
     ContentHashField,
     DocumentIdField,
-    PromptVersionField,
 )
 
 

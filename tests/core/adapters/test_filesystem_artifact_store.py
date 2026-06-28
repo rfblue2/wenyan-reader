@@ -1,4 +1,3 @@
-import pytest
 from pydantic import BaseModel, ConfigDict
 
 from wenyan.core.adapters.filesystem_artifact_store import FilesystemArtifactStore

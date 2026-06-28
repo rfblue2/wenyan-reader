@@ -1,0 +1,9 @@
+{
+  "segmentId": "d70e05cc-a271-43e6-9abd-40c97c83bb96",
+  "model": "mock",
+  "promptVersion": "segment-tokenization-review-v1",
+  "inputHash": "sha256:token-review-input",
+  "attempts": 1,
+  "status": "approved",
+  "findings": []
+}

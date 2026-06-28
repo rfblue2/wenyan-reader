@@ -17,7 +17,12 @@ from wenyan_models.domain.ids import (
     segment_id,
 )
 
-DEFAULT_ARTIFACT_CONFIG = ConfigDict(frozen=True, populate_by_name=True, extra="forbid")
+DEFAULT_ARTIFACT_CONFIG = ConfigDict(
+    frozen=True,
+    populate_by_name=True,
+    validate_by_name=True,
+    extra="forbid",
+)
 
 DocumentIdField = Annotated[DocumentId, BeforeValidator(document_id)]
 ChapterIdField = Annotated[ChapterId, BeforeValidator(chapter_id)]

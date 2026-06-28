@@ -1,4 +1,5 @@
 documents:
-  - slug: sunzi-bingfa
-    title: 孙子兵法
-    status: active
+- slug: sunzi-bingfa
+  title: 孙子兵法
+  status: active
+  documentId: 12ea50f2-025a-43e4-9093-e0309d8341e2

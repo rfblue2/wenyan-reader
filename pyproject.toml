@@ -42,6 +42,10 @@ strict = true
 plugins = ["pydantic.mypy"]
 packages = ["wenyan", "wenyan_models"]
 
+[tool.pydantic-mypy]
+init_typed = true
+warn_required_dynamic_aliases = false
+
 [[tool.mypy.overrides]]
 module = "tests.*"
 disallow_untyped_defs = false

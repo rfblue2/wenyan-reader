@@ -1,7 +1,6 @@
 import pytest
 
 from wenyan_models.domain.ids import (
-    ContentHash,
     document_id,
     parse_content_hash,
 )

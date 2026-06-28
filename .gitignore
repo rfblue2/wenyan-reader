@@ -1,9 +1,10 @@
 .venv/
 .env
 .wenyan/
-preprocess/
-content/
 __pycache__/
 *.pyc
 .ruff_cache/
 .pytest_cache/
+
+# Leftover atomic-write temps; final artifacts under preprocess/ and content/ are committed.
+**/*.tmp

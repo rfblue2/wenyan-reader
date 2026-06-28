@@ -1,6 +1,6 @@
-from typing import Annotated, Generic, Literal, TypeVar
+from typing import Generic, Literal, TypeVar
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
 
 T = TypeVar("T")
 
@@ -29,13 +29,10 @@ class JobFailure(BaseModel):
     message: str
 
 
-JobOutcome = Annotated[
-    Promoted[T] | Skipped | JobFailure,
-    Field(discriminator="kind"),
-]
+type JobOutcome[T] = Promoted[T] | Skipped | JobFailure
 
 
-def outcome_exit_code(outcome: Promoted[object] | Skipped | JobFailure) -> int:
+def outcome_exit_code[T](outcome: Promoted[T] | Skipped | JobFailure) -> int:
     match outcome:
         case Promoted() | Skipped():
             return 0

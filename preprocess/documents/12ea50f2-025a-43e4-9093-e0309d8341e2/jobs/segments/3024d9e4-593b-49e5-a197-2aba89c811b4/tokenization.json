@@ -1,0 +1,1 @@
+{"segmentId":"3024d9e4-593b-49e5-a197-2aba89c811b4","model":"claude-opus-4-8","promptVersion":"segment-tokenization-v1","inputHash":"sha256:16f3ba654dc7fb1105e0e18cffbe12ed1c4c6dc3149ff48da2e31e41c120449a","attempts":1,"text":"始計第一","tokens":[{"id":"t1","surface":"孫子","start":0,"end":2},{"id":"t2","surface":"曰","start":2,"end":3}]}
