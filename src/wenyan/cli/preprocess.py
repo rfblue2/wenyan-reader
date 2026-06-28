@@ -60,6 +60,7 @@ def ingest_document_cmd(
     dry_run: bool = dry_run_option,
     as_json: bool = json_option,
 ) -> None:
+    """Ingest a source directory, normalize text, and write normalized-document.json."""
     ctx = build_job_context(_repo_root())
     outcome = run_ingest_document(ctx, source, _job_options(force, dry_run))
     _emit_json_or_text(outcome, as_json)
@@ -73,6 +74,7 @@ def split_chapters_cmd(
     dry_run: bool = dry_run_option,
     as_json: bool = json_option,
 ) -> None:
+    """Propose chapter spans for a normalized document and validate coverage."""
     ctx = build_job_context(_repo_root())
     entry = ctx.registry.resolve(document)
     doc_id = entry.document_id or document_id(document)
@@ -86,12 +88,13 @@ def split_chapters_cmd(
 
 @preprocess_app.command("split-paragraphs")
 def split_paragraphs_cmd(
-    document: Annotated[str, typer.Argument()],
-    chapter: Annotated[str, typer.Option("--chapter")],
+    document: Annotated[str, typer.Argument(help="Document UUID or slug")],
+    chapter: Annotated[str, typer.Option("--chapter", help="Chapter UUID")],
     force: bool = force_option,
     dry_run: bool = dry_run_option,
     as_json: bool = json_option,
 ) -> None:
+    """Propose paragraph spans for one chapter and validate coverage."""
     ctx = build_job_context(_repo_root())
     entry = ctx.registry.resolve(document)
     doc_id = entry.document_id or document_id(document)
@@ -110,12 +113,13 @@ def split_paragraphs_cmd(
 
 @preprocess_app.command("split-segments")
 def split_segments_cmd(
-    document: Annotated[str, typer.Argument()],
-    paragraph: Annotated[str, typer.Option("--paragraph")],
+    document: Annotated[str, typer.Argument(help="Document UUID or slug")],
+    paragraph: Annotated[str, typer.Option("--paragraph", help="Paragraph UUID")],
     force: bool = force_option,
     dry_run: bool = dry_run_option,
     as_json: bool = json_option,
 ) -> None:
+    """Propose segment boundaries for one paragraph and create segment job inputs."""
     ctx = build_job_context(_repo_root())
     entry = ctx.registry.resolve(document)
     doc_id = entry.document_id or document_id(document)
@@ -134,13 +138,17 @@ def split_segments_cmd(
 
 @preprocess_app.command("tokenize-segment")
 def tokenize_segment_cmd(
-    document: Annotated[str, typer.Argument()],
-    segment: Annotated[str | None, typer.Option("--segment")] = None,
-    paragraph: Annotated[str | None, typer.Option("--paragraph")] = None,
+    document: Annotated[str, typer.Argument(help="Document UUID or slug")],
+    segment: Annotated[str | None, typer.Option("--segment", help="Single segment UUID")] = None,
+    paragraph: Annotated[
+        str | None,
+        typer.Option("--paragraph", help="Run all pending segments under this paragraph"),
+    ] = None,
     force: bool = force_option,
     dry_run: bool = dry_run_option,
     as_json: bool = json_option,
 ) -> None:
+    """Identify glossable token occurrences for one segment or a paragraph batch."""
     if (segment is None) == (paragraph is None):
         raise typer.BadParameter("provide exactly one of --segment or --paragraph")
     ctx = build_job_context(_repo_root())
@@ -161,12 +169,13 @@ def tokenize_segment_cmd(
 
 @preprocess_app.command("review-segment-tokenization")
 def review_segment_tokenization_cmd(
-    document: Annotated[str, typer.Argument()],
-    segment: Annotated[str, typer.Option("--segment")],
+    document: Annotated[str, typer.Argument(help="Document UUID or slug")],
+    segment: Annotated[str, typer.Option("--segment", help="Segment UUID")],
     force: bool = force_option,
     dry_run: bool = dry_run_option,
     as_json: bool = json_option,
 ) -> None:
+    """Review token boundaries and offsets for one segment tokenization."""
     ctx = build_job_context(_repo_root())
     entry = ctx.registry.resolve(document)
     doc_id = entry.document_id or document_id(document)
@@ -185,9 +194,10 @@ def review_segment_tokenization_cmd(
 
 @preprocess_app.command("status")
 def status_cmd(
-    document: Annotated[str, typer.Argument()],
+    document: Annotated[str, typer.Argument(help="Document UUID or slug")],
     as_json: bool = json_option,
 ) -> None:
+    """Report preprocessing progress for a document and its child units."""
     ctx = build_job_context(_repo_root())
     entry = ctx.registry.resolve(document)
     if entry.document_id is None:
@@ -203,9 +213,10 @@ def status_cmd(
 
 @preprocess_app.command("validate-artifacts")
 def validate_artifacts_cmd(
-    document: Annotated[str, typer.Argument()],
+    document: Annotated[str, typer.Argument(help="Document UUID or slug")],
     as_json: bool = json_option,
 ) -> None:
+    """Check artifact graph integrity without generating new content."""
     ctx = build_job_context(_repo_root())
     entry = ctx.registry.resolve(document)
     if entry.document_id is None:
@@ -219,28 +230,29 @@ def validate_artifacts_cmd(
     raise typer.Exit(0 if report.ok else 1)
 
 
-_STUBS = [
-    "review-paragraph-structure",
-    "gloss-segment",
-    "review-segment-gloss",
-    "annotate-segment-grammar",
-    "review-segment-grammar",
-    "annotate-segment-context",
-    "review-segment-context",
-    "assemble-paragraph",
-    "package-document",
-    "show",
-    "review-report",
-]
+_STUB_HELP: dict[str, str] = {
+    "review-paragraph-structure": "Review segment boundaries and paragraph structure quality.",
+    "gloss-segment": "Select or propose glosses for reviewed token occurrences.",
+    "review-segment-gloss": "Review gloss sense selection and homonym handling.",
+    "annotate-segment-grammar": "Draft grammar notes anchored to segment tokens.",
+    "review-segment-grammar": "Review grammar notes for accuracy and usefulness.",
+    "annotate-segment-context": "Draft segment-local context notes with source grounding.",
+    "review-segment-context": "Review context notes for usefulness and grounding.",
+    "assemble-paragraph": "Assemble completed segment outputs into a reader paragraph file.",
+    "package-document": "Build validated reader package files under content/documents/.",
+    "show": "Show a segment's source text and accepted or blocked artifacts.",
+    "review-report": "Print the latest review report for a segment or component.",
+}
 
 
-def _register_stub(name: str) -> None:
-    def _stub(document: Annotated[str, typer.Argument()] = "") -> None:
+def _register_stub(name: str, help_text: str) -> None:
+    def _stub(document: Annotated[str, typer.Argument(help="Document UUID or slug")] = "") -> None:
         typer.echo(f"{name} is not implemented in this slice", err=True)
         raise typer.Exit(2)
 
+    _stub.__doc__ = help_text
     preprocess_app.command(name)(_stub)
 
 
-for _command_name in _STUBS:
-    _register_stub(_command_name)
+for _command_name, _help_text in _STUB_HELP.items():
+    _register_stub(_command_name, _help_text)
