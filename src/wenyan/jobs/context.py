@@ -7,6 +7,7 @@ from wenyan.core.ports.artifact_store import ArtifactStore
 from wenyan.core.ports.llm_client import LLMClient
 from wenyan.core.ports.source_registry import SourceRegistry
 from wenyan.core.ports.span_validator import SpanValidator
+from wenyan_models.config import PreprocessingConfig
 
 
 class JobOptions(BaseModel):
@@ -19,7 +20,7 @@ class JobOptions(BaseModel):
 @dataclass(frozen=True)
 class JobContext:
     repo_root: Path
-    config: object
+    config: PreprocessingConfig
     artifacts: ArtifactStore
     registry: SourceRegistry
     llm: LLMClient

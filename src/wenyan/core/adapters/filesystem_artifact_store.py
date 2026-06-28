@@ -1,5 +1,6 @@
 import json
 import os
+from collections.abc import Sequence
 from pathlib import Path
 
 from pydantic import BaseModel
@@ -26,7 +27,7 @@ class FilesystemArtifactStore:
             return
         self._promote(ref, payload.model_dump_json(by_alias=True))
 
-    def write_batch(self, writes: list[ArtifactWrite], *, dry_run: bool) -> None:
+    def write_batch(self, writes: Sequence[ArtifactWrite], *, dry_run: bool) -> None:
         if dry_run:
             return
         pending: list[tuple[Path, Path, str]] = []
