@@ -48,6 +48,7 @@ A segment is **finished** when all eight subjobs have approved review artifacts:
 | `gloss-segment`, `review-segment-gloss` | Implemented |
 | Grammar, context subjobs and reviews | Stubbed |
 | `show` | Implemented |
+| `prune` | Implemented |
 | `run` | Chains all subjobs; stops with `not-implemented` when the next subjob is missing |
 
 ## LLM backend
@@ -73,6 +74,7 @@ uv run wenyan preprocess ...
 ```shell
 uv run wenyan preprocess status <slug> --json
 uv run wenyan preprocess validate-artifacts <slug>
+uv run wenyan preprocess prune <slug> --dry-run
 ```
 
 ### Inspect segment outputs (glosses, reviews)

@@ -16,6 +16,7 @@ from wenyan.core.show.segment_view import build_segment_show_view
 from wenyan.core.status.derivation import find_segment_location
 from wenyan.jobs.context import JobOptions
 from wenyan.jobs.ingest_document import run_ingest_document
+from wenyan.jobs.prune_orphan_segments import run_prune_orphan_segments
 from wenyan.jobs.run_preprocess import RunPlan, run_preprocess
 from wenyan.jobs.gloss_segment import run_gloss_segment
 from wenyan.jobs.review_segment_gloss import run_review_segment_gloss
@@ -438,6 +439,39 @@ def show_cmd(
     else:
         typer.echo(render_segment_show(payload, display), nl=False)
     raise typer.Exit(0)
+
+
+@preprocess_app.command("prune")
+def prune_cmd(
+    document: Annotated[str, typer.Argument(help="Document UUID or slug")],
+    dry_run: bool = dry_run_option,
+    as_json: bool = json_option,
+) -> None:
+    """Remove segment job directories not referenced by any current paragraph draft."""
+    ctx = build_job_context(_repo_root())
+    entry = ctx.registry.resolve(document)
+    if entry.document_id is None:
+        raise typer.Exit(1)
+    outcome = run_prune_orphan_segments(
+        ctx,
+        entry.document_id,
+        JobOptions(dry_run=dry_run),
+    )
+    if as_json:
+        typer.echo(json.dumps({"outcome": outcome.model_dump(by_alias=True)}))
+    else:
+        match outcome:
+            case Skipped(reason=reason):
+                typer.echo(reason)
+            case Promoted(artifact=result):
+                action = "would remove" if result.dry_run else "removed"
+                typer.echo(f"{action} {len(result.removed)} orphaned segment(s)")
+                for item in result.removed:
+                    preview = f" — {item.text_preview}" if item.text_preview else ""
+                    typer.echo(f"  {item.segment_id}{preview}")
+            case JobFailure(message=message):
+                typer.echo(message, err=True)
+    raise typer.Exit(outcome_exit_code(outcome))
 
 
 @preprocess_app.command("validate-artifacts")

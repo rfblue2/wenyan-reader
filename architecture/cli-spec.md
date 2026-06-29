@@ -47,6 +47,7 @@ Read-only inspection commands can use nouns when that reads more naturally:
 ```shell
 wenyan preprocess status <document-id>
 wenyan preprocess validate-artifacts <document-id>
+wenyan preprocess prune <document-id>
 wenyan preprocess show <document-id> --segment <segment-id>
 wenyan preprocess review-report <document-id> --segment <segment-id>
 ```
@@ -354,6 +355,18 @@ Validation should check:
 - No temporary output file is being treated as a real artifact.
 
 The command should return a non-zero exit code when it finds invalid, dangling, stale, or partially written artifacts.
+
+### `prune`
+
+```shell
+wenyan preprocess prune <document-id> [--dry-run] [--json]
+```
+
+Scope: document.
+
+Removes orphaned segment job directories under `jobs/segments/`. A segment is orphaned when its directory exists on disk but its ID is not listed in any current paragraph draft for a paragraph still present in the structure proposals. This typically happens after `split-paragraphs` or `split-segments` is rerun with new boundaries, leaving stale preprocessing artifacts behind.
+
+With `--dry-run`, lists the directories that would be removed without deleting them. When nothing is orphaned, exits zero and reports `no orphaned segments`.
 
 ### `show`
 
