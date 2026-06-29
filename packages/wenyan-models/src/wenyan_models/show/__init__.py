@@ -1,12 +1,16 @@
 from wenyan_models.show.segment import (
-    NoteShowItem,
+    ContextNoteShowItem,
+    GrammarNoteShowItem,
+    NoteCitationShowItem,
     ReviewShowItem,
     SegmentShowView,
     TokenGlossRow,
 )
 
 __all__ = [
-    "NoteShowItem",
+    "ContextNoteShowItem",
+    "GrammarNoteShowItem",
+    "NoteCitationShowItem",
     "ReviewShowItem",
     "SegmentShowView",
     "TokenGlossRow",

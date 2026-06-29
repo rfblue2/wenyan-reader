@@ -14,9 +14,7 @@ from wenyan.core.ports.artifact_ref import (
 )
 from wenyan.jobs.context import JobContext, JobOptions
 from wenyan_models.artifacts.segment import (
-    GlossEntry,
     GlossesArtifact,
-    SegmentInput,
     TokenizationArtifact,
     TokenizationReviewArtifact,
 )
@@ -63,7 +61,6 @@ def _gloss_one(
     input_ref = segment_input_ref(document_id, segment_id_value)
     if not ctx.artifacts.exists(input_ref):
         return JobFailure(code="missing-input", message="segment input is missing")
-    segment_input = ctx.artifacts.read(input_ref, SegmentInput)
     glosses_ref = segment_glosses_ref(document_id, segment_id_value)
     input_hash = sha256_text(tokenization_review.model_dump_json(by_alias=True))
     if ctx.artifacts.exists(glosses_ref) and not options.force:
@@ -74,11 +71,7 @@ def _gloss_one(
         ctx.repo_root / ctx.config.prompts.root,
         "segment-gloss",
     )
-    candidate_glosses = load_candidate_glosses(ctx.artifacts, document_id, segment_id_value)
-    segment_candidates = tuple(
-        GlossEntry.model_validate(dict(item)) for item in segment_input.candidate_glosses
-    )
-    all_candidates = _merge_gloss_entries(candidate_glosses, segment_candidates)
+    all_candidates = load_candidate_glosses(ctx.artifacts, document_id, segment_id_value)
     context = {
         "segment_id": str(segment_id_value),
         "segment_text": tokenization.text,
@@ -148,12 +141,3 @@ def _resolve_segment_ids(
             return [segment_id(str(segment.id)) for segment in draft.segments]
     return []
 
-
-def _merge_gloss_entries(
-    *groups: tuple[GlossEntry, ...],
-) -> tuple[GlossEntry, ...]:
-    by_id: dict[str, GlossEntry] = {}
-    for group in groups:
-        for entry in group:
-            by_id[entry.id] = entry
-    return tuple(by_id.values())

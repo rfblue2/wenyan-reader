@@ -73,7 +73,7 @@ def test_run_next_paragraph_split_segments(tmp_workspace: Path) -> None:
     assert outcome.artifact.stages_run == ("split-segments",)  # type: ignore[union-attr]
 
 
-def test_run_segment_completes_all_subjobs(tmp_workspace: Path) -> None:
+def test_run_segment_stops_at_skill_driven_context_subjobs(tmp_workspace: Path) -> None:
     ctx = build_job_context(tmp_workspace)
     from wenyan.jobs.ingest_document import run_ingest_document
     from wenyan.jobs.split_paragraphs import run_split_paragraphs
@@ -94,7 +94,9 @@ def test_run_segment_completes_all_subjobs(tmp_workspace: Path) -> None:
         segment_id_value=first_segment_id,
         options=JobOptions(),
     )
-    assert outcome.kind == "promoted"
-    stages = outcome.artifact.stages_run  # type: ignore[union-attr]
-    assert "annotate-segment-grammar" in stages
-    assert "review-segment-context" in stages
+    assert outcome.kind == "failure"
+    assert outcome.code == "not-implemented"  # type: ignore[union-attr]
+    assert "drafting-context-notes" in outcome.message  # type: ignore[union-attr]
+    assert "review-segment-grammar" in outcome.message  # type: ignore[union-attr]
+    assert "annotate-segment-context" in outcome.message  # type: ignore[union-attr]
+    assert "review-segment-context" not in outcome.message  # type: ignore[union-attr]

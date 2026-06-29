@@ -15,7 +15,13 @@ from wenyan.jobs.split_segments import run_split_segments
 from wenyan.jobs.tokenize_segment import run_tokenize_segment
 from wenyan_models.domain.enums import ReviewStatus, UnitStatus
 from wenyan_models.domain.targets import single_segment_target
-from wenyan_models.artifacts.segment import ContextNotesArtifact, GrammarNotesArtifact, NoteItem, NoteSource
+from wenyan_models.artifacts.segment import (
+    ContextNotesArtifact,
+    GrammarNoteItem,
+    GrammarNotesArtifact,
+    NoteCitation,
+    ContextNoteItem,
+)
 from conftest import install_sunzi_chapter_proposal
 
 
@@ -233,9 +239,8 @@ def test_build_segment_show_view_includes_notes(tmp_workspace: Path) -> None:
         inputHash="sha256:test",
         attempts=1,
         grammarNotes=(
-            NoteItem(
+            GrammarNoteItem(
                 id="note-1",
-                type="grammar",
                 anchorTokenIds=(token_id,),
                 body="Title segment heading.",
             ),
@@ -250,16 +255,14 @@ def test_build_segment_show_view_includes_notes(tmp_workspace: Path) -> None:
             inputHash="sha256:test",
             attempts=1,
             contextNotes=(
-                NoteItem(
+                ContextNoteItem(
                     id="note-2",
-                    type="context",
                     anchorTokenIds=(token_id,),
                     body="Chapter title for 始計.",
                     sources=(
-                        NoteSource(
-                            sourceId="src-001",
+                        NoteCitation(
                             label="Commentary",
-                            detail="Chapter heading context.",
+                            excerpt="Chapter heading context.",
                         ),
                     ),
                 ),
@@ -300,9 +303,8 @@ def test_render_segment_show_displays_notes(tmp_workspace: Path) -> None:
             inputHash="sha256:test",
             attempts=1,
             grammarNotes=(
-                NoteItem(
+                GrammarNoteItem(
                     id="note-1",
-                    type="grammar",
                     anchorTokenIds=(token_id,),
                     body="Title segment heading.",
                 ),

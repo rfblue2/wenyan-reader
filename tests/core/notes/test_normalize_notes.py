@@ -1,5 +1,11 @@
-from wenyan_models.artifacts.segment import NoteItem, NoteSource, TokenItem, TokenizationArtifact
-from wenyan.core.notes.normalize_notes import normalize_notes
+from wenyan_models.artifacts.segment import (
+    ContextNoteItem,
+    GrammarNoteItem,
+    NoteCitation,
+    TokenItem,
+    TokenizationArtifact,
+)
+from wenyan.core.notes.normalize_notes import normalize_context_notes, normalize_grammar_notes
 
 
 def _tokenization() -> TokenizationArtifact:
@@ -17,69 +23,44 @@ def _tokenization() -> TokenizationArtifact:
     )
 
 
-def test_normalize_notes_drops_empty_body_and_invalid_anchors() -> None:
+def test_normalize_grammar_notes_drops_empty_body_and_invalid_anchors() -> None:
     tokenization = _tokenization()
     notes = (
-        NoteItem(
-            id="n1",
-            type="grammar",
-            anchorTokenIds=("t2",),
-            body="",
-        ),
-        NoteItem(
-            id="n2",
-            type="grammar",
-            anchorTokenIds=(),
-            body="Missing anchors.",
-        ),
-        NoteItem(
-            id="n3",
-            type="grammar",
-            anchorTokenIds=("missing",),
-            body="Bad anchor.",
-        ),
-        NoteItem(
-            id="n4",
-            type="grammar",
-            anchorTokenIds=("t2",),
-            body="之 links modifier to head.",
-        ),
+        GrammarNoteItem(id="n1", anchorTokenIds=("t2",), body=""),
+        GrammarNoteItem(id="n2", anchorTokenIds=(), body="Missing anchors."),
+        GrammarNoteItem(id="n3", anchorTokenIds=("missing",), body="Bad anchor."),
+        GrammarNoteItem(id="n4", anchorTokenIds=("t2",), body="之 links modifier to head."),
     )
 
-    normalized = normalize_notes(notes, tokenization)
+    normalized = normalize_grammar_notes(notes, tokenization)
 
     assert len(normalized) == 1
     assert normalized[0].id == "n4"
 
 
-def test_normalize_notes_deduplicates_ids_and_filters_invalid_sources() -> None:
+def test_normalize_context_notes_deduplicates_ids_and_filters_invalid_citations() -> None:
     tokenization = _tokenization()
     notes = (
-        NoteItem(
+        ContextNoteItem(
             id="n1",
-            type="context",
             anchorTokenIds=("t1",),
             body="State affairs.",
             sources=(
-                NoteSource(sourceId="src-001", label="Commentary", detail=""),
-                NoteSource(sourceId="missing", label="Bad", detail=""),
+                NoteCitation(label="Commentary", excerpt="Supporting quote."),
+                NoteCitation(label="", excerpt="Missing label."),
+                NoteCitation(label="Bad", excerpt=""),
             ),
         ),
-        NoteItem(
+        ContextNoteItem(
             id="n1",
-            type="context",
             anchorTokenIds=("t3",),
             body="Duplicate id.",
         ),
     )
 
-    normalized = normalize_notes(
-        notes,
-        tokenization,
-        source_snippet_ids=frozenset({"src-001"}),
-    )
+    normalized = normalize_context_notes(notes, tokenization)
 
     assert len(normalized) == 1
     assert normalized[0].anchor_token_ids == ("t1",)
     assert len(normalized[0].sources) == 1
-    assert normalized[0].sources[0].source_id == "src-001"
+    assert normalized[0].sources[0].label == "Commentary"

@@ -2,23 +2,25 @@
 
 ## Purpose
 
-Context-note generation should use retrieval where possible.
+Context notes that make factual or interpretive claims beyond the segment text should cite inline sources. Grammar notes do not use sources.
 
-Source material may include:
+## Context note citations
 
-- The source passage itself.
-- Existing translations.
-- Commentaries.
-- Historical reference texts.
-- Editor-provided notes.
-- Local curated source excerpts.
+Each `ContextNoteItem` may include a `sources` array of self-contained citation objects:
 
-The relevant paragraph job or focused segment subjob should pass source snippets with stable source IDs. Context notes should cite source IDs in their `sources` metadata when a claim depends on external grounding.
+| Field | Required | Notes |
+| --- | --- | --- |
+| `label` | When `sources` non-empty | Short title |
+| `excerpt` | When `sources` non-empty | Supporting quoted text |
+| `url` | Optional | Web reference |
+| `accessedAt` | Optional | ISO date for web sources |
 
-If no source supports a claim, the model should either omit the note or mark it as unsupported in the review report rather than inventing a citation.
+There is no shared snippet registry on segment input. The [drafting-context-notes](../../.cursor/skills/drafting-context-notes/SKILL.md) skill researches and writes citations during interactive preprocessing.
 
-## Review Handoff
+If no source supports a claim, omit the note or reject it in [reviewing-context-notes](../../.cursor/skills/reviewing-context-notes/SKILL.md) rather than inventing a citation.
 
-Source grounding feeds the review and quality jobs, but it is not itself the full QA process. Grounded source snippets should be passed into any review job that needs to assess context notes, source support, or cross-document consistency.
+## Review handoff
 
-See [Review And Quality Jobs](review-and-quality-jobs.md) for the concrete validation, review, and blocking jobs.
+Context review records `sourceGrounding` with `sourceIndexes` (0-based into each note's `sources` array) when verifying citations.
+
+See [Review And Quality Jobs](review-and-quality-jobs.md) for validation and blocking behavior.

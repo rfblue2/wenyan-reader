@@ -1,1 +1,25 @@
-{"segmentId":"7b3c4d5e-8f2a-4b9c-8d1e-2f3a4b5c6d7e","model":"MiniMax-M2.5-highspeed","inputHash":"sha256:c0aa7f9151eed64d9933435ab8a4c1faa9ea82def2e3e90761eff21c57298b88","attempts":1,"status":"rejected","findings":[{"noteId":"a3b7c4d5-e6f8-4091-b2c3-d4e5f6a7b8c9","reason":"Historical and biographical claims about Sunzi (identification with Sun Wu, 6th–5th c. BCE dating, service as general of Wu) are presented with empty sources array, violating the requirement that factual claims must be source-grounded when source snippets are available."},{"noteId":"b4c8d9e0-f7a8-4102-c3d4-e5f6a7b8c9d0","reason":"The note presents substantive literary-interpretive claims about the passage's function ('tone for a text that treats strategy as a matter of state survival rather than glory') with empty sources array. This extends beyond direct paraphrase of the segment text into broader claims about the Art of War's thematic scope that require source grounding."}],"sourceGrounding":[]}
+{
+  "segmentId": "7b3c4d5e-8f2a-4b9c-8d1e-2f3a4b5c6d7e",
+  "model": "editor",
+  "inputHash": "sha256:147cc2d0e7f6bdd7a6d1986ac0f13a05ee43c2386f5be1f2cdd9b10ca9bc91b2",
+  "attempts": 1,
+  "status": "approved",
+  "findings": [],
+  "sourceGrounding": [
+    {
+      "noteId": "481e1d9d-7d14-4c71-8b1f-c5cca41c71ad",
+      "supported": true,
+      "sourceIndexes": [0]
+    },
+    {
+      "noteId": "d0d0c575-50a2-49ca-a047-430e9a4664f7",
+      "supported": true,
+      "sourceIndexes": [0]
+    },
+    {
+      "noteId": "b528dcf5-15a6-4fce-9b6a-8e73f8754a25",
+      "supported": true,
+      "sourceIndexes": [0]
+    }
+  ]
+}

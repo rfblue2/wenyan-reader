@@ -273,10 +273,8 @@ class MockLLMClient(LLMClient):
             grammar_notes.append(
                 {
                     "id": str(uuid.uuid4()),
-                    "type": "grammar",
                     "anchorTokenIds": [zhi_tokens[0]["id"]],
                     "body": "之 links the modifier to its head noun.",
-                    "sources": [],
                 },
             )
         payload = {

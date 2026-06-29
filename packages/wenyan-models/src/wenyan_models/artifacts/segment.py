@@ -13,22 +13,30 @@ from wenyan_models.artifacts.base import (
 from wenyan_models.domain.enums import ReviewStatus
 
 
-class NoteSource(BaseModel):
-    model_config = DEFAULT_ARTIFACT_CONFIG
-
-    source_id: str = Field(alias="sourceId")
-    label: str
-    detail: str = ""
-
-
-class NoteItem(BaseModel):
+class GrammarNoteItem(BaseModel):
     model_config = DEFAULT_ARTIFACT_CONFIG
 
     id: str
-    type: Literal["grammar", "context"]
     anchor_token_ids: tuple[str, ...] = Field(alias="anchorTokenIds")
     body: str
-    sources: tuple[NoteSource, ...] = ()
+
+
+class NoteCitation(BaseModel):
+    model_config = DEFAULT_ARTIFACT_CONFIG
+
+    label: str
+    excerpt: str
+    url: str = ""
+    accessed_at: str = Field(default="", alias="accessedAt")
+
+
+class ContextNoteItem(BaseModel):
+    model_config = DEFAULT_ARTIFACT_CONFIG
+
+    id: str
+    anchor_token_ids: tuple[str, ...] = Field(alias="anchorTokenIds")
+    body: str
+    sources: tuple[NoteCitation, ...] = ()
 
 
 class SourceGroundingItem(BaseModel):
@@ -36,7 +44,7 @@ class SourceGroundingItem(BaseModel):
 
     note_id: str = Field(alias="noteId")
     supported: bool
-    source_ids: tuple[str, ...] = Field(default=(), alias="sourceIds")
+    source_indexes: tuple[int, ...] = Field(default=(), alias="sourceIndexes")
 
 
 class SegmentInput(BaseModel):
@@ -48,11 +56,6 @@ class SegmentInput(BaseModel):
     segment_id: SegmentIdField = Field(alias="segmentId")
     segment_text: str = Field(alias="segmentText")
     local_context: dict[str, object] = Field(default_factory=dict, alias="localContext")
-    candidate_glosses: tuple[dict[str, object], ...] = Field(
-        default=(),
-        alias="candidateGlosses",
-    )
-    source_snippets: tuple[dict[str, object], ...] = Field(default=(), alias="sourceSnippets")
 
 
 class TokenItem(BaseModel):
@@ -133,7 +136,7 @@ class GrammarNotesArtifact(BaseModel):
     model: str
     input_hash: ContentHashField = Field(alias="inputHash")
     attempts: int
-    grammar_notes: tuple[NoteItem, ...] = Field(default=(), alias="grammarNotes")
+    grammar_notes: tuple[GrammarNoteItem, ...] = Field(default=(), alias="grammarNotes")
 
 
 class GrammarReviewArtifact(BaseModel):
@@ -154,7 +157,7 @@ class ContextNotesArtifact(BaseModel):
     model: str
     input_hash: ContentHashField = Field(alias="inputHash")
     attempts: int
-    context_notes: tuple[NoteItem, ...] = Field(default=(), alias="contextNotes")
+    context_notes: tuple[ContextNoteItem, ...] = Field(default=(), alias="contextNotes")
 
 
 class ContextReviewArtifact(BaseModel):

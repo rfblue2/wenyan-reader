@@ -36,8 +36,8 @@ A segment is **finished** when all eight subjobs have approved review artifacts:
 
 1. `tokenize-segment` → `review-segment-tokenization`
 2. `gloss-segment` → `review-segment-gloss`
-3. `annotate-segment-grammar` → `review-segment-grammar`
-4. `annotate-segment-context` → `review-segment-context`
+3. `annotate-segment-grammar` → `review-segment-grammar` (CLI)
+4. [drafting-context-notes](../drafting-context-notes/SKILL.md) → [reviewing-context-notes](../reviewing-context-notes/SKILL.md)
 
 ## Slice scope (current implementation)
 
@@ -46,8 +46,8 @@ A segment is **finished** when all eight subjobs have approved review artifacts:
 | `split-paragraphs`, `split-segments` | Implemented |
 | `tokenize-segment`, `review-segment-tokenization` | Implemented |
 | `gloss-segment`, `review-segment-gloss` | Implemented |
-| `annotate-segment-grammar`, `review-segment-grammar` | Implemented |
-| `annotate-segment-context`, `review-segment-context` | Implemented |
+| `annotate-segment-grammar`, `review-segment-grammar` | Implemented (CLI) |
+| `annotate-segment-context`, `review-segment-context` | Stubbed — use context skills |
 | `show` | Implemented |
 | `prune` | Implemented |
 | `run` | Chains all subjobs through context review; stops with `not-implemented` at assembly |
@@ -122,9 +122,18 @@ uv run wenyan preprocess review-segment-tokenization <slug> --segment <segment-i
 
 ## Handling failures
 
-### `not-implemented` from `run`
+### `not-implemented` from context CLI or `run`
 
-The next subjob in the chain is not built yet (for example `gloss-segment`). Tokenization may still be complete; implement or run the focused command once it exists.
+Context annotate/review commands are stubbed. When `run` reaches context stages it stops with a pointer to:
+
+- [drafting-context-notes](../drafting-context-notes/SKILL.md) for `context-notes.json`
+- [reviewing-context-notes](../reviewing-context-notes/SKILL.md) for `context-review.json`
+
+The editor only names slug + chapter/paragraph/segment ordinals (e.g. “Draft context notes for sunzi-bingfa chapter 1 paragraph 1 segment 1”). The skill resolves the segment via `preprocess show --json`.
+
+Grammar and upstream subjobs may still be complete; use the skills to finish the segment.
+
+### `not-implemented` from other `run` stages
 
 ### Review rejected
 

@@ -7,7 +7,6 @@ from wenyan.core.ports.artifact_ref import (
     segment_context_notes_ref,
     segment_glosses_ref,
     segment_grammar_notes_ref,
-    segment_input_ref,
     segment_tokenization_ref,
 )
 from wenyan.core.ports.artifact_store import ArtifactStore
@@ -15,18 +14,24 @@ from wenyan.core.review.findings import format_review_findings
 from wenyan.core.run.segment_pipeline import read_review_component
 from wenyan.core.status.derivation import derive_segment_status, find_segment_location
 from wenyan_models.artifacts.segment import (
+    ContextNoteItem,
     ContextNotesArtifact,
     ContextReviewArtifact,
     GlossEntry,
     GlossesArtifact,
+    GrammarNoteItem,
     GrammarNotesArtifact,
-    NoteItem,
-    SegmentInput,
     TokenizationArtifact,
 )
 from wenyan_models.domain.enums import ComponentKind
 from wenyan_models.domain.ids import DocumentId, SegmentId
-from wenyan_models.show.segment import NoteShowItem, ReviewShowItem, SegmentShowView, TokenGlossRow
+from wenyan_models.show.segment import (
+    ContextNoteShowItem,
+    GrammarNoteShowItem,
+    ReviewShowItem,
+    SegmentShowView,
+    TokenGlossRow,
+)
 
 _REVIEW_COMPONENTS: tuple[ComponentKind, ...] = (
     ComponentKind.REVIEW_SEGMENT_TOKENIZATION,
@@ -77,14 +82,14 @@ def build_segment_show_view(
             "tokens": [token.model_dump(by_alias=True) for token in token_rows],
             "grammarNotes": [
                 note.model_dump(by_alias=True)
-                for note in _build_note_show_items(
+                for note in _build_grammar_note_show_items(
                     _load_grammar_notes(artifacts, document_id, segment_id),
                     tokenization,
                 )
             ],
             "contextNotes": [
                 note.model_dump(by_alias=True)
-                for note in _build_note_show_items(
+                for note in _build_context_note_show_items(
                     _load_context_notes(artifacts, document_id, segment_id),
                     tokenization,
                 )
@@ -116,12 +121,6 @@ def _build_token_rows(
     candidate_glosses: tuple[dict[str, object], ...] = ()
     glossary_draft = load_glossary_draft(artifacts, document_id)
     candidate_entries = list(glossary_draft.glosses)
-    input_ref = segment_input_ref(document_id, segment_id)
-    if artifacts.exists(input_ref):
-        segment_input = artifacts.read(input_ref, SegmentInput)
-        candidate_entries.extend(
-            GlossEntry.model_validate(dict(item)) for item in segment_input.candidate_glosses
-        )
     candidate_glosses = tuple(
         entry.model_dump(by_alias=True) for entry in _unique_gloss_entries(candidate_entries)
     )
@@ -171,7 +170,7 @@ def _load_grammar_notes(
     artifacts: ArtifactStore,
     document_id: DocumentId,
     segment_id: SegmentId,
-) -> tuple[NoteItem, ...]:
+) -> tuple[GrammarNoteItem, ...]:
     grammar_ref = segment_grammar_notes_ref(document_id, segment_id)
     if not artifacts.exists(grammar_ref):
         return ()
@@ -183,7 +182,7 @@ def _load_context_notes(
     artifacts: ArtifactStore,
     document_id: DocumentId,
     segment_id: SegmentId,
-) -> tuple[NoteItem, ...]:
+) -> tuple[ContextNoteItem, ...]:
     context_ref = segment_context_notes_ref(document_id, segment_id)
     if not artifacts.exists(context_ref):
         return ()
@@ -191,31 +190,49 @@ def _load_context_notes(
     return context.context_notes
 
 
-def _build_note_show_items(
-    notes: tuple[NoteItem, ...],
+def _anchor_surfaces(
+    note: GrammarNoteItem | ContextNoteItem,
     tokenization: TokenizationArtifact | None,
-) -> tuple[NoteShowItem, ...]:
+) -> tuple[str, ...]:
     surfaces_by_id = (
         {token.id: token.surface for token in tokenization.tokens} if tokenization is not None else {}
     )
-    items: list[NoteShowItem] = []
-    for note in notes:
-        anchor_surfaces = tuple(
-            surfaces_by_id.get(token_id, token_id) for token_id in note.anchor_token_ids
+    return tuple(surfaces_by_id.get(token_id, token_id) for token_id in note.anchor_token_ids)
+
+
+def _build_grammar_note_show_items(
+    notes: tuple[GrammarNoteItem, ...],
+    tokenization: TokenizationArtifact | None,
+) -> tuple[GrammarNoteShowItem, ...]:
+    return tuple(
+        GrammarNoteShowItem.model_validate(
+            {
+                "id": note.id,
+                "anchorTokenIds": note.anchor_token_ids,
+                "anchorSurfaces": _anchor_surfaces(note, tokenization),
+                "body": note.body,
+            },
         )
-        items.append(
-            NoteShowItem.model_validate(
-                {
-                    "id": note.id,
-                    "type": note.type,
-                    "anchorTokenIds": note.anchor_token_ids,
-                    "anchorSurfaces": anchor_surfaces,
-                    "body": note.body,
-                    "sources": [source.model_dump(by_alias=True) for source in note.sources],
-                },
-            ),
+        for note in notes
+    )
+
+
+def _build_context_note_show_items(
+    notes: tuple[ContextNoteItem, ...],
+    tokenization: TokenizationArtifact | None,
+) -> tuple[ContextNoteShowItem, ...]:
+    return tuple(
+        ContextNoteShowItem.model_validate(
+            {
+                "id": note.id,
+                "anchorTokenIds": note.anchor_token_ids,
+                "anchorSurfaces": _anchor_surfaces(note, tokenization),
+                "body": note.body,
+                "sources": [source.model_dump(by_alias=True) for source in note.sources],
+            },
         )
-    return tuple(items)
+        for note in notes
+    )
 
 
 def _resolve_gloss_entry(

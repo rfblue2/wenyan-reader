@@ -8,7 +8,12 @@ from rich.table import Table
 from rich.text import Text
 
 from wenyan_models.domain.enums import ReviewStatus, UnitStatus
-from wenyan_models.show.segment import NoteShowItem, SegmentShowView
+from wenyan_models.show.segment import (
+    ContextNoteShowItem,
+    GrammarNoteShowItem,
+    NoteCitationShowItem,
+    SegmentShowView,
+)
 
 _STATUS_STYLE: dict[UnitStatus, str] = {
     UnitStatus.COMPLETE: "green",
@@ -99,19 +104,32 @@ def _render_notes(console: Console, payload: SegmentShowView) -> None:
     if payload.grammar_notes:
         console.print("[bold]Grammar notes[/bold]")
         for note in payload.grammar_notes:
-            _render_note(console, note)
+            _render_grammar_note(console, note)
     if payload.context_notes:
         console.print("[bold]Context notes[/bold]")
-        for note in payload.context_notes:
-            _render_note(console, note)
+        for context_note in payload.context_notes:
+            _render_context_note(console, context_note)
 
 
-def _render_note(console: Console, note: NoteShowItem) -> None:
+def _render_grammar_note(console: Console, note: GrammarNoteShowItem) -> None:
+    anchors = ", ".join(note.anchor_surfaces) if note.anchor_surfaces else "—"
+    console.print(f"  [{anchors}]  {note.body}")
+
+
+def _render_context_note(console: Console, note: ContextNoteShowItem) -> None:
     anchors = ", ".join(note.anchor_surfaces) if note.anchor_surfaces else "—"
     console.print(f"  [{anchors}]  {note.body}")
     for source in note.sources:
-        detail = f" — {source.detail}" if source.detail else ""
-        console.print(f"    [dim]Source: {source.label}{detail}[/dim]")
+        _render_citation(console, source)
+
+
+def _render_citation(console: Console, source: NoteCitationShowItem) -> None:
+    parts = [source.label]
+    if source.url:
+        parts.append(source.url)
+    if source.excerpt:
+        parts.append(source.excerpt)
+    console.print(f"    [dim]Source: {' — '.join(parts)}[/dim]")
 
 
 def _render_reviews(console: Console, payload: SegmentShowView) -> None:
@@ -128,10 +146,11 @@ def _render_reviews(console: Console, payload: SegmentShowView) -> None:
         for item in review.source_grounding:
             note_id = item.get("noteId")
             supported = item.get("supported")
-            source_ids = item.get("sourceIds")
+            source_indexes = item.get("sourceIndexes")
             if note_id is not None:
                 console.print(
-                    f"    [dim]Grounding note {note_id}: supported={supported}, sources={source_ids}[/dim]",
+                    "    [dim]Grounding note "
+                    f"{note_id}: supported={supported}, sourceIndexes={source_indexes}[/dim]",
                 )
 
 

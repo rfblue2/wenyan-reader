@@ -8,7 +8,6 @@ Draft grammar notes for the reviewed tokenization below.
 - Anchor each note to one or more `anchorTokenIds` from the tokenization.
 - Write for an English-speaking learner. Avoid generic textbook filler.
 - Return `grammarNotes: []` when the segment has no construction worth calling out.
-- Use `type` `grammar` on every note.
 - Generate a new UUID v4 for each note `id`.
 
 ## Output

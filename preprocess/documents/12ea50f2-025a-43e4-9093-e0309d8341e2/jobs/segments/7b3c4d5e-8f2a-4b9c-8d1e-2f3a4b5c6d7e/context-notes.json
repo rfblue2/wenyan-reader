@@ -1,1 +1,47 @@
-{"segmentId":"7b3c4d5e-8f2a-4b9c-8d1e-2f3a4b5c6d7e","model":"MiniMax-M2.5-highspeed","inputHash":"sha256:5e889ada4f65aeb6682506960952a36c6404f03892b09b9d769ba576b14e28cb","attempts":1,"contextNotes":[{"id":"a3b7c4d5-e6f8-4091-b2c3-d4e5f6a7b8c9","type":"context","anchorTokenIds":["a1b2c3d4-0001-4e5f-8a7b-9c0d1e2f3a4b"],"body":"Sunzi (孫子, fl. 6th–5th c. BCE) was a military strategist traditionally identified with Sun Wu, a general of the state of Wu during the Spring and Autumn period. The Art of War (孫子兵法) is the earliest known Chinese treatise on military strategy, emphasizing calculation, deception, and the avoidance of direct confrontation rather than brute force.","sources":[]},{"id":"b4c8d9e0-f7a8-4102-c3d4-e5f6a7b8c9d0","type":"context","anchorTokenIds":["a1b2c3d4-0003-4e5f-8a7b-9c0d1e2f3a4b","a1b2c3d4-0004-4e5f-8a7b-9c0d1e2f3a4b","a1b2c3d4-0005-4e5f-8a7b-9c0d1e2f3a4b","a1b2c3d4-0006-4e5f-8a7b-9c0d1e2f3a4b","a1b2c3d4-0007-4e5f-8a7b-9c0d1e2f3a4b","a1b2c3d4-0008-4e5f-8a7b-9c0d1e2f3a4b","a1b2c3d4-0009-4e5f-8a7b-9c0d1e2f3a4b","a1b2c3d4-000a-4e5f-8a7b-9c0d1e2f3a4b","a1b2c3d4-000b-4e5f-8a7b-9c0d1e2f3a4b","a1b2c3d4-000c-4e5f-8a7b-9c0d1e2f3a4b"],"body":"This opening passage establishes the gravitas of military affairs: warfare determines life and death (死生之地) and the survival or destruction of the state (存亡之道), requiring the ruler's utmost deliberation. The parallel structure 死生/存亡 reflects the existential stakes Sunzi ascribes to military decisions, setting the tone for a text that treats strategy as a matter of state survival rather than glory.","sources":[]}]}
+{
+  "segmentId": "7b3c4d5e-8f2a-4b9c-8d1e-2f3a4b5c6d7e",
+  "model": "editor",
+  "inputHash": "sha256:5e889ada4f65aeb6682506960952a36c6404f03892b09b9d769ba576b14e28cb",
+  "attempts": 1,
+  "contextNotes": [
+    {
+      "id": "481e1d9d-7d14-4c71-8b1f-c5cca41c71ad",
+      "anchorTokenIds": ["a1b2c3d4-0001-4e5f-8a7b-9c0d1e2f3a4b"],
+      "body": "孫子 is the honorific for Sun Wu (孫武), the figure traditionally credited with composing the Art of War. Sima Qian's *Records of the Grand Historian* describes him as a native of Qi who entered Wu service under King Helü and demonstrated command before campaigns against Chu. Many modern scholars date the received text to the Warring States period rather than Sun Wu's lifetime, but readers still conventionally call the attributed author 孫子.",
+      "sources": [
+        {
+          "label": "Sunzi bingfa (ChinaKnowledge)",
+          "excerpt": "The author of the book was believed to be the historical person Sun Wu 孫武, who originated in the regional state of Qi during the late Spring and Autumn period.",
+          "url": "http://www.chinaknowledge.de/Literature/Diverse/sunzibingfa.html",
+          "accessedAt": "2026-06-28"
+        }
+      ]
+    },
+    {
+      "id": "d0d0c575-50a2-49ca-a047-430e9a4664f7",
+      "anchorTokenIds": ["a1b2c3d4-0003-4e5f-8a7b-9c0d1e2f3a4b"],
+      "body": "This sentence opens 計篇 (Planning), the first chapter of the received *Sunzi bingfa*. Commentators treat it as the programmatic warning before the chapter turns to comparing one's own and the enemy's situation through the five factors (道、天、地、將、法). Du Mu cites the *Zuozhuan* line that state ritual and military affairs are the two great matters of government, framing 兵 as a matter of comparable gravity.",
+      "sources": [
+        {
+          "label": "孫子集注 · 計篇 (CText)",
+          "excerpt": "孫子曰：兵者，國之大事，… 杜牧曰：傳曰：「國之大事，在祀與戎。」",
+          "url": "https://ctext.org/wiki.pl?chapter=553556&if=gb",
+          "accessedAt": "2026-06-28"
+        }
+      ]
+    },
+    {
+      "id": "b528dcf5-15a6-4fce-9b6a-8e73f8754a25",
+      "anchorTokenIds": ["a1b2c3d4-0010-4e5f-8a7b-9c0d1e2f3a4b"],
+      "body": "Traditional commentators read 察 as careful scrutiny through pre-battle planning—what the chapter develops next as 廟算 (calculations in the ancestral temple). Du Mu glosses that a state's survival and its people's lives depend on military affairs, so a ruler must examine the situation thoroughly before acting. Cao Cao likewise opens his commentary by defining 計 as selecting generals, sizing up the enemy, and estimating terrain before decisions are made in the temple hall.",
+      "sources": [
+        {
+          "label": "孫子集注 · 計篇 (CText)",
+          "excerpt": "死生之地，存亡之道，不可不察也。… 杜牧曰：國之存亡，人之死生，皆由於兵，故須審察也。",
+          "url": "https://ctext.org/wiki.pl?chapter=553556&if=gb",
+          "accessedAt": "2026-06-28"
+        }
+      ]
+    }
+  ]
+}

@@ -23,23 +23,32 @@ class TokenGlossRow(BaseModel):
     decision: Literal["reuse-existing", "create-new"] | None = None
 
 
-class NoteSourceShowItem(BaseModel):
+class NoteCitationShowItem(BaseModel):
     model_config = DEFAULT_ARTIFACT_CONFIG
 
-    source_id: str = Field(alias="sourceId")
     label: str
-    detail: str = ""
+    excerpt: str
+    url: str = ""
+    accessed_at: str = Field(default="", alias="accessedAt")
 
 
-class NoteShowItem(BaseModel):
+class GrammarNoteShowItem(BaseModel):
     model_config = DEFAULT_ARTIFACT_CONFIG
 
     id: str
-    type: Literal["grammar", "context"]
     anchor_token_ids: tuple[str, ...] = Field(alias="anchorTokenIds")
     anchor_surfaces: tuple[str, ...] = Field(alias="anchorSurfaces")
     body: str
-    sources: tuple[NoteSourceShowItem, ...] = ()
+
+
+class ContextNoteShowItem(BaseModel):
+    model_config = DEFAULT_ARTIFACT_CONFIG
+
+    id: str
+    anchor_token_ids: tuple[str, ...] = Field(alias="anchorTokenIds")
+    anchor_surfaces: tuple[str, ...] = Field(alias="anchorSurfaces")
+    body: str
+    sources: tuple[NoteCitationShowItem, ...] = ()
 
 
 class ReviewShowItem(BaseModel):
@@ -66,7 +75,7 @@ class SegmentShowView(BaseModel):
     text: str
     status: UnitStatus
     tokens: tuple[TokenGlossRow, ...] = ()
-    grammar_notes: tuple[NoteShowItem, ...] = Field(default=(), alias="grammarNotes")
-    context_notes: tuple[NoteShowItem, ...] = Field(default=(), alias="contextNotes")
+    grammar_notes: tuple[GrammarNoteShowItem, ...] = Field(default=(), alias="grammarNotes")
+    context_notes: tuple[ContextNoteShowItem, ...] = Field(default=(), alias="contextNotes")
     reviews: tuple[ReviewShowItem, ...] = ()
     components: tuple[ComponentStatusItem, ...] = ()

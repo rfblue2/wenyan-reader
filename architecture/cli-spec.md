@@ -239,7 +239,7 @@ wenyan preprocess annotate-segment-context <document-id> --paragraph <paragraph-
 
 Scope: one segment, or pending segments under one paragraph.
 
-Drafts segment-local context notes using retrieved source snippets when claims need grounding. This can run after tokenization review and does not need to wait for gloss or grammar jobs.
+**Stubbed.** Returns `not-implemented` and points to `.cursor/skills/drafting-context-notes/SKILL.md`. Use that skill to write `context-notes.json` with inline citations.
 
 Primary output:
 
@@ -253,7 +253,7 @@ wenyan preprocess review-segment-context <document-id> --segment <segment-id>
 
 Scope: one segment context output.
 
-Reviews whether context notes are useful, anchored correctly, source-grounded where needed, and not duplicative of paragraph-level context notes.
+**Stubbed.** Returns `not-implemented` and points to `.cursor/skills/reviewing-context-notes/SKILL.md`.
 
 Primary output:
 

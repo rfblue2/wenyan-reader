@@ -2,8 +2,6 @@ from pathlib import Path
 
 from wenyan.bootstrap import build_job_context
 from wenyan.core.ports.artifact_ref import (
-    segment_context_notes_ref,
-    segment_context_review_ref,
     segment_grammar_notes_ref,
     segment_grammar_review_ref,
 )
@@ -17,12 +15,7 @@ from wenyan.jobs.review_segment_tokenization import run_review_segment_tokenizat
 from wenyan.jobs.split_paragraphs import run_split_paragraphs
 from wenyan.jobs.split_segments import run_split_segments
 from wenyan.jobs.tokenize_segment import run_tokenize_segment
-from wenyan_models.artifacts.segment import (
-    ContextNotesArtifact,
-    ContextReviewArtifact,
-    GrammarNotesArtifact,
-    GrammarReviewArtifact,
-)
+from wenyan_models.artifacts.segment import GrammarNotesArtifact, GrammarReviewArtifact
 from wenyan_models.domain.enums import ReviewStatus
 from wenyan_models.domain.results import JobFailure, Promoted, Skipped, outcome_exit_code
 from wenyan_models.domain.targets import single_segment_target
@@ -80,7 +73,6 @@ def test_annotate_segment_grammar_writes_artifact(tmp_workspace: Path) -> None:
     grammar_ref = segment_grammar_notes_ref(doc_id, segment_id_value)
     assert ctx.artifacts.exists(grammar_ref)
     grammar = ctx.artifacts.read(grammar_ref, GrammarNotesArtifact)
-    assert all(note.type == "grammar" for note in grammar.grammar_notes)
     assert all(note.anchor_token_ids for note in grammar.grammar_notes)
 
 
@@ -130,7 +122,7 @@ def test_review_segment_grammar_rejects(tmp_workspace: Path, monkeypatch) -> Non
     assert outcome.code == "review-rejected"
 
 
-def test_annotate_segment_context_writes_empty_notes(tmp_workspace: Path) -> None:
+def test_annotate_segment_context_is_skill_driven_stub(tmp_workspace: Path) -> None:
     ctx, (doc_id, segment_id_value) = _prepare_segment_with_approved_tokenization(tmp_workspace)
 
     outcome = run_annotate_segment_context(
@@ -139,21 +131,15 @@ def test_annotate_segment_context_writes_empty_notes(tmp_workspace: Path) -> Non
         single_segment_target(segment_id_value),
         JobOptions(),
     )
-    assert outcome_exit_code(outcome) == 0
-    assert isinstance(outcome, Promoted)
-    context_ref = segment_context_notes_ref(doc_id, segment_id_value)
-    context_notes = ctx.artifacts.read(context_ref, ContextNotesArtifact)
-    assert context_notes.context_notes == ()
+    assert isinstance(outcome, JobFailure)
+    assert outcome.code == "not-implemented"
+    assert "drafting-context-notes" in outcome.message
 
 
-def test_review_segment_context_approves(tmp_workspace: Path) -> None:
+def test_review_segment_context_is_skill_driven_stub(tmp_workspace: Path) -> None:
     ctx, (doc_id, segment_id_value) = _prepare_segment_with_approved_tokenization(tmp_workspace)
-    run_annotate_segment_context(ctx, doc_id, single_segment_target(segment_id_value), JobOptions())
 
     outcome = run_review_segment_context(ctx, doc_id, segment_id_value, JobOptions())
-    assert outcome_exit_code(outcome) == 0
-    review = ctx.artifacts.read(
-        segment_context_review_ref(doc_id, segment_id_value),
-        ContextReviewArtifact,
-    )
-    assert review.status == ReviewStatus.APPROVED
+    assert isinstance(outcome, JobFailure)
+    assert outcome.code == "not-implemented"
+    assert "reviewing-context-notes" in outcome.message
