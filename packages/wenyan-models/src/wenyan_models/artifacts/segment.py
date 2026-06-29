@@ -13,6 +13,32 @@ from wenyan_models.artifacts.base import (
 from wenyan_models.domain.enums import ReviewStatus
 
 
+class NoteSource(BaseModel):
+    model_config = DEFAULT_ARTIFACT_CONFIG
+
+    source_id: str = Field(alias="sourceId")
+    label: str
+    detail: str = ""
+
+
+class NoteItem(BaseModel):
+    model_config = DEFAULT_ARTIFACT_CONFIG
+
+    id: str
+    type: Literal["grammar", "context"]
+    anchor_token_ids: tuple[str, ...] = Field(alias="anchorTokenIds")
+    body: str
+    sources: tuple[NoteSource, ...] = ()
+
+
+class SourceGroundingItem(BaseModel):
+    model_config = DEFAULT_ARTIFACT_CONFIG
+
+    note_id: str = Field(alias="noteId")
+    supported: bool
+    source_ids: tuple[str, ...] = Field(default=(), alias="sourceIds")
+
+
 class SegmentInput(BaseModel):
     model_config = DEFAULT_ARTIFACT_CONFIG
 
@@ -98,3 +124,46 @@ class GlossReviewArtifact(BaseModel):
     attempts: int
     status: ReviewStatus
     findings: tuple[dict[str, object], ...] = ()
+
+
+class GrammarNotesArtifact(BaseModel):
+    model_config = DEFAULT_ARTIFACT_CONFIG
+
+    segment_id: SegmentIdField = Field(alias="segmentId")
+    model: str
+    input_hash: ContentHashField = Field(alias="inputHash")
+    attempts: int
+    grammar_notes: tuple[NoteItem, ...] = Field(default=(), alias="grammarNotes")
+
+
+class GrammarReviewArtifact(BaseModel):
+    model_config = DEFAULT_ARTIFACT_CONFIG
+
+    segment_id: SegmentIdField = Field(alias="segmentId")
+    model: str
+    input_hash: ContentHashField = Field(alias="inputHash")
+    attempts: int
+    status: ReviewStatus
+    findings: tuple[dict[str, object], ...] = ()
+
+
+class ContextNotesArtifact(BaseModel):
+    model_config = DEFAULT_ARTIFACT_CONFIG
+
+    segment_id: SegmentIdField = Field(alias="segmentId")
+    model: str
+    input_hash: ContentHashField = Field(alias="inputHash")
+    attempts: int
+    context_notes: tuple[NoteItem, ...] = Field(default=(), alias="contextNotes")
+
+
+class ContextReviewArtifact(BaseModel):
+    model_config = DEFAULT_ARTIFACT_CONFIG
+
+    segment_id: SegmentIdField = Field(alias="segmentId")
+    model: str
+    input_hash: ContentHashField = Field(alias="inputHash")
+    attempts: int
+    status: ReviewStatus
+    findings: tuple[dict[str, object], ...] = ()
+    source_grounding: tuple[SourceGroundingItem, ...] = Field(default=(), alias="sourceGrounding")

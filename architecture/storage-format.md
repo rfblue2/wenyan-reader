@@ -170,7 +170,6 @@ Notes live inside the segment they annotate.
   "type": "context",
   "anchorTokenIds": ["3723a8d9-6621-40e7-b444-2fcb3dcbcdcb"],
   "body": "Mencius is being introduced in an audience with a ruler.",
-  "introKey": "mencius-audience",
   "sources": [
     {
       "label": "Mencius 1A1",
@@ -186,7 +185,6 @@ Required fields:
 - `type`
 - `anchorTokenIds`
 - `body`
-- `introKey`
 
 Optional fields:
 

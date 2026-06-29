@@ -38,6 +38,47 @@ _LLM_PROMPTS: tuple[tuple[str, tuple[str, ...]], ...] = (
         "segment-gloss-review",
         ("glosses_json", "segment_id", "review_input_hash", "segment_text", "tokenization_json", "candidate_glosses_json"),
     ),
+    (
+        "segment-grammar",
+        ("segment_text", "segment_id", "input_hash", "tokenization_json", "local_context_json"),
+    ),
+    (
+        "segment-grammar-review",
+        (
+            "grammar_notes_json",
+            "segment_id",
+            "review_input_hash",
+            "segment_text",
+            "tokenization_json",
+            "glosses_json",
+            "local_context_json",
+        ),
+    ),
+    (
+        "segment-context",
+        (
+            "segment_text",
+            "segment_id",
+            "input_hash",
+            "tokenization_json",
+            "local_context_json",
+            "source_snippets_json",
+        ),
+    ),
+    (
+        "segment-context-review",
+        (
+            "context_notes_json",
+            "segment_id",
+            "review_input_hash",
+            "segment_text",
+            "tokenization_json",
+            "glosses_json",
+            "local_context_json",
+            "source_snippets_json",
+            "paragraph_context_notes_json",
+        ),
+    ),
 )
 
 

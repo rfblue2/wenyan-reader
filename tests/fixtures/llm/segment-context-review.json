@@ -1,0 +1,9 @@
+{
+  "segmentId": "d70e05cc-a271-43e6-9abd-40c97c83bb96",
+  "model": "mock",
+  "inputHash": "sha256:context-review-input",
+  "attempts": 1,
+  "status": "approved",
+  "findings": [],
+  "sourceGrounding": []
+}

@@ -7,6 +7,7 @@ from pathlib import Path
 from wenyan.core.adapters.paths import artifact_path
 from wenyan.core.ports.artifact_ref import paragraph_draft_ref, paragraph_proposal_ref, segment_input_ref
 from wenyan.core.ports.artifact_store import ArtifactStore
+from wenyan.core.review.findings import format_review_finding
 from wenyan.core.run.segment_pipeline import (
     SEGMENT_SUBJOBS,
     component_artifact_ref,
@@ -326,9 +327,9 @@ def _component_status_item(
 
 def _blocked_reason(findings: tuple[dict[str, object], ...]) -> str | None:
     for finding in findings:
-        message = finding.get("message")
-        if isinstance(message, str) and message:
-            return message
+        line = format_review_finding(finding)
+        if line:
+            return line
     return None
 
 

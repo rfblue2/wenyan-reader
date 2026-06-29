@@ -46,10 +46,11 @@ A segment is **finished** when all eight subjobs have approved review artifacts:
 | `split-paragraphs`, `split-segments` | Implemented |
 | `tokenize-segment`, `review-segment-tokenization` | Implemented |
 | `gloss-segment`, `review-segment-gloss` | Implemented |
-| Grammar, context subjobs and reviews | Stubbed |
+| `annotate-segment-grammar`, `review-segment-grammar` | Implemented |
+| `annotate-segment-context`, `review-segment-context` | Implemented |
 | `show` | Implemented |
 | `prune` | Implemented |
-| `run` | Chains all subjobs; stops with `not-implemented` when the next subjob is missing |
+| `run` | Chains all subjobs through context review; stops with `not-implemented` at assembly |
 
 ## LLM backend
 

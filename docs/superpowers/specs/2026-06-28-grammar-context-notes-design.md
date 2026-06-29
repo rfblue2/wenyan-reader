@@ -2,7 +2,7 @@
 
 ## Summary
 
-Implement the four stubbed segment subjobs for grammar and context notes: `annotate-segment-grammar`, `review-segment-grammar`, `annotate-segment-context`, and `review-segment-context`. Wire them into `run preprocess` so a segment can complete all eight subjobs. Defer paragraph assembly, `show`, reader packaging, and `introKey`.
+Implement the four stubbed segment subjobs for grammar and context notes: `annotate-segment-grammar`, `review-segment-grammar`, `annotate-segment-context`, and `review-segment-context`. Wire them into `run preprocess` so a segment can complete all eight subjobs. Defer paragraph assembly, `show`, and reader packaging.
 
 ## Decisions
 
@@ -12,7 +12,6 @@ Implement the four stubbed segment subjobs for grammar and context notes: `annot
 | Empty segments | `grammarNotes: []` / `contextNotes: []` when nothing salient applies |
 | Upstream for drafting | Approved tokenization review only; `inputHash` derived from tokenization review JSON |
 | Gloss dependency | Optional at review time — pass glosses when present; grammar review checks gloss conflicts only when glosses exist |
-| `introKey` | Dropped from draft note shape — not used by reader or pipeline today |
 | Implementation style | Mirror gloss jobs (four modules + small shared `normalize_notes()` helper) |
 | Review failure | Fail-fast — write review artifact, non-zero exit, block only that subjob |
 | Test backend | Mock LLM fixtures; no live LLM required in CI |
@@ -183,16 +182,15 @@ Tests use `build_job_context(tmp_workspace)` with `models.provider: mock`.
 
 - `assemble-paragraph` note merging into final paragraph package
 - `show` command note display
-- `introKey` field (drop until a consumer exists)
 - Paragraph-level context note drafting (remains in paragraph structure job)
 - Deterministic segment-output validation during assembly
-- Storage format doc update for `introKey` removal (follow-up when reader packaging is implemented)
 
 ## Architecture Doc Updates
 
 Update these files as part of implementation:
 
-- `architecture/preprocessing/intermediate-artifacts.md` — note examples without `introKey`; typed note fields in grammar/context artifacts
+- `architecture/storage-format.md` — note schema without `introKey` (done)
+- `architecture/preprocessing/intermediate-artifacts.md` — typed note fields in grammar/context artifacts
 - `.cursor/skills/preprocessing-segments/SKILL.md` — mark grammar/context subjobs as implemented
 
 ## Error Handling
@@ -208,5 +206,4 @@ Update these files as part of implementation:
 
 - `assemble-paragraph` merging notes into `segments[].notes`
 - `show` command grammar/context display
-- Revisit `introKey` if reader needs cross-segment introduction tracking
 - Deterministic segment-output validation for note anchors during assembly

@@ -23,12 +23,33 @@ class TokenGlossRow(BaseModel):
     decision: Literal["reuse-existing", "create-new"] | None = None
 
 
+class NoteSourceShowItem(BaseModel):
+    model_config = DEFAULT_ARTIFACT_CONFIG
+
+    source_id: str = Field(alias="sourceId")
+    label: str
+    detail: str = ""
+
+
+class NoteShowItem(BaseModel):
+    model_config = DEFAULT_ARTIFACT_CONFIG
+
+    id: str
+    type: Literal["grammar", "context"]
+    anchor_token_ids: tuple[str, ...] = Field(alias="anchorTokenIds")
+    anchor_surfaces: tuple[str, ...] = Field(alias="anchorSurfaces")
+    body: str
+    sources: tuple[NoteSourceShowItem, ...] = ()
+
+
 class ReviewShowItem(BaseModel):
     model_config = DEFAULT_ARTIFACT_CONFIG
 
     kind: ComponentKind
     status: ReviewStatus
     findings: tuple[dict[str, object], ...] = ()
+    finding_lines: tuple[str, ...] = Field(default=(), alias="findingLines")
+    source_grounding: tuple[dict[str, object], ...] = Field(default=(), alias="sourceGrounding")
 
 
 class SegmentShowView(BaseModel):
@@ -45,5 +66,7 @@ class SegmentShowView(BaseModel):
     text: str
     status: UnitStatus
     tokens: tuple[TokenGlossRow, ...] = ()
+    grammar_notes: tuple[NoteShowItem, ...] = Field(default=(), alias="grammarNotes")
+    context_notes: tuple[NoteShowItem, ...] = Field(default=(), alias="contextNotes")
     reviews: tuple[ReviewShowItem, ...] = ()
     components: tuple[ComponentStatusItem, ...] = ()

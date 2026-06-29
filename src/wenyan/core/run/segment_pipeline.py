@@ -13,7 +13,9 @@ from wenyan.core.ports.artifact_ref import (
 )
 from wenyan.core.ports.artifact_store import ArtifactStore
 from wenyan_models.artifacts.segment import (
+    ContextReviewArtifact,
     GlossReviewArtifact,
+    GrammarReviewArtifact,
     TokenizationReviewArtifact,
 )
 from wenyan_models.domain.enums import ComponentKind, ReviewStatus, UnitStatus
@@ -47,6 +49,8 @@ _REVIEW_REF: dict[ComponentKind, Callable[[DocumentId, SegmentId], ArtifactRef]]
 _REVIEW_MODEL = {
     ComponentKind.REVIEW_SEGMENT_TOKENIZATION: TokenizationReviewArtifact,
     ComponentKind.REVIEW_SEGMENT_GLOSS: GlossReviewArtifact,
+    ComponentKind.REVIEW_SEGMENT_GRAMMAR: GrammarReviewArtifact,
+    ComponentKind.REVIEW_SEGMENT_CONTEXT: ContextReviewArtifact,
 }
 
 
@@ -113,7 +117,7 @@ def read_review_component(
     document_id: DocumentId,
     segment_id: SegmentId,
     component: ComponentKind,
-) -> TokenizationReviewArtifact | GlossReviewArtifact | None:
+) -> TokenizationReviewArtifact | GlossReviewArtifact | GrammarReviewArtifact | ContextReviewArtifact | None:
     if component not in _REVIEW_REF:
         return None
     review_ref = _REVIEW_REF[component](document_id, segment_id)

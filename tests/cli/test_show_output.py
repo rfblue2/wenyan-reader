@@ -3,6 +3,7 @@ from pathlib import Path
 from wenyan.bootstrap import build_job_context
 from wenyan.cli.show_output import ShowDisplayContext, render_segment_show
 from wenyan.cli.status_scope import resolve_status_scope, segment_handle_for_id
+from wenyan.core.ports.artifact_ref import segment_context_notes_ref, segment_grammar_notes_ref
 from wenyan.core.show.segment_view import build_segment_show_view
 from wenyan.jobs.context import JobOptions
 from wenyan.jobs.gloss_segment import run_gloss_segment
@@ -14,6 +15,7 @@ from wenyan.jobs.split_segments import run_split_segments
 from wenyan.jobs.tokenize_segment import run_tokenize_segment
 from wenyan_models.domain.enums import ReviewStatus, UnitStatus
 from wenyan_models.domain.targets import single_segment_target
+from wenyan_models.artifacts.segment import ContextNotesArtifact, GrammarNotesArtifact, NoteItem, NoteSource
 from conftest import install_sunzi_chapter_proposal
 
 
@@ -176,3 +178,147 @@ def test_render_segment_show_rejected_gloss_review(tmp_workspace: Path, monkeypa
         review for review in payload.reviews if review.kind.value == "review-segment-gloss"
     )
     assert gloss_review.status == ReviewStatus.REJECTED
+
+
+def test_render_segment_show_displays_context_review_findings(tmp_workspace: Path) -> None:
+    from wenyan.core.ports.artifact_ref import segment_context_review_ref
+    from wenyan_models.artifacts.segment import ContextReviewArtifact
+
+    ctx, doc_id, segment_id_value = _prepare_segment_with_glosses(tmp_workspace)
+    ctx.artifacts.write(
+        segment_context_review_ref(doc_id, segment_id_value),
+        ContextReviewArtifact(
+            segmentId=segment_id_value,
+            model="mock",
+            inputHash="sha256:test",
+            attempts=1,
+            status=ReviewStatus.REJECTED,
+            findings=(
+                {
+                    "noteId": "note-1",
+                    "reason": "Unsupported historical claim without sources.",
+                },
+            ),
+        ),
+        dry_run=False,
+    )
+    payload = build_segment_show_view(
+        ctx.artifacts,
+        tmp_workspace,
+        document_id=doc_id,
+        document_ref="sunzi-bingfa",
+        segment_id=segment_id_value,
+    )
+    output = render_segment_show(payload, ShowDisplayContext())
+
+    assert "Unsupported historical claim without sources." in output
+    context_review = next(
+        review for review in payload.reviews if review.kind.value == "review-segment-context"
+    )
+    assert len(context_review.finding_lines) == 1
+
+
+def test_build_segment_show_view_includes_notes(tmp_workspace: Path) -> None:
+    ctx, doc_id, segment_id_value = _prepare_segment_with_glosses(tmp_workspace)
+    token_id = build_segment_show_view(
+        ctx.artifacts,
+        tmp_workspace,
+        document_id=doc_id,
+        document_ref="sunzi-bingfa",
+        segment_id=segment_id_value,
+    ).tokens[0].token_id
+    grammar = GrammarNotesArtifact(
+        segmentId=segment_id_value,
+        model="mock",
+        inputHash="sha256:test",
+        attempts=1,
+        grammarNotes=(
+            NoteItem(
+                id="note-1",
+                type="grammar",
+                anchorTokenIds=(token_id,),
+                body="Title segment heading.",
+            ),
+        ),
+    )
+    ctx.artifacts.write(segment_grammar_notes_ref(doc_id, segment_id_value), grammar, dry_run=False)
+    ctx.artifacts.write(
+        segment_context_notes_ref(doc_id, segment_id_value),
+        ContextNotesArtifact(
+            segmentId=segment_id_value,
+            model="mock",
+            inputHash="sha256:test",
+            attempts=1,
+            contextNotes=(
+                NoteItem(
+                    id="note-2",
+                    type="context",
+                    anchorTokenIds=(token_id,),
+                    body="Chapter title for 始計.",
+                    sources=(
+                        NoteSource(
+                            sourceId="src-001",
+                            label="Commentary",
+                            detail="Chapter heading context.",
+                        ),
+                    ),
+                ),
+            ),
+        ),
+        dry_run=False,
+    )
+
+    payload = build_segment_show_view(
+        ctx.artifacts,
+        tmp_workspace,
+        document_id=doc_id,
+        document_ref="sunzi-bingfa",
+        segment_id=segment_id_value,
+    )
+
+    assert len(payload.grammar_notes) == 1
+    assert payload.grammar_notes[0].body == "Title segment heading."
+    assert payload.grammar_notes[0].anchor_surfaces == (payload.tokens[0].surface,)
+    assert len(payload.context_notes) == 1
+    assert payload.context_notes[0].sources[0].label == "Commentary"
+
+
+def test_render_segment_show_displays_notes(tmp_workspace: Path) -> None:
+    ctx, doc_id, segment_id_value = _prepare_segment_with_glosses(tmp_workspace)
+    token_id = build_segment_show_view(
+        ctx.artifacts,
+        tmp_workspace,
+        document_id=doc_id,
+        document_ref="sunzi-bingfa",
+        segment_id=segment_id_value,
+    ).tokens[0].token_id
+    ctx.artifacts.write(
+        segment_grammar_notes_ref(doc_id, segment_id_value),
+        GrammarNotesArtifact(
+            segmentId=segment_id_value,
+            model="mock",
+            inputHash="sha256:test",
+            attempts=1,
+            grammarNotes=(
+                NoteItem(
+                    id="note-1",
+                    type="grammar",
+                    anchorTokenIds=(token_id,),
+                    body="Title segment heading.",
+                ),
+            ),
+        ),
+        dry_run=False,
+    )
+    payload = build_segment_show_view(
+        ctx.artifacts,
+        tmp_workspace,
+        document_id=doc_id,
+        document_ref="sunzi-bingfa",
+        segment_id=segment_id_value,
+    )
+    output = render_segment_show(payload, ShowDisplayContext())
+
+    assert "Grammar notes" in output
+    assert "Title segment heading." in output
+    assert payload.tokens[0].surface in output

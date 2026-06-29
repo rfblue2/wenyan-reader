@@ -46,6 +46,14 @@ class MockLLMClient(LLMClient):
             return self._glosses(prompt, model)
         if name == "segment-gloss-review":
             return self._gloss_review(prompt, model)
+        if name == "segment-grammar":
+            return self._grammar_notes(prompt, model)
+        if name == "segment-grammar-review":
+            return self._grammar_review(prompt, model)
+        if name == "segment-context":
+            return self._context_notes(prompt, model)
+        if name == "segment-context-review":
+            return self._context_review(prompt, model)
         fixture_path = self._fixture_dir / f"{name}.json"
         if not fixture_path.is_file():
             raise LLMParseError(f"no fixture for prompt template: {name}")
@@ -239,6 +247,78 @@ class MockLLMClient(LLMClient):
 
     def _gloss_review[T: BaseModel](self, prompt: StructuredPrompt, model: type[T]) -> T:
         fixture_path = self._fixture_dir / "segment-gloss-review.json"
+        payload = json.loads(fixture_path.read_text(encoding="utf-8"))
+        if isinstance(prompt, RenderedPrompt):
+            payload["segmentId"] = prompt.context_value("segment_id")
+            payload["inputHash"] = prompt.context_value("review_input_hash")
+        else:
+            rendered = prompt.render({})
+            payload["segmentId"] = _context_value(rendered, "segment_id")
+            payload["inputHash"] = _context_value(rendered, "review_input_hash")
+        return TypeAdapter(model).validate_python(payload)
+
+    def _grammar_notes[T: BaseModel](self, prompt: StructuredPrompt, model: type[T]) -> T:
+        if isinstance(prompt, RenderedPrompt):
+            segment_id_value = prompt.context_value("segment_id")
+            input_hash = prompt.context_value("input_hash")
+            tokenization = json.loads(prompt.context_value("tokenization_json"))
+        else:
+            rendered = prompt.render({})
+            segment_id_value = _context_value(rendered, "segment_id")
+            input_hash = _context_value(rendered, "input_hash")
+            tokenization = json.loads(_extract_section(rendered, "Tokenization:", "Local context:"))
+        grammar_notes: list[dict[str, object]] = []
+        zhi_tokens = [token for token in tokenization["tokens"] if token["surface"] == "之"]
+        if zhi_tokens:
+            grammar_notes.append(
+                {
+                    "id": str(uuid.uuid4()),
+                    "type": "grammar",
+                    "anchorTokenIds": [zhi_tokens[0]["id"]],
+                    "body": "之 links the modifier to its head noun.",
+                    "sources": [],
+                },
+            )
+        payload = {
+            "segmentId": segment_id_value,
+            "model": "mock",
+            "inputHash": input_hash,
+            "attempts": 1,
+            "grammarNotes": grammar_notes,
+        }
+        return TypeAdapter(model).validate_python(payload)
+
+    def _grammar_review[T: BaseModel](self, prompt: StructuredPrompt, model: type[T]) -> T:
+        fixture_path = self._fixture_dir / "segment-grammar-review.json"
+        payload = json.loads(fixture_path.read_text(encoding="utf-8"))
+        if isinstance(prompt, RenderedPrompt):
+            payload["segmentId"] = prompt.context_value("segment_id")
+            payload["inputHash"] = prompt.context_value("review_input_hash")
+        else:
+            rendered = prompt.render({})
+            payload["segmentId"] = _context_value(rendered, "segment_id")
+            payload["inputHash"] = _context_value(rendered, "review_input_hash")
+        return TypeAdapter(model).validate_python(payload)
+
+    def _context_notes[T: BaseModel](self, prompt: StructuredPrompt, model: type[T]) -> T:
+        if isinstance(prompt, RenderedPrompt):
+            segment_id_value = prompt.context_value("segment_id")
+            input_hash = prompt.context_value("input_hash")
+        else:
+            rendered = prompt.render({})
+            segment_id_value = _context_value(rendered, "segment_id")
+            input_hash = _context_value(rendered, "input_hash")
+        payload = {
+            "segmentId": segment_id_value,
+            "model": "mock",
+            "inputHash": input_hash,
+            "attempts": 1,
+            "contextNotes": [],
+        }
+        return TypeAdapter(model).validate_python(payload)
+
+    def _context_review[T: BaseModel](self, prompt: StructuredPrompt, model: type[T]) -> T:
+        fixture_path = self._fixture_dir / "segment-context-review.json"
         payload = json.loads(fixture_path.read_text(encoding="utf-8"))
         if isinstance(prompt, RenderedPrompt):
             payload["segmentId"] = prompt.context_value("segment_id")

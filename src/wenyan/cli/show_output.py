@@ -8,7 +8,7 @@ from rich.table import Table
 from rich.text import Text
 
 from wenyan_models.domain.enums import ReviewStatus, UnitStatus
-from wenyan_models.show.segment import SegmentShowView
+from wenyan_models.show.segment import NoteShowItem, SegmentShowView
 
 _STATUS_STYLE: dict[UnitStatus, str] = {
     UnitStatus.COMPLETE: "green",
@@ -41,6 +41,9 @@ def render_segment_show(payload: SegmentShowView, context: ShowDisplayContext) -
     console.print()
     if payload.tokens:
         _render_gloss_table(console, payload)
+    if payload.grammar_notes or payload.context_notes:
+        console.print()
+        _render_notes(console, payload)
     if payload.reviews:
         console.print()
         _render_reviews(console, payload)
@@ -92,6 +95,25 @@ def _render_gloss_table(console: Console, payload: SegmentShowView) -> None:
     console.print(table)
 
 
+def _render_notes(console: Console, payload: SegmentShowView) -> None:
+    if payload.grammar_notes:
+        console.print("[bold]Grammar notes[/bold]")
+        for note in payload.grammar_notes:
+            _render_note(console, note)
+    if payload.context_notes:
+        console.print("[bold]Context notes[/bold]")
+        for note in payload.context_notes:
+            _render_note(console, note)
+
+
+def _render_note(console: Console, note: NoteShowItem) -> None:
+    anchors = ", ".join(note.anchor_surfaces) if note.anchor_surfaces else "—"
+    console.print(f"  [{anchors}]  {note.body}")
+    for source in note.sources:
+        detail = f" — {source.detail}" if source.detail else ""
+        console.print(f"    [dim]Source: {source.label}{detail}[/dim]")
+
+
 def _render_reviews(console: Console, payload: SegmentShowView) -> None:
     console.print("[bold]Reviews[/bold]")
     for review in payload.reviews:
@@ -100,10 +122,17 @@ def _render_reviews(console: Console, payload: SegmentShowView) -> None:
         line.append("  ")
         line.append(review.status.value, style=_REVIEW_STYLE[review.status])
         console.print(line)
-        for finding in review.findings:
-            message = finding.get("message")
-            if isinstance(message, str) and message:
-                console.print(f"  • {message}", style="red" if review.status == ReviewStatus.REJECTED else None)
+        style = "red" if review.status == ReviewStatus.REJECTED else None
+        for finding_line in review.finding_lines:
+            console.print(f"  • {finding_line}", style=style)
+        for item in review.source_grounding:
+            note_id = item.get("noteId")
+            supported = item.get("supported")
+            source_ids = item.get("sourceIds")
+            if note_id is not None:
+                console.print(
+                    f"    [dim]Grounding note {note_id}: supported={supported}, sources={source_ids}[/dim]",
+                )
 
 
 def _render_components(console: Console, payload: SegmentShowView) -> None:
@@ -112,6 +141,4 @@ def _render_components(console: Console, payload: SegmentShowView) -> None:
         line = Text()
         line.append(component.status.value, style=_STATUS_STYLE[component.status])
         line.append(f"  {component.kind.value}")
-        if component.blocked_reason:
-            line.append(f"  {component.blocked_reason}", style="red")
         console.print(line)

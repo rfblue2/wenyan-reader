@@ -301,7 +301,14 @@ Each focused segment command writes its own artifact so tokenization, glossing, 
 ```json
 {
   "segmentId": "d70e05cc-a271-43e6-9abd-40c97c83bb96",
-  "grammarNotes": []
+  "grammarNotes": [
+    {
+      "id": "6f79c527-259a-4e7e-8c51-8c2f71d801c2",
+      "type": "grammar",
+      "anchorTokenIds": ["3723a8d9-6621-40e7-b444-2fcb3dcbcdcb"],
+      "body": "見 here is used in the sense of having an audience with a superior."
+    }
+  ]
 }
 ```
 
@@ -310,7 +317,21 @@ Each focused segment command writes its own artifact so tokenization, glossing, 
 ```json
 {
   "segmentId": "d70e05cc-a271-43e6-9abd-40c97c83bb96",
-  "contextNotes": []
+  "contextNotes": [
+    {
+      "id": "8a12b634-370b-51f8-9d63-a3e4e812d3d4",
+      "type": "context",
+      "anchorTokenIds": ["3723a8d9-6621-40e7-b444-2fcb3dcbcdcb"],
+      "body": "Mencius is being introduced in an audience with a ruler.",
+      "sources": [
+        {
+          "sourceId": "src-001",
+          "label": "Mencius 1A1",
+          "detail": "Used to verify the immediate passage context."
+        }
+      ]
+    }
+  ]
 }
 ```
 

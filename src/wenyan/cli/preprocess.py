@@ -14,12 +14,16 @@ from wenyan.core.adapters.filesystem_graph_validator import FilesystemGraphValid
 from wenyan.core.adapters.filesystem_status_reader import FilesystemStatusReader
 from wenyan.core.show.segment_view import build_segment_show_view
 from wenyan.core.status.derivation import find_segment_location
+from wenyan.jobs.annotate_segment_context import run_annotate_segment_context
+from wenyan.jobs.annotate_segment_grammar import run_annotate_segment_grammar
 from wenyan.jobs.context import JobOptions
 from wenyan.jobs.ingest_document import run_ingest_document
 from wenyan.jobs.prune_orphan_segments import run_prune_orphan_segments
 from wenyan.jobs.run_preprocess import RunPlan, run_preprocess
 from wenyan.jobs.gloss_segment import run_gloss_segment
+from wenyan.jobs.review_segment_context import run_review_segment_context
 from wenyan.jobs.review_segment_gloss import run_review_segment_gloss
+from wenyan.jobs.review_segment_grammar import run_review_segment_grammar
 from wenyan.jobs.review_segment_tokenization import run_review_segment_tokenization
 from wenyan.jobs.split_paragraphs import run_split_paragraphs
 from wenyan.jobs.split_segments import run_split_segments
@@ -226,6 +230,118 @@ def review_segment_gloss_cmd(
     entry = ctx.registry.resolve(document)
     doc_id = entry.document_id or document_id(document)
     outcome = run_review_segment_gloss(
+        ctx,
+        doc_id,
+        segment_id(segment),
+        _job_options(force, dry_run),
+    )
+    if as_json:
+        typer.echo(json.dumps({"outcome": outcome.model_dump(by_alias=True)}))
+    else:
+        typer.echo(_outcome_message(outcome))
+    raise typer.Exit(outcome_exit_code(outcome))
+
+
+@preprocess_app.command("annotate-segment-grammar")
+def annotate_segment_grammar_cmd(
+    document: Annotated[str, typer.Argument(help="Document UUID or slug")],
+    segment: Annotated[str | None, typer.Option("--segment", help="Single segment UUID")] = None,
+    paragraph: Annotated[
+        str | None,
+        typer.Option("--paragraph", help="Run all pending segments under this paragraph"),
+    ] = None,
+    force: bool = force_option,
+    dry_run: bool = dry_run_option,
+    as_json: bool = json_option,
+) -> None:
+    """Draft grammar notes anchored to segment tokens."""
+    if (segment is None) == (paragraph is None):
+        raise typer.BadParameter("provide exactly one of --segment or --paragraph")
+    ctx = build_job_context(_repo_root())
+    entry = ctx.registry.resolve(document)
+    doc_id = entry.document_id or document_id(document)
+    target = (
+        single_segment_target(segment_id(segment))
+        if segment is not None
+        else paragraph_batch_target(paragraph_id(paragraph or ""))
+    )
+    outcome = run_annotate_segment_grammar(ctx, doc_id, target, _job_options(force, dry_run))
+    if as_json:
+        typer.echo(json.dumps({"outcome": outcome.model_dump(by_alias=True)}))
+    else:
+        typer.echo(_outcome_message(outcome))
+    raise typer.Exit(outcome_exit_code(outcome))
+
+
+@preprocess_app.command("review-segment-grammar")
+def review_segment_grammar_cmd(
+    document: Annotated[str, typer.Argument(help="Document UUID or slug")],
+    segment: Annotated[str, typer.Option("--segment", help="Segment UUID")],
+    force: bool = force_option,
+    dry_run: bool = dry_run_option,
+    as_json: bool = json_option,
+) -> None:
+    """Review grammar notes for accuracy and usefulness."""
+    ctx = build_job_context(_repo_root())
+    entry = ctx.registry.resolve(document)
+    doc_id = entry.document_id or document_id(document)
+    outcome = run_review_segment_grammar(
+        ctx,
+        doc_id,
+        segment_id(segment),
+        _job_options(force, dry_run),
+    )
+    if as_json:
+        typer.echo(json.dumps({"outcome": outcome.model_dump(by_alias=True)}))
+    else:
+        typer.echo(_outcome_message(outcome))
+    raise typer.Exit(outcome_exit_code(outcome))
+
+
+@preprocess_app.command("annotate-segment-context")
+def annotate_segment_context_cmd(
+    document: Annotated[str, typer.Argument(help="Document UUID or slug")],
+    segment: Annotated[str | None, typer.Option("--segment", help="Single segment UUID")] = None,
+    paragraph: Annotated[
+        str | None,
+        typer.Option("--paragraph", help="Run all pending segments under this paragraph"),
+    ] = None,
+    force: bool = force_option,
+    dry_run: bool = dry_run_option,
+    as_json: bool = json_option,
+) -> None:
+    """Draft segment-local context notes with source grounding."""
+    if (segment is None) == (paragraph is None):
+        raise typer.BadParameter("provide exactly one of --segment or --paragraph")
+    ctx = build_job_context(_repo_root())
+    entry = ctx.registry.resolve(document)
+    doc_id = entry.document_id or document_id(document)
+    target = (
+        single_segment_target(segment_id(segment))
+        if segment is not None
+        else paragraph_batch_target(paragraph_id(paragraph or ""))
+    )
+    outcome = run_annotate_segment_context(ctx, doc_id, target, _job_options(force, dry_run))
+    if as_json:
+        typer.echo(json.dumps({"outcome": outcome.model_dump(by_alias=True)}))
+    else:
+        typer.echo(_outcome_message(outcome))
+    raise typer.Exit(outcome_exit_code(outcome))
+
+
+@preprocess_app.command("review-segment-context")
+def review_segment_context_cmd(
+    document: Annotated[str, typer.Argument(help="Document UUID or slug")],
+    segment: Annotated[str, typer.Option("--segment", help="Segment UUID")],
+    force: bool = force_option,
+    dry_run: bool = dry_run_option,
+    as_json: bool = json_option,
+) -> None:
+    """Review context notes for usefulness and grounding."""
+    ctx = build_job_context(_repo_root())
+    entry = ctx.registry.resolve(document)
+    doc_id = entry.document_id or document_id(document)
+    outcome = run_review_segment_context(
         ctx,
         doc_id,
         segment_id(segment),
@@ -495,10 +611,6 @@ def validate_artifacts_cmd(
 
 _STUB_HELP: dict[str, str] = {
     "review-paragraph-structure": "Review segment boundaries and paragraph structure quality.",
-    "annotate-segment-grammar": "Draft grammar notes anchored to segment tokens.",
-    "review-segment-grammar": "Review grammar notes for accuracy and usefulness.",
-    "annotate-segment-context": "Draft segment-local context notes with source grounding.",
-    "review-segment-context": "Review context notes for usefulness and grounding.",
     "assemble-paragraph": "Assemble completed segment outputs into a reader paragraph file.",
     "package-document": "Build validated reader package files under content/documents/.",
     "review-report": "Print the latest review report for a segment or component.",
