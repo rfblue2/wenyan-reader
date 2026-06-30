@@ -407,14 +407,8 @@ def _rollup_paragraph_status(paragraph: ParagraphStatus) -> UnitStatus:
         return UnitStatus.BLOCKED
     if paragraph.structure.status != UnitStatus.COMPLETE:
         return UnitStatus.PENDING
-    if paragraph.assembly is not None:
-        if paragraph.assembly.review.status == UnitStatus.BLOCKED:
-            return UnitStatus.BLOCKED
-        if (
-            paragraph.assembly.assemble.status == UnitStatus.COMPLETE
-            and paragraph.assembly.review.status == UnitStatus.COMPLETE
-        ):
-            return UnitStatus.COMPLETE
+    if paragraph.assembly is not None and paragraph.assembly.status == UnitStatus.COMPLETE:
+        return UnitStatus.COMPLETE
     if paragraph.counts.segments:
         if paragraph.counts.complete or paragraph.counts.in_progress:
             return UnitStatus.IN_PROGRESS

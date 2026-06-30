@@ -74,7 +74,7 @@ def test_paragraph_status_lists_segments(tmp_workspace: Path) -> None:
     assert payload.structure.segment_count is not None
     assert payload.counts.segments == len(payload.segments)
     assert payload.assembly is not None
-    assert payload.assembly.assemble.status == UnitStatus.PENDING
+    assert payload.assembly.status == UnitStatus.PENDING
     first_segment = next(item for item in payload.segments if item.segment_id == str(segment_id_value))
     assert first_segment.ordinal == 1
     assert first_segment.text_preview
@@ -93,7 +93,7 @@ def test_paragraph_status_in_progress_when_all_segments_complete(tmp_workspace: 
 
     assert payload.counts.complete == payload.counts.segments
     assert payload.assembly is not None
-    assert payload.assembly.assemble.status == UnitStatus.PENDING
+    assert payload.assembly.status == UnitStatus.PENDING
     assert paragraph_item.status == UnitStatus.IN_PROGRESS
 
 

@@ -69,13 +69,14 @@ Each box after `Build Minimal Context` writes its own output artifact. Tokenizat
 flowchart TD
   SegmentOutputs[Accepted Segment Subjob Outputs] --> Assemble[Assemble Paragraph In Memory]
   ParagraphContext[Paragraph Context Notes] --> Assemble
-  Assemble --> Validate[Validate Paragraph Reconstruction]
-  Validate --> Review[Paragraph Package Review]
-  Review --> Accept{Accept?}
-  Accept -->|Yes| WriteFiles[Write Paragraph File]
-  Accept -->|No| Repair[Repair Or Block]
+  Assemble --> Validate[Validate Paragraph Package]
+  Validate --> Accept{Accept?}
+  Accept -->|Yes| StagePackage[Write package.json To Preprocess]
+  Accept -->|No| Repair[Repair Upstream Segment Subjobs]
   Repair --> Assemble
 ```
+
+Deterministic validation runs during `assemble-paragraph`. There is no LLM review at assembly time; segment subjob reviews are the editorial gate. `package-document` promotes validated packages to `content/`.
 
 ## Rate Limiting And Resumability
 

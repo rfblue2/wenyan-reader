@@ -113,4 +113,4 @@ Committed artifacts under `preprocess/documents/` let CI resume or validate the 
 - [CLI spec](architecture/cli-spec.md) — commands, options, and status payloads
 - [Preprocessing overview](architecture/preprocessing/README.md) — pipeline stages and design principles
 
-Several later-stage commands (`gloss-segment`, `package-document`, `run`, etc.) are registered but not yet implemented in the current vertical slice.
+Several later-stage commands (`run`, etc.) are registered but not yet fully implemented in the current vertical slice.

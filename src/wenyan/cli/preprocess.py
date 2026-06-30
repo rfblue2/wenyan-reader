@@ -31,6 +31,7 @@ from wenyan.core.adapters.filesystem_graph_validator import FilesystemGraphValid
 from wenyan.core.adapters.filesystem_status_reader import FilesystemStatusReader
 from wenyan.core.show.segment_view import build_segment_show_view
 from wenyan.jobs.assemble_paragraph import run_assemble_paragraph
+from wenyan.jobs.package_document import run_package_document
 from wenyan.jobs.annotate_segment_context import run_annotate_segment_context
 from wenyan.jobs.annotate_segment_grammar import run_annotate_segment_grammar
 from wenyan.jobs.context import JobOptions
@@ -38,7 +39,6 @@ from wenyan.jobs.ingest_document import run_ingest_document
 from wenyan.jobs.prune_orphan_segments import run_prune_orphan_segments
 from wenyan.jobs.run_preprocess import run_preprocess
 from wenyan.jobs.gloss_segment import run_gloss_segment
-from wenyan.jobs.review_paragraph_assembly import run_review_paragraph_assembly
 from wenyan.jobs.review_segment_context import run_review_segment_context
 from wenyan.jobs.review_segment_gloss import run_review_segment_gloss
 from wenyan.jobs.review_segment_grammar import run_review_segment_grammar
@@ -538,34 +538,18 @@ def assemble_paragraph_cmd(
     raise typer.Exit(outcome_exit_code(outcome))
 
 
-@preprocess_app.command("review-paragraph-assembly")
-def review_paragraph_assembly_cmd(
+@preprocess_app.command("package-document")
+def package_document_cmd(
     document: Annotated[str, typer.Argument(help="Document UUID or slug")],
-    paragraph: RequiredParagraphOption,
-    chapter: ChapterOption = None,
     force: bool = force_option,
     dry_run: bool = dry_run_option,
     as_json: bool = json_option,
 ) -> None:
-    """Review assembled paragraph package for reader readiness."""
+    """Build validated reader package files under content/documents/."""
     ctx, doc_id = resolve_document_context(document)
-    outcome = run_review_paragraph_assembly(
-        ctx,
-        doc_id,
-        paragraph_id_from_ref(ctx, doc_id, paragraph, chapter=chapter),
-        job_options(force, dry_run),
-    )
+    outcome = run_package_document(ctx, doc_id, job_options(force, dry_run))
     emit_job_outcome(outcome, as_json=as_json)
     raise typer.Exit(outcome_exit_code(outcome))
-
-
-@preprocess_app.command("package-document")
-def package_document_cmd(
-    document: Annotated[str, typer.Argument(help="Document UUID or slug")],
-) -> None:
-    """Build validated reader package files under content/documents/."""
-    typer.echo("package-document is not implemented in this slice", err=True)
-    raise typer.Exit(2)
 
 
 @preprocess_app.command("review-report")

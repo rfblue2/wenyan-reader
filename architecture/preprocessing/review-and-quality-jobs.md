@@ -272,28 +272,11 @@ Failure behavior:
 - Write the review artifact with findings and required fixes.
 - Exit non-zero on rejection; block only the context subjob.
 
-### Paragraph Package Review
+### Paragraph Assembly Validation
 
-Scope: paragraph assembly job.
+Scope: `assemble-paragraph` (deterministic only).
 
-Inputs:
-
-- Original paragraph.
-- Paragraph structure draft.
-- Completed segment outputs.
-- Assembled paragraph package.
-
-Review checklist:
-
-- The assembled paragraph still reads as the original paragraph.
-- Segment outputs are internally consistent when read together.
-- Paragraph-level context notes do not duplicate or conflict with segment-local notes.
-- New gloss introductions are pedagogically sensible in paragraph context.
-
-Failure behavior:
-
-- Write `jobs/assembly/paragraph-id/review.json` with findings.
-- Exit non-zero on rejection; prefer blocking the specific segment or paragraph-level note that caused the failure.
+Assembly does not introduce new editorial content. Validation checks reconstruction, schema shape, gloss references, and note anchors. Cross-segment editorial quality is covered by segment subjob reviews. There is no LLM paragraph assembly review step.
 
 ### Document Consistency Review
 

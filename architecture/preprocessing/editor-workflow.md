@@ -161,11 +161,10 @@ Once all segment subjobs for a paragraph are complete (all eight subjobs with ap
 
 ```shell
 wenyan preprocess assemble-paragraph <document-id> --paragraph <paragraph-id>
-wenyan preprocess review-paragraph-assembly <document-id> --paragraph <paragraph-id>
 wenyan preprocess status <document-id> --paragraph <paragraph-id>
 ```
 
-The editor reviews the staged `jobs/assembly/paragraph-id/package.json` and assembly review before packaging. A paragraph is not complete until both assembly commands succeed. See [Storage Format](../storage-format.md) for the reader paragraph schema.
+The editor reviews the staged `jobs/assembly/paragraph-id/package.json` before packaging. A paragraph is complete when `assemble-paragraph` succeeds. See [Storage Format](../storage-format.md) for the reader paragraph schema.
 
 
 
@@ -177,7 +176,7 @@ After enough paragraphs are complete, the editor can package the document:
 wenyan preprocess package-document <document-id>
 ```
 
-**Stubbed.** When implemented, `package-document` promotes approved `jobs/assembly/paragraph-id/package.json` files to `content/documents/document-id/chapters/chapter-id/paragraphs/paragraph-id.json` and builds the rest of the reader package.
+`package-document` promotes validated `jobs/assembly/paragraph-id/package.json` files to `content/documents/document-id/chapters/chapter-id/paragraphs/paragraph-id.json` and builds the rest of the reader package (`document.json`, `glosses/index.json`, chapter manifests). Only paragraphs with passed assembly validation are included.
 
 The editor reviews the packaged reader files through normal code review before adding them to the collection.
 

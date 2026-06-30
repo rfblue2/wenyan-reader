@@ -29,13 +29,6 @@ class SegmentStatusItem(BaseModel):
     blocked_component: ComponentKind | None = Field(default=None, alias="blockedComponent")
 
 
-class ParagraphAssemblyStatus(BaseModel):
-    model_config = DEFAULT_ARTIFACT_CONFIG
-
-    assemble: ComponentStatusItem
-    review: ComponentStatusItem
-
-
 class ParagraphStatus(BaseModel):
     model_config = DEFAULT_ARTIFACT_CONFIG
 
@@ -46,4 +39,4 @@ class ParagraphStatus(BaseModel):
     structure: ParagraphStructureStatus
     counts: StatusCounts
     segments: tuple[SegmentStatusItem, ...] = ()
-    assembly: ParagraphAssemblyStatus | None = None
+    assembly: ComponentStatusItem | None = None

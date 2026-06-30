@@ -43,10 +43,9 @@ A segment is **finished** when all eight subjobs have approved review artifacts:
 
 When every segment in a paragraph is finished, run assembly explicitly — `run preprocess` does not auto-advance:
 
-1. `assemble-paragraph` — deterministic compile to `jobs/assembly/<paragraph-id>/package.json`
-2. `review-paragraph-assembly` — LLM review; writes `review.json` only (no write to `content/`)
+1. `assemble-paragraph` — deterministic compile to `jobs/assembly/<paragraph-id>/package.json` + `validation.json`
 
-A paragraph is not complete until both assembly steps pass. See [Storage Format](../../../architecture/storage-format.md) for the reader paragraph schema.
+A paragraph is complete when assembly validation passes. See [Storage Format](../../../architecture/storage-format.md) for the reader paragraph schema.
 
 ## Slice scope (current implementation)
 
@@ -57,11 +56,11 @@ A paragraph is not complete until both assembly steps pass. See [Storage Format]
 | `gloss-segment`, `review-segment-gloss` | Implemented |
 | `annotate-segment-grammar`, `review-segment-grammar` | Implemented (CLI) |
 | `annotate-segment-context`, `review-segment-context` | Stubbed — use context skills |
-| `assemble-paragraph`, `review-paragraph-assembly` | Implemented — run explicitly after all segments in a paragraph complete |
+| `assemble-paragraph` | Implemented — run explicitly after all segments in a paragraph complete |
 | `show` | Implemented |
 | `prune` | Implemented |
 | `run` | Chains segment subjobs only; does not auto-assemble |
-| `package-document` | Stubbed — promotes approved `package.json` to `content/` when implemented |
+| `package-document` | Promotes validated `package.json` files to `content/` |
 
 ## LLM backend
 
@@ -78,7 +77,7 @@ uv run wenyan preprocess ...
 - [ ] 2. Paragraph proposal for target chapter
 - [ ] 3. Segment drafts for target paragraph(s)
 - [ ] 4. Each segment fully preprocessed (all subjobs + reviews)
-- [ ] 5. Paragraph assembly (`assemble-paragraph`, then `review-paragraph-assembly`)
+- [ ] 5. Paragraph assembly (`assemble-paragraph`)
 - [ ] 6. Editor inspected artifacts; advance or repair
 ```
 
@@ -115,7 +114,6 @@ After all segments in a paragraph are complete:
 
 ```shell
 uv run wenyan preprocess assemble-paragraph <slug> --paragraph <paragraph-id>
-uv run wenyan preprocess review-paragraph-assembly <slug> --paragraph <paragraph-id>
 uv run wenyan preprocess status <slug> --paragraph <paragraph-id>
 ```
 

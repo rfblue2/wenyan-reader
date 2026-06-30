@@ -126,13 +126,13 @@ def _render_paragraph(console: Console, payload: ParagraphStatus, context: Statu
     if payload.assembly is not None:
         console.print()
         console.print("[bold]Assembly[/bold]")
-        for component in (payload.assembly.assemble, payload.assembly.review):
-            line = Text()
-            line.append(component.status.value, style=_STATUS_STYLE[component.status])
-            line.append(f"  {component.kind.value}")
-            if component.blocked_reason:
-                line.append(f"  {component.blocked_reason}", style="red")
-            console.print(line)
+        component = payload.assembly
+        line = Text()
+        line.append(component.status.value, style=_STATUS_STYLE[component.status])
+        line.append(f"  {component.kind.value}")
+        if component.blocked_reason:
+            line.append(f"  {component.blocked_reason}", style="red")
+        console.print(line)
     console.print()
     if not payload.segments:
         console.print("[dim]No segments yet.[/dim]")

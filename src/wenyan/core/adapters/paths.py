@@ -84,9 +84,6 @@ def artifact_path(repo_root: Path, ref: ArtifactRef) -> Path:
         case ArtifactKind.PARAGRAPH_ASSEMBLY_VALIDATION:
             paragraph_id = _require(ref.paragraph_id, ref.kind, "paragraph_id")
             return root / "jobs" / "assembly" / str(paragraph_id) / "validation.json"
-        case ArtifactKind.PARAGRAPH_ASSEMBLY_REVIEW:
-            paragraph_id = _require(ref.paragraph_id, ref.kind, "paragraph_id")
-            return root / "jobs" / "assembly" / str(paragraph_id) / "review.json"
         case ArtifactKind.PACKAGE_VALIDATION:
             return root / "jobs" / "package" / "validation.json"
 

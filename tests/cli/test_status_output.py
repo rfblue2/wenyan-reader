@@ -105,7 +105,6 @@ def test_render_paragraph_status_shows_assembly_section(tmp_workspace: Path) -> 
     )
     assert "Assembly" in output
     assert "assemble-paragraph" in output
-    assert "review-paragraph-assembly" in output
 
 
 def test_paragraph_number_requires_chapter(tmp_workspace: Path) -> None:

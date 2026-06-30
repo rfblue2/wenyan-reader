@@ -81,7 +81,6 @@ preprocess/documents/document-id/
       paragraph-id/
         package.json
         validation.json
-        review.json
     package/
       validation.json
 ```
@@ -338,18 +337,17 @@ Each focused segment command writes its own artifact so tokenization, glossing, 
 
 ## Paragraph Assembly
 
-Paragraph assembly is two explicit commands that mirror the segment draft/review pattern:
+Paragraph assembly is a single deterministic command after all segment subjobs complete:
 
 ```text
 all segment subjobs complete (×8 per segment)
   → assemble-paragraph          # deterministic compile + validation
-  → review-paragraph-assembly   # LLM review
-  → package-document            # promotes approved packages to content/ (stubbed)
+  → package-document            # promotes validated packages to content/
 ```
 
-`assemble-paragraph` deterministically joins the paragraph draft and accepted segment subjob outputs into a reader-shaped `package.json` under `jobs/assembly/paragraph-id/`. `review-paragraph-assembly` writes `review.json` only; it does not write to `content/`. A paragraph is not complete until both assembly steps pass.
+`assemble-paragraph` joins the paragraph draft and accepted segment subjob outputs into a reader-shaped `package.json` under `jobs/assembly/paragraph-id/` and writes `validation.json`. It does not call an LLM and does not write to `content/`. A paragraph is complete when assembly validation passes.
 
-Deleting or changing any segment subjob output invalidates `package.json`, `validation.json`, and `review.json` for that paragraph. See [CLI Spec](../cli-spec.md) for command behavior.
+Deleting or changing any segment subjob output invalidates `package.json` and `validation.json` for that paragraph. See [CLI Spec](../cli-spec.md) for command behavior.
 
 ## Paragraph Assembly Package (`package.json`)
 

@@ -51,7 +51,6 @@ _SCOPES: dict[ArtifactKind, _Scope] = {
     ArtifactKind.PARAGRAPH_DRAFT_REVIEW: _PARAGRAPH_SCOPE,
     ArtifactKind.PARAGRAPH_ASSEMBLY_PACKAGE: _PARAGRAPH_SCOPE,
     ArtifactKind.PARAGRAPH_ASSEMBLY_VALIDATION: _PARAGRAPH_SCOPE,
-    ArtifactKind.PARAGRAPH_ASSEMBLY_REVIEW: _PARAGRAPH_SCOPE,
     ArtifactKind.SEGMENT_INPUT: _SEGMENT_SCOPE,
     ArtifactKind.TOKENIZATION: _SEGMENT_SCOPE,
     ArtifactKind.TOKENIZATION_REVIEW: _SEGMENT_SCOPE,
@@ -264,17 +263,6 @@ def paragraph_assembly_validation_ref(
 ) -> ArtifactRef:
     return _make_ref(
         ArtifactKind.PARAGRAPH_ASSEMBLY_VALIDATION,
-        document_id=document_id,
-        paragraph_id=paragraph_id,
-    )
-
-
-def paragraph_assembly_review_ref(
-    document_id: DocumentId,
-    paragraph_id: ParagraphId,
-) -> ArtifactRef:
-    return _make_ref(
-        ArtifactKind.PARAGRAPH_ASSEMBLY_REVIEW,
         document_id=document_id,
         paragraph_id=paragraph_id,
     )

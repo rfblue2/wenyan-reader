@@ -66,10 +66,6 @@ SEGMENT = segment_id("d70e05cc-a271-43e6-9abd-40c97c83bb96")
             lambda: refs.paragraph_assembly_validation_ref(DOC, PARAGRAPH),
             ArtifactKind.PARAGRAPH_ASSEMBLY_VALIDATION,
         ),
-        (
-            lambda: refs.paragraph_assembly_review_ref(DOC, PARAGRAPH),
-            ArtifactKind.PARAGRAPH_ASSEMBLY_REVIEW,
-        ),
         (lambda: refs.package_validation_ref(DOC), ArtifactKind.PACKAGE_VALIDATION),
     ],
 )
@@ -107,7 +103,6 @@ def test_all_kinds_are_covered() -> None:
         refs.glossary_draft_ref(DOC).kind,
         refs.paragraph_assembly_package_ref(DOC, PARAGRAPH).kind,
         refs.paragraph_assembly_validation_ref(DOC, PARAGRAPH).kind,
-        refs.paragraph_assembly_review_ref(DOC, PARAGRAPH).kind,
         refs.package_validation_ref(DOC).kind,
     }
     assert produced == set(ArtifactKind)

@@ -54,15 +54,6 @@ _LLM_PROMPTS: tuple[tuple[str, tuple[str, ...]], ...] = (
             "local_context_json",
         ),
     ),
-    (
-        "review-paragraph-assembly",
-        (
-            "paragraph_id",
-            "review_input_hash",
-            "paragraph_package_json",
-            "paragraph_draft_json",
-        ),
-    ),
 )
 
 
