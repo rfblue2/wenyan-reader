@@ -48,7 +48,6 @@ Read-only inspection commands can use nouns when that reads more naturally:
 wenyan preprocess status <document-id>
 wenyan preprocess validate-artifacts <document-id>
 wenyan preprocess prune <document-id>
-wenyan preprocess show <document-id> --segment <segment-id>
 wenyan preprocess review-report <document-id> --segment <segment-id>
 ```
 
@@ -315,7 +314,7 @@ Runs preprocessing commands in dependency order. With no segment flags, processe
 wenyan preprocess status <document-id>
 wenyan preprocess status <document-id> --chapter <chapter-id>
 wenyan preprocess status <document-id> --paragraph <paragraph-id>
-wenyan preprocess status <document-id> --segment <segment-id>
+wenyan preprocess status <document-id> --segment <segment-id> [--chapter <ref>] [--paragraph <ref>] [--json]
 ```
 
 Scope: document, chapter, paragraph, or segment.
@@ -325,7 +324,14 @@ Reports progress for the next level down:
 - Document status lists chapters.
 - Chapter status lists paragraphs.
 - Paragraph status lists segments.
-- Segment status lists focused components.
+- Segment status shows the segment source text and generated artifacts in an editor-friendly terminal layout:
+  - Location header with chapter/paragraph/segment handles (ordinals when resolvable) and UUIDs.
+  - Gloss table joining token surfaces with pinyin, gloss text, and reuse/create decisions when `glosses.json` exists; token surfaces only when only tokenization exists.
+  - Grammar and context notes when present.
+  - Review status and findings for each present review artifact.
+  - Component summary for all eight segment subjobs.
+
+Use `--json` at segment scope for a structured `SegmentShowView` payload suitable for agents and tooling.
 
 Status output should include a compact rollup of complete, in-progress, pending, failed, and blocked units, plus the last validation or review error per failed or blocked unit.
 
@@ -367,23 +373,6 @@ Scope: document.
 Removes orphaned segment job directories under `jobs/segments/`. A segment is orphaned when its directory exists on disk but its ID is not listed in any current paragraph draft for a paragraph still present in the structure proposals. This typically happens after `split-paragraphs` or `split-segments` is rerun with new boundaries, leaving stale preprocessing artifacts behind.
 
 With `--dry-run`, lists the directories that would be removed without deleting them. When nothing is orphaned, exits zero and reports `no orphaned segments`.
-
-### `show`
-
-```shell
-wenyan preprocess show <document-id> --segment <segment-id> [--chapter <ref>] [--paragraph <ref>] [--json]
-```
-
-Scope: one segment.
-
-Shows the segment source text and generated artifacts in an editor-friendly terminal layout:
-
-- Location header with chapter/paragraph/segment handles (ordinals when resolvable) and UUIDs.
-- Gloss table joining token surfaces with pinyin, gloss text, and reuse/create decisions when `glosses.json` exists; token surfaces only when only tokenization exists.
-- Review status and findings for each present review artifact.
-- Component summary matching `status --segment`.
-
-Use `--json` for a structured `SegmentShowView` payload suitable for agents and tooling.
 
 ### `review-report`
 
@@ -533,19 +522,24 @@ Paragraph-level status lists segments:
 }
 ```
 
-Segment-level status lists focused components:
+Segment-level status returns a `SegmentShowView` with source text, tokens, notes, reviews, and components:
 
 ```json
 {
   "documentId": "9ad841a6-f20f-4f43-9805-166ab2d98e7f",
+  "documentRef": "mengzi",
   "chapterId": "6c708ee9-95c0-4d23-8a4f-8cb5fd62c605",
+  "chapterHandle": "1",
   "paragraphId": "c777d984-afd6-4a31-aa34-2d26d29fb445",
+  "paragraphHandle": "1",
   "segmentId": "d70e05cc-a271-43e6-9abd-40c97c83bb96",
-  "scope": {
-    "type": "segment"
-  },
+  "segmentHandle": "1",
   "text": "孟子見梁惠王。",
   "status": "blocked",
+  "tokens": [],
+  "grammarNotes": [],
+  "contextNotes": [],
+  "reviews": [],
   "components": [
     {
       "kind": "tokenize-segment",

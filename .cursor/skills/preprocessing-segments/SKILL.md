@@ -81,8 +81,8 @@ uv run wenyan preprocess prune <slug> --dry-run
 ### Inspect segment outputs (glosses, reviews)
 
 ```shell
-uv run wenyan preprocess show <slug> --chapter 1 --paragraph 1 --segment 1
-uv run wenyan preprocess show <slug> --segment <segment-uuid> --json
+uv run wenyan preprocess status <slug> --chapter 1 --paragraph 1 --segment 1
+uv run wenyan preprocess status <slug> --segment <segment-uuid> --json
 ```
 
 Use ordinals with `--chapter` / `--paragraph` as needed, or pass a segment UUID directly.
@@ -129,7 +129,7 @@ Context annotate/review commands are stubbed. When `run` reaches context stages 
 - [drafting-context-notes](../drafting-context-notes/SKILL.md) for `context-notes.json`
 - [reviewing-context-notes](../reviewing-context-notes/SKILL.md) for `context-review.json`
 
-The editor only names slug + chapter/paragraph/segment ordinals (e.g. “Draft context notes for sunzi-bingfa chapter 1 paragraph 1 segment 1”). The skill resolves the segment via `preprocess show --json`.
+The editor only names slug + chapter/paragraph/segment ordinals (e.g. “Draft context notes for sunzi-bingfa chapter 1 paragraph 1 segment 1”). The skill resolves the segment via `preprocess status --segment --json`.
 
 Grammar and upstream subjobs may still be complete; use the skills to finish the segment.
 

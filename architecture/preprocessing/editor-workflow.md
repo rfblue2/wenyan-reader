@@ -199,7 +199,6 @@ When status shows a blocked segment, the editor drills into the segment and revi
 
 ```shell
 wenyan preprocess status <document-id> --segment <segment-id>
-wenyan preprocess show <document-id> --segment <segment-id>
 wenyan preprocess review-report <document-id> --segment <segment-id>
 ```
 

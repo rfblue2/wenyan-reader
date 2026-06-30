@@ -2,7 +2,7 @@
 name: drafting-context-notes
 description: >-
   Draft segment-local context notes for a document segment identified by slug
-  and chapter/paragraph/segment ordinals (same as preprocess show). Writes
+  and chapter/paragraph/segment ordinals (same as preprocess status --segment). Writes
   context-notes.json with web-grounded citations. Use when the editor asks to
   draft context notes, when run preprocess stops at context drafting, or for
   sunzi-bingfa ch1 p1 seg1 style requests.
@@ -27,7 +27,7 @@ You do **not** need to paste document UUIDs, artifact paths, JSON schemas, or sk
 ## Agent workflow
 
 ```text
-1. Resolve segment (show --json)
+1. Resolve segment (status --segment --json)
 2. Confirm approved tokenization-review.json
 3. Read tokenization, glosses, paragraph draft (duplication check)
 4. Web-research factual claims
@@ -38,16 +38,16 @@ You do **not** need to paste document UUIDs, artifact paths, JSON schemas, or sk
 
 ## Step 1 — Resolve segment (always use CLI)
 
-**Ordinals (preferred — same as `preprocess show`):**
+**Ordinals (preferred — same as `preprocess status --segment`):**
 
 ```shell
-uv run wenyan preprocess show <slug> --chapter <n> --paragraph <n> --segment <n> --json
+uv run wenyan preprocess status <slug> --chapter <n> --paragraph <n> --segment <n> --json
 ```
 
 Example:
 
 ```shell
-uv run wenyan preprocess show sunzi-bingfa --chapter 1 --paragraph 1 --segment 1 --json
+uv run wenyan preprocess status sunzi-bingfa --chapter 1 --paragraph 1 --segment 1 --json
 ```
 
 From the JSON payload use `segmentId`, `documentId`, `text`, `tokens`, `grammarNotes`, `contextNotes`, `reviews`, `components`.
@@ -55,14 +55,14 @@ From the JSON payload use `segmentId`, `documentId`, `text`, `tokens`, `grammarN
 **Segment UUID only** (chapter/paragraph ordinals optional):
 
 ```shell
-uv run wenyan preprocess show <slug> --segment <segment-uuid> --json
+uv run wenyan preprocess status <slug> --segment <segment-uuid> --json
 ```
 
 **Next gloss-ready segment** (no context review yet):
 
-1. `uv run wenyan preprocess status <slug> --json` or inspect `components` on incomplete segments via `show`.
+1. `uv run wenyan preprocess status <slug> --json` or inspect segment detail via `status --segment`.
 2. Pick the next segment in document order with approved gloss review (if glosses exist) and missing or non-approved context review.
-3. Resolve with `show --json` using that segment’s ordinals or UUID.
+3. Resolve with `status --segment --json` using that segment’s ordinals or UUID.
 
 Artifact directory after resolve:
 

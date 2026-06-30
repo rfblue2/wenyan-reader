@@ -91,9 +91,10 @@ def build_display_context(
     artifacts: ArtifactStore,
     document_id: DocumentId,
     scope: StatusScope,
-) -> tuple[str | None, str | None]:
+) -> tuple[str | None, str | None, str | None]:
     chapter_handle = scope.chapter_handle
     paragraph_handle = scope.paragraph_handle
+    segment_handle = scope.segment_handle
     chapter_id_value = scope.chapter_id
     paragraph_id_value = scope.paragraph_id
     if scope.segment_id is not None and (chapter_id_value is None or paragraph_id_value is None):
@@ -112,7 +113,14 @@ def build_display_context(
             chapter_id_value,
             paragraph_id_value,
         )
-    return chapter_handle, paragraph_handle
+    if scope.segment_id is not None and paragraph_id_value is not None and segment_handle is None:
+        segment_handle = segment_handle_for_id(
+            artifacts,
+            document_id,
+            paragraph_id_value,
+            scope.segment_id,
+        )
+    return chapter_handle, paragraph_handle, segment_handle
 
 
 def segment_handle_for_id(

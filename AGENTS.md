@@ -34,7 +34,7 @@ Most project details live in the architecture docs. Start there before making de
 
 - Follow [Coding Style](architecture/coding-style.md) for Python layer boundaries, Pydantic usage, ports, and static typing.
 - For interactive source normalization and chapter boundaries, use the [preparing-source-structure](.cursor/skills/preparing-source-structure/SKILL.md) skill.
-- For segment-local **context notes** (draft or review), use [drafting-context-notes](.cursor/skills/drafting-context-notes/SKILL.md) and [reviewing-context-notes](.cursor/skills/reviewing-context-notes/SKILL.md). The editor only needs document slug + chapter/paragraph/segment ordinals (same as `preprocess show`); context annotate/review CLI commands are stubbed.
+- For segment-local **context notes** (draft or review), use [drafting-context-notes](.cursor/skills/drafting-context-notes/SKILL.md) and [reviewing-context-notes](.cursor/skills/reviewing-context-notes/SKILL.md). The editor only needs document slug + chapter/paragraph/segment ordinals (same as `preprocess status --segment`); context annotate/review CLI commands are stubbed.
 - Keep architecture docs concise and cross-link rather than duplicating large sections.
 - When changing CLI behavior, update the CLI spec and any affected workflow examples.
 - When changing artifact shapes or status semantics, update the artifact documentation.

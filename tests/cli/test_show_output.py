@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from wenyan.bootstrap import build_job_context
-from wenyan.cli.show_output import ShowDisplayContext, render_segment_show
+from wenyan.cli.status_output import StatusDisplayContext, render_status
 from wenyan.cli.status_scope import resolve_status_scope, segment_handle_for_id
 from wenyan.core.ports.artifact_ref import segment_context_notes_ref, segment_grammar_notes_ref
 from wenyan.core.show.segment_view import build_segment_show_view
@@ -96,9 +96,9 @@ def test_render_segment_show_displays_gloss_table(tmp_workspace: Path) -> None:
         segment_handle="1",
     )
 
-    output = render_segment_show(
+    output = render_status(
         payload,
-        ShowDisplayContext(chapter_handle="1", paragraph_handle="1", segment_handle="1"),
+        StatusDisplayContext(chapter_handle="1", paragraph_handle="1", segment_handle="1"),
     )
 
     assert "sunzi-bingfa" in output
@@ -141,7 +141,7 @@ def test_render_segment_show_tokenization_only(tmp_workspace: Path) -> None:
         document_ref="sunzi-bingfa",
         segment_id=segment_id_value,
     )
-    output = render_segment_show(payload, ShowDisplayContext())
+    output = render_status(payload, StatusDisplayContext())
 
     assert len(payload.tokens) >= 1
     assert all(row.gloss is None for row in payload.tokens)
@@ -176,7 +176,7 @@ def test_render_segment_show_rejected_gloss_review(tmp_workspace: Path, monkeypa
         document_ref="sunzi-bingfa",
         segment_id=segment_id_value,
     )
-    output = render_segment_show(payload, ShowDisplayContext())
+    output = render_status(payload, StatusDisplayContext())
 
     assert "rejected" in output
     assert "Wrong sense for 之." in output
@@ -215,7 +215,7 @@ def test_render_segment_show_displays_context_review_findings(tmp_workspace: Pat
         document_ref="sunzi-bingfa",
         segment_id=segment_id_value,
     )
-    output = render_segment_show(payload, ShowDisplayContext())
+    output = render_status(payload, StatusDisplayContext())
 
     assert "Unsupported historical claim without sources." in output
     context_review = next(
@@ -319,7 +319,7 @@ def test_render_segment_show_displays_notes(tmp_workspace: Path) -> None:
         document_ref="sunzi-bingfa",
         segment_id=segment_id_value,
     )
-    output = render_segment_show(payload, ShowDisplayContext())
+    output = render_status(payload, StatusDisplayContext())
 
     assert "Grammar notes" in output
     assert "Title segment heading." in output

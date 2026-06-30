@@ -3,7 +3,7 @@ name: reviewing-context-notes
 description: >-
   Review segment context notes and write context-review.json. Target segments
   by document slug plus chapter/paragraph/segment ordinals (same as preprocess
-  show), or segment UUID. Use after drafting-context-notes or when the editor
+  status --segment), or segment UUID. Use after drafting-context-notes or when the editor
   asks to review context notes for a segment.
 ---
 
@@ -26,7 +26,7 @@ You do **not** need to paste schemas, hashes, or workflow steps.
 ## Agent workflow
 
 ```text
-1. Resolve segment (show --json)
+1. Resolve segment (status --segment --json)
 2. Read context-notes.json and upstream artifacts
 3. Apply review checklist
 4. Write context-review.json only — never edit context-notes.json
@@ -37,7 +37,7 @@ You do **not** need to paste schemas, hashes, or workflow steps.
 ## Step 1 — Resolve segment
 
 ```shell
-uv run wenyan preprocess show <slug> --chapter <n> --paragraph <n> --segment <n> --json
+uv run wenyan preprocess status <slug> --chapter <n> --paragraph <n> --segment <n> --json
 ```
 
 Or `--segment <uuid>` without ordinals.
