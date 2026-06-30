@@ -8,6 +8,7 @@ from wenyan_models.artifacts.base import (
 )
 from wenyan_models.domain.enums import ComponentKind, UnitStatus
 from wenyan_models.status.common import ScopeParagraph, SegmentProgress, StatusCounts
+from wenyan_models.status.component import ComponentStatusItem
 
 
 class ParagraphStructureStatus(BaseModel):
@@ -28,6 +29,13 @@ class SegmentStatusItem(BaseModel):
     blocked_component: ComponentKind | None = Field(default=None, alias="blockedComponent")
 
 
+class ParagraphAssemblyStatus(BaseModel):
+    model_config = DEFAULT_ARTIFACT_CONFIG
+
+    assemble: ComponentStatusItem
+    review: ComponentStatusItem
+
+
 class ParagraphStatus(BaseModel):
     model_config = DEFAULT_ARTIFACT_CONFIG
 
@@ -38,3 +46,4 @@ class ParagraphStatus(BaseModel):
     structure: ParagraphStructureStatus
     counts: StatusCounts
     segments: tuple[SegmentStatusItem, ...] = ()
+    assembly: ParagraphAssemblyStatus | None = None

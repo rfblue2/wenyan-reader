@@ -73,11 +73,28 @@ def test_paragraph_status_lists_segments(tmp_workspace: Path) -> None:
     assert payload.structure.status == UnitStatus.COMPLETE
     assert payload.structure.segment_count is not None
     assert payload.counts.segments == len(payload.segments)
+    assert payload.assembly is not None
+    assert payload.assembly.assemble.status == UnitStatus.PENDING
     first_segment = next(item for item in payload.segments if item.segment_id == str(segment_id_value))
     assert first_segment.ordinal == 1
     assert first_segment.text_preview
     assert first_segment.progress is not None
     assert first_segment.progress.components_total == 8
+
+
+def test_paragraph_status_in_progress_when_all_segments_complete(tmp_workspace: Path) -> None:
+    from tests.jobs.assembly_helpers import prepare_paragraph_with_complete_segments
+
+    ctx, doc_id, paragraph_id_value = prepare_paragraph_with_complete_segments(tmp_workspace)
+    reader = FilesystemStatusReader(ctx.artifacts, tmp_workspace)
+    payload = reader.paragraph_status(doc_id, paragraph_id_value)
+    chapter_payload = reader.chapter_status(doc_id, payload.chapter_id)
+    paragraph_item = next(item for item in chapter_payload.paragraphs if item.paragraph_id == str(paragraph_id_value))
+
+    assert payload.counts.complete == payload.counts.segments
+    assert payload.assembly is not None
+    assert payload.assembly.assemble.status == UnitStatus.PENDING
+    assert paragraph_item.status == UnitStatus.IN_PROGRESS
 
 
 def test_segment_status_lists_components(tmp_workspace: Path) -> None:

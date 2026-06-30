@@ -15,6 +15,7 @@ from wenyan.core.run.segment_pipeline import (
     read_review_component,
 )
 from wenyan.core.run.work_queue import _iter_paragraphs, _preview_text
+from wenyan.core.status.assembly import derive_paragraph_assembly_status
 from wenyan_models.artifacts.paragraph import ParagraphDraft
 from wenyan_models.artifacts.segment import SegmentInput
 from wenyan_models.artifacts.structure import ParagraphProposal
@@ -177,6 +178,16 @@ def derive_paragraph_status(
                 ),
             )
             statuses.append(rollup.status)
+    segments_complete = bool(segments) and all(segment.status == UnitStatus.COMPLETE for segment in segments)
+    assembly = None
+    if has_draft:
+        assembly = derive_paragraph_assembly_status(
+            artifacts,
+            repo_root,
+            document_id,
+            paragraph_id,
+            segments_complete=segments_complete,
+        )
     return ParagraphStatus.model_validate(
         {
             "documentId": str(document_id),
@@ -189,6 +200,7 @@ def derive_paragraph_status(
             },
             "counts": _build_counts(statuses, segments=len(segments)).model_dump(by_alias=True),
             "segments": [segment.model_dump(by_alias=True) for segment in segments],
+            "assembly": assembly.model_dump(by_alias=True) if assembly is not None else None,
         },
     )
 
@@ -393,10 +405,17 @@ def _rollup_chapter_status(chapter: ChapterStatus) -> UnitStatus:
 def _rollup_paragraph_status(paragraph: ParagraphStatus) -> UnitStatus:
     if paragraph.counts.blocked:
         return UnitStatus.BLOCKED
-    if paragraph.counts.segments and paragraph.counts.complete == paragraph.counts.segments:
-        return UnitStatus.COMPLETE
     if paragraph.structure.status != UnitStatus.COMPLETE:
         return UnitStatus.PENDING
-    if paragraph.counts.complete or paragraph.counts.in_progress or paragraph.counts.blocked:
-        return UnitStatus.IN_PROGRESS
+    if paragraph.assembly is not None:
+        if paragraph.assembly.review.status == UnitStatus.BLOCKED:
+            return UnitStatus.BLOCKED
+        if (
+            paragraph.assembly.assemble.status == UnitStatus.COMPLETE
+            and paragraph.assembly.review.status == UnitStatus.COMPLETE
+        ):
+            return UnitStatus.COMPLETE
+    if paragraph.counts.segments:
+        if paragraph.counts.complete or paragraph.counts.in_progress:
+            return UnitStatus.IN_PROGRESS
     return UnitStatus.PENDING

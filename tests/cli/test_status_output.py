@@ -94,6 +94,20 @@ def test_resolve_paragraph_and_segment_by_number(tmp_workspace: Path) -> None:
     assert scope.segment_handle == "1"
 
 
+def test_render_paragraph_status_shows_assembly_section(tmp_workspace: Path) -> None:
+    from tests.jobs.assembly_helpers import prepare_paragraph_with_complete_segments
+
+    ctx, doc_id, paragraph_id_value = prepare_paragraph_with_complete_segments(tmp_workspace)
+    reader = FilesystemStatusReader(ctx.artifacts, tmp_workspace)
+    output = render_status(
+        reader.paragraph_status(doc_id, paragraph_id_value),
+        StatusDisplayContext(chapter_handle="1", paragraph_handle="1"),
+    )
+    assert "Assembly" in output
+    assert "assemble-paragraph" in output
+    assert "review-paragraph-assembly" in output
+
+
 def test_paragraph_number_requires_chapter(tmp_workspace: Path) -> None:
     ctx = build_job_context(tmp_workspace)
     source_dir = tmp_workspace / "sources" / "documents" / "sunzi-bingfa"
