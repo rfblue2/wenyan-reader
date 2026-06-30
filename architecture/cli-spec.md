@@ -78,6 +78,21 @@ Common options:
 - `--concurrency <n>`: cap parallel execution where a command supports fan-out.
 - `--continue-on-blocked`: continue batch execution when one unit becomes blocked.
 
+### Unit reference resolution
+
+Scoped commands accept stable UUIDs or editor-friendly ordinals:
+
+- `--chapter`: UUID, number (e.g. `1`), or title (e.g. `始計第一`).
+- `--paragraph`: UUID, or number when `--chapter` is also set.
+- `--segment`: UUID, or number when `--paragraph` is also set (and `--chapter` when the paragraph is numeric).
+
+When a command accepts both `--segment` and `--paragraph`, they play different roles:
+
+- `--segment` selects a single segment. Any `--chapter` / `--paragraph` values disambiguate ordinal segment numbers (for example `--chapter 1 --paragraph 1 --segment 1`).
+- `--paragraph` without `--segment` selects a paragraph batch (all pending segments under that paragraph).
+
+Resolution is shared across commands via `wenyan.cli.status_scope` and `wenyan.cli.unit_refs`.
+
 ## Command Reference
 
 ### `ingest-document`

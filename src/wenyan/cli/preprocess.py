@@ -4,11 +4,29 @@ from typing import Annotated, TypeVar
 
 import typer
 
-from wenyan.bootstrap import build_job_context
 from wenyan.cli import preprocess_app
 from wenyan.cli.options import dry_run_option, force_option, json_option
+from wenyan.cli.scope_options import (
+    ChapterOption,
+    OptionalSegmentOption,
+    ParagraphOption,
+    RequiredChapterOption,
+    RequiredParagraphOption,
+    SegmentOption,
+)
 from wenyan.cli.status_output import StatusDisplayContext, StatusDisplayPayload, render_status
 from wenyan.cli.status_scope import build_display_context, resolve_status_scope
+from wenyan.cli.unit_refs import (
+    chapter_id_from_ref,
+    emit_job_outcome,
+    job_options,
+    paragraph_id_from_ref,
+    resolve_document_context,
+    resolve_document_context_with_ref,
+    run_single_segment_job,
+    segment_id_from_ref,
+    segment_or_paragraph_batch_target,
+)
 from wenyan.core.adapters.filesystem_graph_validator import FilesystemGraphValidator
 from wenyan.core.adapters.filesystem_status_reader import FilesystemStatusReader
 from wenyan.core.show.segment_view import build_segment_show_view
@@ -17,7 +35,7 @@ from wenyan.jobs.annotate_segment_grammar import run_annotate_segment_grammar
 from wenyan.jobs.context import JobOptions
 from wenyan.jobs.ingest_document import run_ingest_document
 from wenyan.jobs.prune_orphan_segments import run_prune_orphan_segments
-from wenyan.jobs.run_preprocess import RunPlan, run_preprocess
+from wenyan.jobs.run_preprocess import run_preprocess
 from wenyan.jobs.gloss_segment import run_gloss_segment
 from wenyan.jobs.review_segment_context import run_review_segment_context
 from wenyan.jobs.review_segment_gloss import run_review_segment_gloss
@@ -26,40 +44,13 @@ from wenyan.jobs.review_segment_tokenization import run_review_segment_tokenizat
 from wenyan.jobs.split_paragraphs import run_split_paragraphs
 from wenyan.jobs.split_segments import run_split_segments
 from wenyan.jobs.tokenize_segment import run_tokenize_segment
-from wenyan_models.domain.ids import (
-    chapter_id,
-    document_id,
-    paragraph_id,
-    segment_id,
-)
 from wenyan_models.domain.results import JobFailure, Promoted, Skipped, outcome_exit_code
-from wenyan_models.domain.targets import paragraph_batch_target, single_segment_target
+
 T = TypeVar("T")
 
 
 def _repo_root() -> Path:
     return Path.cwd()
-
-
-def _job_options(force: bool, dry_run: bool) -> JobOptions:
-    return JobOptions(force=force, dry_run=dry_run)
-
-
-def _outcome_message(outcome: Promoted[T] | Skipped | JobFailure) -> str:
-    match outcome:
-        case Promoted():
-            return "complete"
-        case Skipped(reason=reason):
-            return reason
-        case JobFailure(message=message):
-            return message
-
-
-def _emit_json_or_text(outcome: Promoted[T] | Skipped | JobFailure, as_json: bool) -> None:
-    if as_json:
-        typer.echo(json.dumps({"outcome": outcome.model_dump(by_alias=True)}))
-    else:
-        typer.echo(_outcome_message(outcome))
 
 
 @preprocess_app.command("ingest-document")
@@ -70,290 +61,269 @@ def ingest_document_cmd(
     as_json: bool = json_option,
 ) -> None:
     """Ingest a source directory, normalize text, and write normalized-document.json."""
+    from wenyan.bootstrap import build_job_context
+
     ctx = build_job_context(_repo_root())
-    outcome = run_ingest_document(ctx, source, _job_options(force, dry_run))
-    _emit_json_or_text(outcome, as_json)
+    outcome = run_ingest_document(ctx, source, job_options(force, dry_run))
+    emit_job_outcome(outcome, as_json=as_json)
     raise typer.Exit(outcome_exit_code(outcome))
 
 
 @preprocess_app.command("split-paragraphs")
 def split_paragraphs_cmd(
     document: Annotated[str, typer.Argument(help="Document UUID or slug")],
-    chapter: Annotated[str, typer.Option("--chapter", help="Chapter UUID")],
+    chapter: RequiredChapterOption,
     force: bool = force_option,
     dry_run: bool = dry_run_option,
     as_json: bool = json_option,
 ) -> None:
     """Propose paragraph spans for one chapter and validate coverage."""
-    ctx = build_job_context(_repo_root())
-    entry = ctx.registry.resolve(document)
-    doc_id = entry.document_id or document_id(document)
+    ctx, doc_id = resolve_document_context(document)
     outcome = run_split_paragraphs(
         ctx,
         doc_id,
-        chapter_id(chapter),
-        _job_options(force, dry_run),
+        chapter_id_from_ref(ctx, doc_id, chapter),
+        job_options(force, dry_run),
     )
-    if as_json:
-        typer.echo(json.dumps({"outcome": outcome.model_dump(by_alias=True)}))
-    else:
-        typer.echo(_outcome_message(outcome))
+    emit_job_outcome(outcome, as_json=as_json)
     raise typer.Exit(outcome_exit_code(outcome))
 
 
 @preprocess_app.command("split-segments")
 def split_segments_cmd(
     document: Annotated[str, typer.Argument(help="Document UUID or slug")],
-    paragraph: Annotated[str, typer.Option("--paragraph", help="Paragraph UUID")],
+    paragraph: RequiredParagraphOption,
+    chapter: ChapterOption = None,
     force: bool = force_option,
     dry_run: bool = dry_run_option,
     as_json: bool = json_option,
 ) -> None:
     """Propose segment boundaries for one paragraph and create segment job inputs."""
-    ctx = build_job_context(_repo_root())
-    entry = ctx.registry.resolve(document)
-    doc_id = entry.document_id or document_id(document)
+    ctx, doc_id = resolve_document_context(document)
     outcome = run_split_segments(
         ctx,
         doc_id,
-        paragraph_id(paragraph),
-        _job_options(force, dry_run),
+        paragraph_id_from_ref(ctx, doc_id, paragraph, chapter=chapter),
+        job_options(force, dry_run),
     )
-    if as_json:
-        typer.echo(json.dumps({"outcome": outcome.model_dump(by_alias=True)}))
-    else:
-        typer.echo(_outcome_message(outcome))
+    emit_job_outcome(outcome, as_json=as_json)
+    raise typer.Exit(outcome_exit_code(outcome))
+
+
+def _run_segment_or_paragraph_batch_cmd(
+    document: str,
+    *,
+    segment: str | None,
+    paragraph: str | None,
+    chapter: str | None,
+    runner,
+    force: bool,
+    dry_run: bool,
+    as_json: bool,
+) -> None:
+    ctx, doc_id = resolve_document_context(document)
+    target = segment_or_paragraph_batch_target(
+        ctx,
+        doc_id,
+        segment=segment,
+        paragraph=paragraph,
+        chapter=chapter,
+    )
+    outcome = runner(ctx, doc_id, target, job_options(force, dry_run))
+    emit_job_outcome(outcome, as_json=as_json)
     raise typer.Exit(outcome_exit_code(outcome))
 
 
 @preprocess_app.command("tokenize-segment")
 def tokenize_segment_cmd(
     document: Annotated[str, typer.Argument(help="Document UUID or slug")],
-    segment: Annotated[str | None, typer.Option("--segment", help="Single segment UUID")] = None,
-    paragraph: Annotated[
-        str | None,
-        typer.Option("--paragraph", help="Run all pending segments under this paragraph"),
-    ] = None,
+    segment: OptionalSegmentOption = None,
+    paragraph: ParagraphOption = None,
+    chapter: ChapterOption = None,
     force: bool = force_option,
     dry_run: bool = dry_run_option,
     as_json: bool = json_option,
 ) -> None:
     """Identify glossable token occurrences for one segment or a paragraph batch."""
-    if (segment is None) == (paragraph is None):
-        raise typer.BadParameter("provide exactly one of --segment or --paragraph")
-    ctx = build_job_context(_repo_root())
-    entry = ctx.registry.resolve(document)
-    doc_id = entry.document_id or document_id(document)
-    target = (
-        single_segment_target(segment_id(segment))
-        if segment is not None
-        else paragraph_batch_target(paragraph_id(paragraph or ""))
+    _run_segment_or_paragraph_batch_cmd(
+        document,
+        segment=segment,
+        paragraph=paragraph,
+        chapter=chapter,
+        runner=run_tokenize_segment,
+        force=force,
+        dry_run=dry_run,
+        as_json=as_json,
     )
-    outcome = run_tokenize_segment(ctx, doc_id, target, _job_options(force, dry_run))
-    if as_json:
-        typer.echo(json.dumps({"outcome": outcome.model_dump(by_alias=True)}))
-    else:
-        typer.echo(_outcome_message(outcome))
-    raise typer.Exit(outcome_exit_code(outcome))
 
 
 @preprocess_app.command("review-segment-tokenization")
 def review_segment_tokenization_cmd(
     document: Annotated[str, typer.Argument(help="Document UUID or slug")],
-    segment: Annotated[str, typer.Option("--segment", help="Segment UUID")],
+    segment: SegmentOption,
+    chapter: ChapterOption = None,
+    paragraph: ParagraphOption = None,
     force: bool = force_option,
     dry_run: bool = dry_run_option,
     as_json: bool = json_option,
 ) -> None:
     """Review token boundaries and offsets for one segment tokenization."""
-    ctx = build_job_context(_repo_root())
-    entry = ctx.registry.resolve(document)
-    doc_id = entry.document_id or document_id(document)
-    outcome = run_review_segment_tokenization(
-        ctx,
-        doc_id,
-        segment_id(segment),
-        _job_options(force, dry_run),
+    run_single_segment_job(
+        document,
+        segment,
+        chapter=chapter,
+        paragraph=paragraph,
+        runner=run_review_segment_tokenization,
+        force=force,
+        dry_run=dry_run,
+        as_json=as_json,
     )
-    if as_json:
-        typer.echo(json.dumps({"outcome": outcome.model_dump(by_alias=True)}))
-    else:
-        typer.echo(_outcome_message(outcome))
-    raise typer.Exit(outcome_exit_code(outcome))
 
 
 @preprocess_app.command("gloss-segment")
 def gloss_segment_cmd(
     document: Annotated[str, typer.Argument(help="Document UUID or slug")],
-    segment: Annotated[str | None, typer.Option("--segment", help="Single segment UUID")] = None,
-    paragraph: Annotated[
-        str | None,
-        typer.Option("--paragraph", help="Run all pending segments under this paragraph"),
-    ] = None,
+    segment: OptionalSegmentOption = None,
+    paragraph: ParagraphOption = None,
+    chapter: ChapterOption = None,
     force: bool = force_option,
     dry_run: bool = dry_run_option,
     as_json: bool = json_option,
 ) -> None:
     """Select or propose glosses for reviewed token occurrences."""
-    if (segment is None) == (paragraph is None):
-        raise typer.BadParameter("provide exactly one of --segment or --paragraph")
-    ctx = build_job_context(_repo_root())
-    entry = ctx.registry.resolve(document)
-    doc_id = entry.document_id or document_id(document)
-    target = (
-        single_segment_target(segment_id(segment))
-        if segment is not None
-        else paragraph_batch_target(paragraph_id(paragraph or ""))
+    _run_segment_or_paragraph_batch_cmd(
+        document,
+        segment=segment,
+        paragraph=paragraph,
+        chapter=chapter,
+        runner=run_gloss_segment,
+        force=force,
+        dry_run=dry_run,
+        as_json=as_json,
     )
-    outcome = run_gloss_segment(ctx, doc_id, target, _job_options(force, dry_run))
-    if as_json:
-        typer.echo(json.dumps({"outcome": outcome.model_dump(by_alias=True)}))
-    else:
-        typer.echo(_outcome_message(outcome))
-    raise typer.Exit(outcome_exit_code(outcome))
 
 
 @preprocess_app.command("review-segment-gloss")
 def review_segment_gloss_cmd(
     document: Annotated[str, typer.Argument(help="Document UUID or slug")],
-    segment: Annotated[str, typer.Option("--segment", help="Segment UUID")],
+    segment: SegmentOption,
+    chapter: ChapterOption = None,
+    paragraph: ParagraphOption = None,
     force: bool = force_option,
     dry_run: bool = dry_run_option,
     as_json: bool = json_option,
 ) -> None:
     """Review gloss sense selection and homonym handling for one segment."""
-    ctx = build_job_context(_repo_root())
-    entry = ctx.registry.resolve(document)
-    doc_id = entry.document_id or document_id(document)
-    outcome = run_review_segment_gloss(
-        ctx,
-        doc_id,
-        segment_id(segment),
-        _job_options(force, dry_run),
+    run_single_segment_job(
+        document,
+        segment,
+        chapter=chapter,
+        paragraph=paragraph,
+        runner=run_review_segment_gloss,
+        force=force,
+        dry_run=dry_run,
+        as_json=as_json,
     )
-    if as_json:
-        typer.echo(json.dumps({"outcome": outcome.model_dump(by_alias=True)}))
-    else:
-        typer.echo(_outcome_message(outcome))
-    raise typer.Exit(outcome_exit_code(outcome))
 
 
 @preprocess_app.command("annotate-segment-grammar")
 def annotate_segment_grammar_cmd(
     document: Annotated[str, typer.Argument(help="Document UUID or slug")],
-    segment: Annotated[str | None, typer.Option("--segment", help="Single segment UUID")] = None,
-    paragraph: Annotated[
-        str | None,
-        typer.Option("--paragraph", help="Run all pending segments under this paragraph"),
-    ] = None,
+    segment: OptionalSegmentOption = None,
+    paragraph: ParagraphOption = None,
+    chapter: ChapterOption = None,
     force: bool = force_option,
     dry_run: bool = dry_run_option,
     as_json: bool = json_option,
 ) -> None:
     """Draft grammar notes anchored to segment tokens."""
-    if (segment is None) == (paragraph is None):
-        raise typer.BadParameter("provide exactly one of --segment or --paragraph")
-    ctx = build_job_context(_repo_root())
-    entry = ctx.registry.resolve(document)
-    doc_id = entry.document_id or document_id(document)
-    target = (
-        single_segment_target(segment_id(segment))
-        if segment is not None
-        else paragraph_batch_target(paragraph_id(paragraph or ""))
+    _run_segment_or_paragraph_batch_cmd(
+        document,
+        segment=segment,
+        paragraph=paragraph,
+        chapter=chapter,
+        runner=run_annotate_segment_grammar,
+        force=force,
+        dry_run=dry_run,
+        as_json=as_json,
     )
-    outcome = run_annotate_segment_grammar(ctx, doc_id, target, _job_options(force, dry_run))
-    if as_json:
-        typer.echo(json.dumps({"outcome": outcome.model_dump(by_alias=True)}))
-    else:
-        typer.echo(_outcome_message(outcome))
-    raise typer.Exit(outcome_exit_code(outcome))
 
 
 @preprocess_app.command("review-segment-grammar")
 def review_segment_grammar_cmd(
     document: Annotated[str, typer.Argument(help="Document UUID or slug")],
-    segment: Annotated[str, typer.Option("--segment", help="Segment UUID")],
+    segment: SegmentOption,
+    chapter: ChapterOption = None,
+    paragraph: ParagraphOption = None,
     force: bool = force_option,
     dry_run: bool = dry_run_option,
     as_json: bool = json_option,
 ) -> None:
     """Review grammar notes for accuracy and usefulness."""
-    ctx = build_job_context(_repo_root())
-    entry = ctx.registry.resolve(document)
-    doc_id = entry.document_id or document_id(document)
-    outcome = run_review_segment_grammar(
-        ctx,
-        doc_id,
-        segment_id(segment),
-        _job_options(force, dry_run),
+    run_single_segment_job(
+        document,
+        segment,
+        chapter=chapter,
+        paragraph=paragraph,
+        runner=run_review_segment_grammar,
+        force=force,
+        dry_run=dry_run,
+        as_json=as_json,
     )
-    if as_json:
-        typer.echo(json.dumps({"outcome": outcome.model_dump(by_alias=True)}))
-    else:
-        typer.echo(_outcome_message(outcome))
-    raise typer.Exit(outcome_exit_code(outcome))
 
 
 @preprocess_app.command("annotate-segment-context")
 def annotate_segment_context_cmd(
     document: Annotated[str, typer.Argument(help="Document UUID or slug")],
-    segment: Annotated[str | None, typer.Option("--segment", help="Single segment UUID")] = None,
-    paragraph: Annotated[
-        str | None,
-        typer.Option("--paragraph", help="Run all pending segments under this paragraph"),
-    ] = None,
+    segment: OptionalSegmentOption = None,
+    paragraph: ParagraphOption = None,
+    chapter: ChapterOption = None,
     force: bool = force_option,
     dry_run: bool = dry_run_option,
     as_json: bool = json_option,
 ) -> None:
     """Draft segment-local context notes with source grounding."""
-    if (segment is None) == (paragraph is None):
-        raise typer.BadParameter("provide exactly one of --segment or --paragraph")
-    ctx = build_job_context(_repo_root())
-    entry = ctx.registry.resolve(document)
-    doc_id = entry.document_id or document_id(document)
-    target = (
-        single_segment_target(segment_id(segment))
-        if segment is not None
-        else paragraph_batch_target(paragraph_id(paragraph or ""))
+    _run_segment_or_paragraph_batch_cmd(
+        document,
+        segment=segment,
+        paragraph=paragraph,
+        chapter=chapter,
+        runner=run_annotate_segment_context,
+        force=force,
+        dry_run=dry_run,
+        as_json=as_json,
     )
-    outcome = run_annotate_segment_context(ctx, doc_id, target, _job_options(force, dry_run))
-    if as_json:
-        typer.echo(json.dumps({"outcome": outcome.model_dump(by_alias=True)}))
-    else:
-        typer.echo(_outcome_message(outcome))
-    raise typer.Exit(outcome_exit_code(outcome))
 
 
 @preprocess_app.command("review-segment-context")
 def review_segment_context_cmd(
     document: Annotated[str, typer.Argument(help="Document UUID or slug")],
-    segment: Annotated[str, typer.Option("--segment", help="Segment UUID")],
+    segment: SegmentOption,
+    chapter: ChapterOption = None,
+    paragraph: ParagraphOption = None,
     force: bool = force_option,
     dry_run: bool = dry_run_option,
     as_json: bool = json_option,
 ) -> None:
     """Review context notes for usefulness and grounding."""
-    ctx = build_job_context(_repo_root())
-    entry = ctx.registry.resolve(document)
-    doc_id = entry.document_id or document_id(document)
-    outcome = run_review_segment_context(
-        ctx,
-        doc_id,
-        segment_id(segment),
-        _job_options(force, dry_run),
+    run_single_segment_job(
+        document,
+        segment,
+        chapter=chapter,
+        paragraph=paragraph,
+        runner=run_review_segment_context,
+        force=force,
+        dry_run=dry_run,
+        as_json=as_json,
     )
-    if as_json:
-        typer.echo(json.dumps({"outcome": outcome.model_dump(by_alias=True)}))
-    else:
-        typer.echo(_outcome_message(outcome))
-    raise typer.Exit(outcome_exit_code(outcome))
 
 
 @preprocess_app.command("run")
 def run_cmd(
     document: Annotated[str, typer.Argument(help="Document UUID or slug")],
-    segment: Annotated[str | None, typer.Option("--segment", help="Segment UUID")] = None,
+    segment: OptionalSegmentOption = None,
+    chapter: ChapterOption = None,
+    paragraph: ParagraphOption = None,
     next_segment: Annotated[
         bool,
         typer.Option(
@@ -373,17 +343,20 @@ def run_cmd(
     as_json: bool = json_option,
 ) -> None:
     """Run preprocessing for the next segment, a named segment, or the next paragraph."""
-    ctx = build_job_context(_repo_root())
-    entry = ctx.registry.resolve(document)
-    doc_id = entry.document_id or document_id(document)
+    ctx, doc_id = resolve_document_context(document)
     use_next_segment = next_segment or (not next_paragraph and segment is None)
+    segment_id_value = (
+        segment_id_from_ref(ctx, doc_id, segment, chapter=chapter, paragraph=paragraph)
+        if segment
+        else None
+    )
     outcome = run_preprocess(
         ctx,
         doc_id,
-        segment_id_value=segment_id(segment) if segment else None,
+        segment_id_value=segment_id_value,
         next_segment=use_next_segment,
         next_paragraph=next_paragraph,
-        options=_job_options(force, dry_run),
+        options=job_options(force, dry_run),
     )
     if as_json:
         typer.echo(json.dumps({"outcome": outcome.model_dump(by_alias=True)}))
@@ -404,37 +377,14 @@ def run_cmd(
 @preprocess_app.command("status")
 def status_cmd(
     document: Annotated[str, typer.Argument(help="Document UUID or slug")],
-    chapter: Annotated[
-        str | None,
-        typer.Option(
-            "--chapter",
-            help="Chapter UUID, number (e.g. 1), or title (e.g. 始計第一)",
-        ),
-    ] = None,
-    paragraph: Annotated[
-        str | None,
-        typer.Option(
-            "--paragraph",
-            help="Paragraph UUID or number (requires --chapter for numbers)",
-        ),
-    ] = None,
-    segment: Annotated[
-        str | None,
-        typer.Option(
-            "--segment",
-            help="Segment UUID or number (requires --paragraph for numbers)",
-        ),
-    ] = None,
+    chapter: ChapterOption = None,
+    paragraph: ParagraphOption = None,
+    segment: OptionalSegmentOption = None,
     as_json: bool = json_option,
 ) -> None:
     """Report preprocessing progress; segment scope includes source text and artifacts."""
-    ctx = build_job_context(_repo_root())
-    entry = ctx.registry.resolve(document)
-    if entry.document_id is None:
-        raise typer.Exit(1)
+    ctx, doc_id, document_ref = resolve_document_context_with_ref(document)
     reader = FilesystemStatusReader(ctx.artifacts, _repo_root())
-    doc_id = entry.document_id
-    document_ref = entry.slug or document
     payload: StatusDisplayPayload
     try:
         scope = resolve_status_scope(
@@ -493,15 +443,8 @@ def prune_cmd(
     as_json: bool = json_option,
 ) -> None:
     """Remove segment job directories not referenced by any current paragraph draft."""
-    ctx = build_job_context(_repo_root())
-    entry = ctx.registry.resolve(document)
-    if entry.document_id is None:
-        raise typer.Exit(1)
-    outcome = run_prune_orphan_segments(
-        ctx,
-        entry.document_id,
-        JobOptions(dry_run=dry_run),
-    )
+    ctx, doc_id = resolve_document_context_with_ref(document)
+    outcome = run_prune_orphan_segments(ctx, doc_id, JobOptions(dry_run=dry_run))
     if as_json:
         typer.echo(json.dumps({"outcome": outcome.model_dump(by_alias=True)}))
     else:
@@ -522,15 +465,38 @@ def prune_cmd(
 @preprocess_app.command("validate-artifacts")
 def validate_artifacts_cmd(
     document: Annotated[str, typer.Argument(help="Document UUID or slug")],
+    chapter: ChapterOption = None,
+    paragraph: ParagraphOption = None,
+    segment: OptionalSegmentOption = None,
     as_json: bool = json_option,
 ) -> None:
     """Check artifact graph integrity without generating new content."""
-    ctx = build_job_context(_repo_root())
-    entry = ctx.registry.resolve(document)
-    if entry.document_id is None:
-        raise typer.Exit(1)
+    ctx, doc_id, document_ref = resolve_document_context_with_ref(document)
     validator = FilesystemGraphValidator(ctx.artifacts, ctx.repo_root)
-    report = validator.validate_document(entry.document_id)
+    try:
+        scope = resolve_status_scope(
+            ctx.artifacts,
+            doc_id,
+            document_ref,
+            chapter=chapter,
+            paragraph=paragraph,
+            segment=segment,
+        )
+    except ValueError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(1) from exc
+    match scope.level:
+        case "segment":
+            assert scope.segment_id is not None
+            report = validator.validate_segment(doc_id, scope.segment_id)
+        case "paragraph":
+            assert scope.paragraph_id is not None
+            report = validator.validate_paragraph(doc_id, scope.paragraph_id)
+        case "chapter":
+            assert scope.chapter_id is not None
+            report = validator.validate_chapter(doc_id, scope.chapter_id)
+        case "document":
+            report = validator.validate_document(doc_id)
     if as_json:
         typer.echo(report.model_dump_json(by_alias=True))
     else:
@@ -538,22 +504,44 @@ def validate_artifacts_cmd(
     raise typer.Exit(0 if report.ok else 1)
 
 
-_STUB_HELP: dict[str, str] = {
-    "review-paragraph-structure": "Review segment boundaries and paragraph structure quality.",
-    "assemble-paragraph": "Assemble completed segment outputs into a reader paragraph file.",
-    "package-document": "Build validated reader package files under content/documents/.",
-    "review-report": "Print the latest review report for a segment or component.",
-}
+@preprocess_app.command("review-paragraph-structure")
+def review_paragraph_structure_cmd(
+    document: Annotated[str, typer.Argument(help="Document UUID or slug")],
+    paragraph: RequiredParagraphOption,
+    chapter: ChapterOption = None,
+) -> None:
+    """Review segment boundaries and paragraph structure quality."""
+    typer.echo("review-paragraph-structure is not implemented in this slice", err=True)
+    raise typer.Exit(2)
 
 
-def _register_stub(name: str, help_text: str) -> None:
-    def _stub(document: Annotated[str, typer.Argument(help="Document UUID or slug")] = "") -> None:
-        typer.echo(f"{name} is not implemented in this slice", err=True)
-        raise typer.Exit(2)
+@preprocess_app.command("assemble-paragraph")
+def assemble_paragraph_cmd(
+    document: Annotated[str, typer.Argument(help="Document UUID or slug")],
+    paragraph: RequiredParagraphOption,
+    chapter: ChapterOption = None,
+) -> None:
+    """Assemble completed segment outputs into a reader paragraph file."""
+    typer.echo("assemble-paragraph is not implemented in this slice", err=True)
+    raise typer.Exit(2)
 
-    _stub.__doc__ = help_text
-    preprocess_app.command(name)(_stub)
+
+@preprocess_app.command("package-document")
+def package_document_cmd(
+    document: Annotated[str, typer.Argument(help="Document UUID or slug")],
+) -> None:
+    """Build validated reader package files under content/documents/."""
+    typer.echo("package-document is not implemented in this slice", err=True)
+    raise typer.Exit(2)
 
 
-for _command_name, _help_text in _STUB_HELP.items():
-    _register_stub(_command_name, _help_text)
+@preprocess_app.command("review-report")
+def review_report_cmd(
+    document: Annotated[str, typer.Argument(help="Document UUID or slug")],
+    segment: SegmentOption,
+    chapter: ChapterOption = None,
+    paragraph: ParagraphOption = None,
+) -> None:
+    """Print the latest review report for a segment or component."""
+    typer.echo("review-report is not implemented in this slice", err=True)
+    raise typer.Exit(2)
