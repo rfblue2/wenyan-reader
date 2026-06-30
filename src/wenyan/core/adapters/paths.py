@@ -78,6 +78,9 @@ def artifact_path(repo_root: Path, ref: ArtifactRef) -> Path:
             return root / "indexes" / "term-index.json"
         case ArtifactKind.GLOSSARY_DRAFT:
             return root / "indexes" / "glossary-draft.json"
+        case ArtifactKind.PARAGRAPH_ASSEMBLY_PACKAGE:
+            paragraph_id = _require(ref.paragraph_id, ref.kind, "paragraph_id")
+            return root / "jobs" / "assembly" / str(paragraph_id) / "package.json"
         case ArtifactKind.PARAGRAPH_ASSEMBLY_VALIDATION:
             paragraph_id = _require(ref.paragraph_id, ref.kind, "paragraph_id")
             return root / "jobs" / "assembly" / str(paragraph_id) / "validation.json"

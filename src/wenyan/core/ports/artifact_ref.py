@@ -49,6 +49,7 @@ _SCOPES: dict[ArtifactKind, _Scope] = {
     ArtifactKind.PARAGRAPH_DRAFT: _PARAGRAPH_SCOPE,
     ArtifactKind.PARAGRAPH_DRAFT_VALIDATION: _PARAGRAPH_SCOPE,
     ArtifactKind.PARAGRAPH_DRAFT_REVIEW: _PARAGRAPH_SCOPE,
+    ArtifactKind.PARAGRAPH_ASSEMBLY_PACKAGE: _PARAGRAPH_SCOPE,
     ArtifactKind.PARAGRAPH_ASSEMBLY_VALIDATION: _PARAGRAPH_SCOPE,
     ArtifactKind.PARAGRAPH_ASSEMBLY_REVIEW: _PARAGRAPH_SCOPE,
     ArtifactKind.SEGMENT_INPUT: _SEGMENT_SCOPE,
@@ -244,6 +245,17 @@ def term_index_ref(document_id: DocumentId) -> ArtifactRef:
 
 def glossary_draft_ref(document_id: DocumentId) -> ArtifactRef:
     return _make_ref(ArtifactKind.GLOSSARY_DRAFT, document_id=document_id)
+
+
+def paragraph_assembly_package_ref(
+    document_id: DocumentId,
+    paragraph_id: ParagraphId,
+) -> ArtifactRef:
+    return _make_ref(
+        ArtifactKind.PARAGRAPH_ASSEMBLY_PACKAGE,
+        document_id=document_id,
+        paragraph_id=paragraph_id,
+    )
 
 
 def paragraph_assembly_validation_ref(

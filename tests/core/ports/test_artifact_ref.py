@@ -1,5 +1,8 @@
+from pathlib import Path
+
 import pytest
 
+from wenyan.core.adapters.paths import artifact_path
 from wenyan.core.ports import artifact_ref as refs
 from wenyan.core.ports.artifact_ref import _make_ref
 from wenyan_models.domain.enums import ArtifactKind
@@ -56,6 +59,10 @@ SEGMENT = segment_id("d70e05cc-a271-43e6-9abd-40c97c83bb96")
         (lambda: refs.term_index_ref(DOC), ArtifactKind.TERM_INDEX),
         (lambda: refs.glossary_draft_ref(DOC), ArtifactKind.GLOSSARY_DRAFT),
         (
+            lambda: refs.paragraph_assembly_package_ref(DOC, PARAGRAPH),
+            ArtifactKind.PARAGRAPH_ASSEMBLY_PACKAGE,
+        ),
+        (
             lambda: refs.paragraph_assembly_validation_ref(DOC, PARAGRAPH),
             ArtifactKind.PARAGRAPH_ASSEMBLY_VALIDATION,
         ),
@@ -98,6 +105,7 @@ def test_all_kinds_are_covered() -> None:
         refs.entity_index_ref(DOC).kind,
         refs.term_index_ref(DOC).kind,
         refs.glossary_draft_ref(DOC).kind,
+        refs.paragraph_assembly_package_ref(DOC, PARAGRAPH).kind,
         refs.paragraph_assembly_validation_ref(DOC, PARAGRAPH).kind,
         refs.paragraph_assembly_review_ref(DOC, PARAGRAPH).kind,
         refs.package_validation_ref(DOC).kind,
@@ -117,3 +125,9 @@ def test_document_scope_rejects_chapter_id() -> None:
 def test_segment_scope_requires_segment_id() -> None:
     with pytest.raises(ValueError, match="requires segment_id"):
         _make_ref(ArtifactKind.TOKENIZATION, document_id=DOC)
+
+
+def test_paragraph_assembly_package_path() -> None:
+    ref = refs.paragraph_assembly_package_ref(DOC, PARAGRAPH)
+    path = artifact_path(Path("/repo"), ref)
+    assert str(path).endswith(f"jobs/assembly/{PARAGRAPH}/package.json")
