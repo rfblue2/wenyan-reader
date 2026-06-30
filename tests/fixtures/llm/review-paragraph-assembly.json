@@ -1,0 +1,9 @@
+{
+  "paragraphId": "00000000-0000-0000-0000-000000000001",
+  "model": "mock",
+  "inputHash": "sha256:mock",
+  "attempts": 1,
+  "status": "approved",
+  "findings": [],
+  "requiredFixes": []
+}
