@@ -23,6 +23,7 @@ class ArtifactKind(StrEnum):
     ENTITY_INDEX = "entity-index"
     TERM_INDEX = "term-index"
     GLOSSARY_DRAFT = "glossary-draft"
+    PARAGRAPH_ASSEMBLY_PACKAGE = "paragraph-assembly-package"
     PARAGRAPH_ASSEMBLY_VALIDATION = "paragraph-assembly-validation"
     PARAGRAPH_ASSEMBLY_REVIEW = "paragraph-assembly-review"
     PACKAGE_VALIDATION = "package-validation"
@@ -37,6 +38,8 @@ class ComponentKind(StrEnum):
     REVIEW_SEGMENT_GRAMMAR = "review-segment-grammar"
     ANNOTATE_SEGMENT_CONTEXT = "annotate-segment-context"
     REVIEW_SEGMENT_CONTEXT = "review-segment-context"
+    ASSEMBLE_PARAGRAPH = "assemble-paragraph"
+    REVIEW_PARAGRAPH_ASSEMBLY = "review-paragraph-assembly"
 
 
 class UnitStatus(StrEnum):

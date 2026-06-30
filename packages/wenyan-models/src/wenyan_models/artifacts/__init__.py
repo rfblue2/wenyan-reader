@@ -1,3 +1,7 @@
+from wenyan_models.artifacts.assembly import (
+    ParagraphAssemblyReviewArtifact,
+    ParagraphAssemblyValidationArtifact,
+)
 from wenyan_models.artifacts.normalized import NormalizedDocument
 from wenyan_models.artifacts.paragraph import ParagraphDraft, ParagraphValidationArtifact
 from wenyan_models.artifacts.segment import (
@@ -15,6 +19,8 @@ from wenyan_models.artifacts.structure import (
 
 __all__ = [
     "ChapterProposal",
+    "ParagraphAssemblyReviewArtifact",
+    "ParagraphAssemblyValidationArtifact",
     "NormalizedDocument",
     "ParagraphDraft",
     "ParagraphProposal",
