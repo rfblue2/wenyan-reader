@@ -9,6 +9,7 @@ from wenyan.core.ports.artifact_ref import (
     segment_tokenization_ref,
     segment_tokenization_review_ref,
 )
+from wenyan.core.run.segment_pipeline import invalidate_segment_review
 from wenyan.jobs.context import JobContext, JobOptions
 from wenyan_models.artifacts.segment import (
     GrammarNotesArtifact,
@@ -16,7 +17,7 @@ from wenyan_models.artifacts.segment import (
     TokenizationArtifact,
     TokenizationReviewArtifact,
 )
-from wenyan_models.domain.enums import ReviewStatus
+from wenyan_models.domain.enums import ComponentKind, ReviewStatus
 from wenyan_models.domain.ids import DocumentId, SegmentId, segment_id
 from wenyan_models.domain.results import JobFailure, JobOutcome, Promoted, Skipped
 from wenyan_models.domain.targets import ParagraphBatch, SegmentTarget, SingleSegment
@@ -96,6 +97,13 @@ def _annotate_one(
     )
     if options.dry_run:
         return Promoted(artifact=grammar_notes)
+    invalidate_segment_review(
+        ctx.artifacts,
+        document_id,
+        segment_id_value,
+        ComponentKind.ANNOTATE_SEGMENT_GRAMMAR,
+        dry_run=False,
+    )
     ctx.artifacts.write(grammar_ref, grammar_notes, dry_run=False)
     return Promoted(artifact=grammar_notes)
 

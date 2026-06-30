@@ -136,6 +136,27 @@ _DRAFT_FOR_REVIEW: dict[ComponentKind, ComponentKind] = {
     ComponentKind.REVIEW_SEGMENT_CONTEXT: ComponentKind.ANNOTATE_SEGMENT_CONTEXT,
 }
 
+_REVIEW_FOR_DRAFT: dict[ComponentKind, ComponentKind] = {
+    draft: review for review, draft in _DRAFT_FOR_REVIEW.items()
+}
+
+
+def invalidate_segment_review(
+    artifacts: ArtifactStore,
+    document_id: DocumentId,
+    segment_id: SegmentId,
+    draft_component: ComponentKind,
+    *,
+    dry_run: bool,
+) -> None:
+    review_component = _REVIEW_FOR_DRAFT.get(draft_component)
+    if review_component is None:
+        return
+    review_ref = _REVIEW_REF[review_component](document_id, segment_id)
+    if dry_run or not artifacts.exists(review_ref):
+        return
+    artifacts.delete(review_ref)
+
 
 def _component_is_complete(
     artifacts: ArtifactStore,

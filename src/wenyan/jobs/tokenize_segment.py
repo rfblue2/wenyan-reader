@@ -1,9 +1,11 @@
 from wenyan.core.adapters.hashing import sha256_text
 from wenyan.core.adapters.prompt_template import RenderedPrompt, load_prompt_template
 from wenyan.core.ports.artifact_ref import segment_input_ref, segment_tokenization_ref
+from wenyan.core.run.segment_pipeline import invalidate_segment_review
 from wenyan.jobs.context import JobContext, JobOptions
 from wenyan_models.artifacts.segment import SegmentInput, TokenizationArtifact
 from wenyan_models.text.tokenization import drop_punctuation_tokens
+from wenyan_models.domain.enums import ComponentKind
 from wenyan_models.domain.ids import DocumentId, SegmentId, segment_id
 from wenyan_models.domain.results import JobFailure, JobOutcome, Promoted, Skipped
 from wenyan_models.domain.targets import ParagraphBatch, SegmentTarget, SingleSegment
@@ -70,6 +72,13 @@ def _tokenize_one(
     )
     if options.dry_run:
         return Promoted(artifact=tokenization)
+    invalidate_segment_review(
+        ctx.artifacts,
+        document_id,
+        segment_id_value,
+        ComponentKind.TOKENIZE_SEGMENT,
+        dry_run=False,
+    )
     ctx.artifacts.write(tokenization_ref, tokenization, dry_run=False)
     return Promoted(artifact=tokenization)
 
