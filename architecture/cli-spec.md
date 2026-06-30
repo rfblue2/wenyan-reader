@@ -39,6 +39,7 @@ wenyan preprocess review-segment-grammar <document-id> --segment <segment-id>
 wenyan preprocess annotate-segment-context <document-id> --segment <segment-id>
 wenyan preprocess review-segment-context <document-id> --segment <segment-id>
 wenyan preprocess assemble-paragraph <document-id> --paragraph <paragraph-id>
+wenyan preprocess review-paragraph-assembly <document-id> --paragraph <paragraph-id>
 wenyan preprocess package-document <document-id>
 ```
 
@@ -281,13 +282,43 @@ wenyan preprocess assemble-paragraph <document-id> --paragraph <paragraph-id>
 
 Scope: one paragraph.
 
-Combines paragraph structure and completed segment outputs, validates paragraph reconstruction and final paragraph shape, runs paragraph package review, and writes the final paragraph file when accepted.
+Deterministically compiles the paragraph draft and accepted segment subjob outputs into the reader paragraph package shape, runs validation checks, and writes assembly artifacts when checks pass. No LLM call.
+
+Prerequisites:
+
+- `jobs/paragraphs/paragraph-id/draft.json` exists
+- Every segment in the draft has all eight segment subjobs complete with approved reviews
 
 Primary outputs:
 
+- `jobs/assembly/paragraph-id/package.json` — reader-shaped paragraph package staged under preprocess; same schema as the final paragraph file in [Storage Format](storage-format.md)
 - `jobs/assembly/paragraph-id/validation.json`
+
+Skips when `package.json` is current (same computed input hash) unless `--force`. Non-zero exit on validation failure; does not leave a promoted `package.json`.
+
+`run preprocess` completes segments through all eight subjobs and does not auto-assemble. Run this command explicitly after all segments in a paragraph are complete.
+
+### `review-paragraph-assembly`
+
+```shell
+wenyan preprocess review-paragraph-assembly <document-id> --paragraph <paragraph-id>
+```
+
+Scope: one paragraph assembly output.
+
+Reviews the assembled paragraph package for cross-segment consistency and pedagogical quality.
+
+Prerequisites:
+
+- Current `jobs/assembly/paragraph-id/package.json`
+
+Primary output:
+
 - `jobs/assembly/paragraph-id/review.json`
-- `content/documents/document-id/chapters/chapter-id/paragraphs/paragraph-id.json`
+
+Skips when review matches the package input hash unless `--force`. Non-zero exit on rejection (`review-rejected`). Does not write to `content/`.
+
+A paragraph is not complete until both `assemble-paragraph` and `review-paragraph-assembly` succeed.
 
 ### `package-document`
 
@@ -297,7 +328,11 @@ wenyan preprocess package-document <document-id>
 
 Scope: one document.
 
-Builds final reader package files, validates reachability and schema shape, and reports blocked or incomplete units.
+**Stubbed.** Builds final reader package files, validates reachability and schema shape, and reports blocked or incomplete units.
+
+When implemented, promotes approved paragraph packages from preprocess staging to the reader content tree:
+
+- `jobs/assembly/paragraph-id/package.json` → `content/documents/document-id/chapters/chapter-id/paragraphs/paragraph-id.json`
 
 Primary outputs (under `content/documents/document-id/`):
 

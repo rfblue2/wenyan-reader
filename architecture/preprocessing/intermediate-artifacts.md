@@ -79,6 +79,7 @@ preprocess/documents/document-id/
         raw-llm/
     assembly/
       paragraph-id/
+        package.json
         validation.json
         review.json
     package/
@@ -337,9 +338,22 @@ Each focused segment command writes its own artifact so tokenization, glossing, 
 
 ## Paragraph Assembly
 
-The paragraph assembler combines the paragraph draft and accepted segment subjob outputs into the final paragraph package shape. Segment-level deterministic validation runs during assembly.
+Paragraph assembly is two explicit commands that mirror the segment draft/review pattern:
 
-## Final Paragraph Package Shape
+```text
+all segment subjobs complete (×8 per segment)
+  → assemble-paragraph          # deterministic compile + validation
+  → review-paragraph-assembly   # LLM review
+  → package-document            # promotes approved packages to content/ (stubbed)
+```
+
+`assemble-paragraph` deterministically joins the paragraph draft and accepted segment subjob outputs into a reader-shaped `package.json` under `jobs/assembly/paragraph-id/`. `review-paragraph-assembly` writes `review.json` only; it does not write to `content/`. A paragraph is not complete until both assembly steps pass.
+
+Deleting or changing any segment subjob output invalidates `package.json`, `validation.json`, and `review.json` for that paragraph. See [CLI Spec](../cli-spec.md) for command behavior.
+
+## Paragraph Assembly Package (`package.json`)
+
+`jobs/assembly/paragraph-id/package.json` is the staged paragraph package. It uses the same schema as the final paragraph file in [Storage Format](../storage-format.md). Job metadata fields (`model`, `inputHash`, `attempts`) are not stored on this file.
 
 ```json
 {
@@ -348,6 +362,7 @@ The paragraph assembler combines the paragraph draft and accepted segment subjob
     {
       "id": "d70e05cc-a271-43e6-9abd-40c97c83bb96",
       "text": "孟子見梁惠王。",
+      "newGlossIds": ["7d0d9c78-8307-4f11-9352-63b5d74af0fd"],
       "tokens": [
         {
           "id": "3723a8d9-6621-40e7-b444-2fcb3dcbcdcb",
@@ -357,12 +372,13 @@ The paragraph assembler combines the paragraph draft and accepted segment subjob
           "glossId": "7d0d9c78-8307-4f11-9352-63b5d74af0fd"
         }
       ],
-      "newGlossIds": ["7d0d9c78-8307-4f11-9352-63b5d74af0fd"],
       "notes": []
     }
   ]
 }
 ```
+
+When `package-document` is implemented, approved `package.json` files promote to `content/documents/document-id/chapters/chapter-id/paragraphs/paragraph-id.json`.
 
 ## Segment Review Reports
 

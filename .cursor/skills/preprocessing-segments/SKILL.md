@@ -39,6 +39,15 @@ A segment is **finished** when all eight subjobs have approved review artifacts:
 3. `annotate-segment-grammar` → `review-segment-grammar` (CLI)
 4. [drafting-context-notes](../drafting-context-notes/SKILL.md) → [reviewing-context-notes](../reviewing-context-notes/SKILL.md)
 
+## Paragraph assembly (after all segments complete)
+
+When every segment in a paragraph is finished, run assembly explicitly — `run preprocess` does not auto-advance:
+
+1. `assemble-paragraph` — deterministic compile to `jobs/assembly/<paragraph-id>/package.json`
+2. `review-paragraph-assembly` — LLM review; writes `review.json` only (no write to `content/`)
+
+A paragraph is not complete until both assembly steps pass. See [Storage Format](../../../architecture/storage-format.md) for the reader paragraph schema.
+
 ## Slice scope (current implementation)
 
 | Subjob | Status |
@@ -48,9 +57,11 @@ A segment is **finished** when all eight subjobs have approved review artifacts:
 | `gloss-segment`, `review-segment-gloss` | Implemented |
 | `annotate-segment-grammar`, `review-segment-grammar` | Implemented (CLI) |
 | `annotate-segment-context`, `review-segment-context` | Stubbed — use context skills |
+| `assemble-paragraph`, `review-paragraph-assembly` | Implemented — run explicitly after all segments in a paragraph complete |
 | `show` | Implemented |
 | `prune` | Implemented |
-| `run` | Chains all subjobs through context review; stops with `not-implemented` at assembly |
+| `run` | Chains segment subjobs only; does not auto-assemble |
+| `package-document` | Stubbed — promotes approved `package.json` to `content/` when implemented |
 
 ## LLM backend
 
@@ -67,7 +78,8 @@ uv run wenyan preprocess ...
 - [ ] 2. Paragraph proposal for target chapter
 - [ ] 3. Segment drafts for target paragraph(s)
 - [ ] 4. Each segment fully preprocessed (all subjobs + reviews)
-- [ ] 5. Editor inspected artifacts; advance or repair
+- [ ] 5. Paragraph assembly (`assemble-paragraph`, then `review-paragraph-assembly`)
+- [ ] 6. Editor inspected artifacts; advance or repair
 ```
 
 ### Inspect before running
@@ -96,6 +108,16 @@ uv run wenyan preprocess run <slug>
 Equivalent to `--next-segment`. Finds the next incomplete segment in document order, runs `split-segments` first if that paragraph lacks a draft, then runs every pending subjob for the segment. Repeats until the segment is fully complete or a step fails.
 
 Repeat until the command prints `no segments pending preprocessing`.
+
+### Paragraph assembly (explicit step)
+
+After all segments in a paragraph are complete:
+
+```shell
+uv run wenyan preprocess assemble-paragraph <slug> --paragraph <paragraph-id>
+uv run wenyan preprocess review-paragraph-assembly <slug> --paragraph <paragraph-id>
+uv run wenyan preprocess status <slug> --paragraph <paragraph-id>
+```
 
 ### Shorthand: prepare the next paragraph's segments
 

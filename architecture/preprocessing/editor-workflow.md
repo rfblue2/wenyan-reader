@@ -155,19 +155,29 @@ The editor only needs to intervene when focused segment components fail review o
 
 
 
-### 6. Assemble And Package
+### 6. Assemble The Paragraph
 
-Once required segment subjobs for a paragraph are complete, the editor runs:
+Once all segment subjobs for a paragraph are complete (all eight subjobs with approved reviews for every segment), the editor runs paragraph assembly explicitly. `run preprocess` does not auto-advance to assembly.
 
 ```shell
 wenyan preprocess assemble-paragraph <document-id> --paragraph <paragraph-id>
+wenyan preprocess review-paragraph-assembly <document-id> --paragraph <paragraph-id>
+wenyan preprocess status <document-id> --paragraph <paragraph-id>
 ```
+
+The editor reviews the staged `jobs/assembly/paragraph-id/package.json` and assembly review before packaging. A paragraph is not complete until both assembly commands succeed. See [Storage Format](../storage-format.md) for the reader paragraph schema.
+
+
+
+### 7. Package The Document
 
 After enough paragraphs are complete, the editor can package the document:
 
 ```shell
 wenyan preprocess package-document <document-id>
 ```
+
+**Stubbed.** When implemented, `package-document` promotes approved `jobs/assembly/paragraph-id/package.json` files to `content/documents/document-id/chapters/chapter-id/paragraphs/paragraph-id.json` and builds the rest of the reader package.
 
 The editor reviews the packaged reader files through normal code review before adding them to the collection.
 
