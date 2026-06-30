@@ -4,6 +4,8 @@
 
 This repo is designing a local Classical Chinese reader. The app should consume curated local content files; LLMs are used only during preprocessing, never at reader runtime.
 
+When the editor asks what is left to do or what to work on next, start from [Project backlog](docs/backlog.md) and reconcile with the current tree (status commands, tests, and recent changes).
+
 Most project details live in the architecture docs. Start there before making design changes, especially the docs covering:
 
 - Final reader content shape.
