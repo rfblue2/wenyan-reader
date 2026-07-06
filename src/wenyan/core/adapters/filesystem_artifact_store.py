@@ -30,15 +30,15 @@ class FilesystemArtifactStore(ArtifactStore):
     def write_batch(self, writes: Sequence[ArtifactWrite], *, dry_run: bool) -> None:
         if dry_run:
             return
-        pending: list[tuple[Path, Path, str]] = []
+        # Temp files are promoted one-by-one; a crash mid-loop can leave a partial batch.
+        pending: list[tuple[Path, Path]] = []
         for write in writes:
             final_path = artifact_path(self._repo_root, write.ref)
             temp_path = self._temp_path(final_path)
             final_path.parent.mkdir(parents=True, exist_ok=True)
-            content = write.payload.model_dump_json(by_alias=True)
-            temp_path.write_text(content, encoding="utf-8")
-            pending.append((temp_path, final_path, content))
-        for temp_path, final_path, _ in pending:
+            temp_path.write_text(write.payload.model_dump_json(by_alias=True), encoding="utf-8")
+            pending.append((temp_path, final_path))
+        for temp_path, final_path in pending:
             os.replace(temp_path, final_path)
 
     def delete(self, ref: ArtifactRef) -> None:

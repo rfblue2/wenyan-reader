@@ -1,6 +1,6 @@
 from typing import cast
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 
 from wenyan.core.run.segment_pipeline import pending_segment_subjobs
 from wenyan.core.run.work_queue import (
@@ -18,12 +18,11 @@ from wenyan.jobs.review_segment_grammar import run_review_segment_grammar
 from wenyan.jobs.review_segment_tokenization import run_review_segment_tokenization
 from wenyan.jobs.split_segments import run_split_segments
 from wenyan.jobs.tokenize_segment import run_tokenize_segment
+from wenyan_models.artifacts.base import DEFAULT_ARTIFACT_CONFIG
 from wenyan_models.domain.enums import ComponentKind
 from wenyan_models.domain.ids import DocumentId, ParagraphId, SegmentId
 from wenyan_models.domain.results import JobFailure, JobOutcome, Promoted, Skipped, outcome_exit_code
 from wenyan_models.domain.targets import single_segment_target
-
-_DEFAULT_MODEL_CONFIG = ConfigDict(frozen=True, populate_by_name=True, extra="forbid")
 
 
 def _wrap_segment_subjob[T](
@@ -109,7 +108,7 @@ _IMPLEMENTED_SUBJOBS: dict[ComponentKind, SegmentSubjobRunner] = {
 
 
 class RunPlan(BaseModel):
-    model_config = _DEFAULT_MODEL_CONFIG
+    model_config = DEFAULT_ARTIFACT_CONFIG
 
     document_id: DocumentId
     stages_run: tuple[str, ...] = ()
@@ -154,12 +153,7 @@ def _run_next_paragraph(
         return Skipped(reason="all paragraphs already have segment drafts")
     outcome = run_split_segments(ctx, document_id, work.paragraph_id, options)
     if outcome_exit_code(outcome) != 0:
-        return _failure_from_outcome(
-            document_id,
-            ["split-segments"],
-            cast(JobOutcome[object], outcome),
-            paragraph_id=work.paragraph_id,
-        )
+        return _failure_from_outcome(["split-segments"], cast(JobOutcome[object], outcome))
     return Promoted(
         artifact=RunPlan(
             document_id=document_id,
@@ -182,12 +176,7 @@ def _run_next_segment(
         if work.segment_id is None:
             outcome = run_split_segments(ctx, document_id, work.paragraph_id, options)
             if outcome_exit_code(outcome) != 0:
-                return _failure_from_outcome(
-                    document_id,
-                    ["split-segments"],
-                    cast(JobOutcome[object], outcome),
-                    paragraph_id=work.paragraph_id,
-                )
+                return _failure_from_outcome(["split-segments"], cast(JobOutcome[object], outcome))
             continue
         return _run_segment(
             ctx,
@@ -220,12 +209,7 @@ def _run_segment(
         outcome = runner(ctx, document_id, segment_id_value, options)
         stages_run.append(component.value)
         if outcome_exit_code(outcome) != 0:
-            return _failure_from_outcome(
-                document_id,
-                stages_run,
-                outcome,
-                segment_id=segment_id_value,
-            )
+            return _failure_from_outcome(stages_run, outcome)
     if not stages_run:
         return Skipped(reason="segment is already complete")
     return Promoted(
@@ -239,14 +223,9 @@ def _run_segment(
 
 
 def _failure_from_outcome(
-    document_id: DocumentId,
     stages_run: list[str],
     outcome: JobOutcome[object],
-    *,
-    paragraph_id: ParagraphId | None = None,
-    segment_id: SegmentId | None = None,
 ) -> JobFailure:
-    del document_id, paragraph_id, segment_id
     match outcome:
         case JobFailure(code=code, message=message):
             return JobFailure(

@@ -3,17 +3,16 @@ import uuid
 from pathlib import Path
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field
 
 from wenyan.core.ports.source_registry import SourceRegistry
+from wenyan_models.artifacts.base import DEFAULT_ARTIFACT_CONFIG
 from wenyan_models.domain.ids import DocumentId, Slug, document_id, slug
 from wenyan_models.sources import DocumentYaml, RegistryEntry
 
-_DEFAULT_MODEL_CONFIG = ConfigDict(frozen=True, populate_by_name=True, extra="forbid")
-
 
 class _RegistryDocument(BaseModel):
-    model_config = _DEFAULT_MODEL_CONFIG
+    model_config = DEFAULT_ARTIFACT_CONFIG
 
     slug: Slug
     title: str
@@ -22,7 +21,7 @@ class _RegistryDocument(BaseModel):
 
 
 class _RegistryFile(BaseModel):
-    model_config = _DEFAULT_MODEL_CONFIG
+    model_config = DEFAULT_ARTIFACT_CONFIG
 
     documents: tuple[_RegistryDocument, ...]
 

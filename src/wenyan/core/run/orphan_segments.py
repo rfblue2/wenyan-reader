@@ -1,20 +1,17 @@
 import shutil
 from pathlib import Path
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 
 from wenyan.core.adapters.paths import document_root
-from wenyan.core.ports.artifact_ref import segment_input_ref
+from wenyan.core.run.work_queue import iter_segments_in_document_order, segment_text_preview
 from wenyan.core.ports.artifact_store import ArtifactStore
-from wenyan.core.run.work_queue import iter_segments_in_document_order
-from wenyan_models.artifacts.segment import SegmentInput
+from wenyan_models.artifacts.base import DEFAULT_ARTIFACT_CONFIG
 from wenyan_models.domain.ids import DocumentId, SegmentId, segment_id
-
-_DEFAULT_MODEL_CONFIG = ConfigDict(frozen=True, populate_by_name=True, extra="forbid")
 
 
 class OrphanSegmentItem(BaseModel):
-    model_config = _DEFAULT_MODEL_CONFIG
+    model_config = DEFAULT_ARTIFACT_CONFIG
 
     segment_id: SegmentId
     path: str
@@ -22,7 +19,7 @@ class OrphanSegmentItem(BaseModel):
 
 
 class PruneOrphanSegmentsResult(BaseModel):
-    model_config = _DEFAULT_MODEL_CONFIG
+    model_config = DEFAULT_ARTIFACT_CONFIG
 
     dry_run: bool
     removed: tuple[OrphanSegmentItem, ...]
@@ -48,7 +45,7 @@ def find_orphan_segments(
             OrphanSegmentItem(
                 segment_id=segment_id_value,
                 path=entry.relative_to(repo_root).as_posix(),
-                text_preview=_segment_text_preview(artifacts, document_id, segment_id_value),
+                text_preview=segment_text_preview(artifacts, document_id, segment_id_value, ""),
             ),
         )
     return tuple(orphans)
@@ -66,22 +63,3 @@ def prune_orphan_segments(
         for item in orphans:
             shutil.rmtree(document_root(repo_root, document_id) / "jobs" / "segments" / str(item.segment_id))
     return PruneOrphanSegmentsResult(dry_run=dry_run, removed=orphans)
-
-
-def _segment_text_preview(
-    artifacts: ArtifactStore,
-    document_id: DocumentId,
-    segment_id_value: SegmentId,
-) -> str:
-    input_ref = segment_input_ref(document_id, segment_id_value)
-    if not artifacts.exists(input_ref):
-        return ""
-    segment_input = artifacts.read(input_ref, SegmentInput)
-    return _preview_text(segment_input.segment_text)
-
-
-def _preview_text(text: str, *, limit: int = 40) -> str:
-    compact = text.replace("\n", " ").strip()
-    if len(compact) <= limit:
-        return compact
-    return f"{compact[: limit - 1]}…"

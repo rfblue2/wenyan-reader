@@ -1,28 +1,26 @@
-from typing import Generic, Literal, TypeVar
+from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 
-T = TypeVar("T")
-
-_DEFAULT_MODEL_CONFIG = ConfigDict(frozen=True, populate_by_name=True, extra="forbid")
+from wenyan_models.artifacts.base import DEFAULT_ARTIFACT_CONFIG
 
 
 class Skipped(BaseModel):
-    model_config = _DEFAULT_MODEL_CONFIG
+    model_config = DEFAULT_ARTIFACT_CONFIG
 
     kind: Literal["skipped"] = "skipped"
     reason: str
 
 
-class Promoted(BaseModel, Generic[T]):
-    model_config = _DEFAULT_MODEL_CONFIG
+class Promoted[T](BaseModel):
+    model_config = DEFAULT_ARTIFACT_CONFIG
 
     kind: Literal["promoted"] = "promoted"
     artifact: T
 
 
 class JobFailure(BaseModel):
-    model_config = _DEFAULT_MODEL_CONFIG
+    model_config = DEFAULT_ARTIFACT_CONFIG
 
     kind: Literal["failure"] = "failure"
     code: str
@@ -32,7 +30,7 @@ class JobFailure(BaseModel):
 type JobOutcome[T] = Promoted[T] | Skipped | JobFailure
 
 
-def outcome_exit_code[T](outcome: Promoted[T] | Skipped | JobFailure) -> int:
+def outcome_exit_code[T](outcome: JobOutcome[T]) -> int:
     match outcome:
         case Promoted() | Skipped():
             return 0

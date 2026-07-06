@@ -38,7 +38,7 @@ class RenderedPrompt(StructuredPrompt):
     def template_name(self) -> str:
         return self.template.template_name
 
-    def render(self, context: Mapping[str, str]) -> str:
+    def render(self) -> str:
         materialized = {key: self._materialize(value) for key, value in self.context.items()}
         return self.template.render(materialized)
 

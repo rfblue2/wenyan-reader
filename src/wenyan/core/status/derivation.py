@@ -14,7 +14,7 @@ from wenyan.core.run.segment_pipeline import (
     component_unit_status,
     read_review_component,
 )
-from wenyan.core.run.work_queue import _iter_paragraphs, _preview_text
+from wenyan.core.run.work_queue import iter_paragraphs, segment_text_preview
 from wenyan.core.status.assembly import derive_paragraph_assembly_status
 from wenyan_models.artifacts.paragraph import ParagraphDraft
 from wenyan_models.artifacts.segment import SegmentInput
@@ -163,7 +163,7 @@ def derive_paragraph_status(
                         "segmentId": str(segment.id),
                         "ordinal": ordinal,
                         "status": rollup.status.value,
-                        "textPreview": _segment_text_preview(
+                        "textPreview": segment_text_preview(
                             artifacts,
                             document_id,
                             segment.id,
@@ -235,7 +235,7 @@ def find_paragraph_chapter(
     document_id: DocumentId,
     paragraph_id: ParagraphId,
 ) -> ChapterId | None:
-    for chapter, paragraph in _iter_paragraphs(artifacts, document_id):
+    for chapter, paragraph in iter_paragraphs(artifacts, document_id):
         if paragraph.id == paragraph_id:
             return ChapterId(str(chapter.id))
     return None
@@ -250,7 +250,7 @@ def find_segment_location(
     if artifacts.exists(input_ref):
         segment_input = artifacts.read(input_ref, SegmentInput)
         return segment_input.chapter_id, segment_input.paragraph_id, segment_input.segment_text
-    for chapter, paragraph in _iter_paragraphs(artifacts, document_id):
+    for chapter, paragraph in iter_paragraphs(artifacts, document_id):
         draft_ref = paragraph_draft_ref(document_id, paragraph.id)
         if not artifacts.exists(draft_ref):
             continue
@@ -343,19 +343,6 @@ def _blocked_reason(findings: tuple[ReviewFinding, ...]) -> str | None:
         if line:
             return line
     return None
-
-
-def _segment_text_preview(
-    artifacts: ArtifactStore,
-    document_id: DocumentId,
-    segment_id: SegmentId,
-    fallback_text: str,
-) -> str:
-    input_ref = segment_input_ref(document_id, segment_id)
-    if artifacts.exists(input_ref):
-        segment_input = artifacts.read(input_ref, SegmentInput)
-        return _preview_text(segment_input.segment_text)
-    return _preview_text(fallback_text)
 
 
 def _build_counts(

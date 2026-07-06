@@ -1,6 +1,6 @@
 from collections.abc import Iterator
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 
 from wenyan.core.ports.artifact_ref import (
     chapter_proposal_ref,
@@ -10,6 +10,7 @@ from wenyan.core.ports.artifact_ref import (
 )
 from wenyan.core.ports.artifact_store import ArtifactStore
 from wenyan.core.run.segment_pipeline import segment_is_complete
+from wenyan_models.artifacts.base import DEFAULT_ARTIFACT_CONFIG
 from wenyan_models.artifacts.paragraph import ParagraphDraft
 from wenyan_models.artifacts.segment import SegmentInput
 from wenyan_models.artifacts.structure import (
@@ -21,11 +22,8 @@ from wenyan_models.artifacts.structure import (
 from wenyan_models.domain.ids import ChapterId, DocumentId, ParagraphId, SegmentId
 
 
-_DEFAULT_MODEL_CONFIG = ConfigDict(frozen=True, populate_by_name=True, extra="forbid")
-
-
 class SegmentWorkUnit(BaseModel):
-    model_config = _DEFAULT_MODEL_CONFIG
+    model_config = DEFAULT_ARTIFACT_CONFIG
 
     chapter_id: ChapterId
     paragraph_id: ParagraphId
@@ -34,7 +32,7 @@ class SegmentWorkUnit(BaseModel):
 
 
 class ParagraphWorkUnit(BaseModel):
-    model_config = _DEFAULT_MODEL_CONFIG
+    model_config = DEFAULT_ARTIFACT_CONFIG
 
     chapter_id: ChapterId
     paragraph_id: ParagraphId
@@ -45,14 +43,14 @@ def find_next_paragraph_needing_split_segments(
     artifacts: ArtifactStore,
     document_id: DocumentId,
 ) -> ParagraphWorkUnit | None:
-    for chapter, paragraph in _iter_paragraphs(artifacts, document_id):
+    for chapter, paragraph in iter_paragraphs(artifacts, document_id):
         draft_ref = paragraph_draft_ref(document_id, paragraph.id)
         if artifacts.exists(draft_ref):
             continue
         return ParagraphWorkUnit(
             chapter_id=chapter.id,
             paragraph_id=paragraph.id,
-            text_preview=_paragraph_preview(artifacts, document_id, chapter.id, paragraph.id),
+            text_preview=paragraph_preview(artifacts, document_id, chapter.id, paragraph.id),
         )
     return None
 
@@ -61,13 +59,13 @@ def find_next_segment_work(
     artifacts: ArtifactStore,
     document_id: DocumentId,
 ) -> SegmentWorkUnit | None:
-    for chapter, paragraph in _iter_paragraphs(artifacts, document_id):
+    for chapter, paragraph in iter_paragraphs(artifacts, document_id):
         draft_ref = paragraph_draft_ref(document_id, paragraph.id)
         if not artifacts.exists(draft_ref):
             return SegmentWorkUnit(
                 chapter_id=chapter.id,
                 paragraph_id=paragraph.id,
-                text_preview=_paragraph_preview(
+                text_preview=paragraph_preview(
                     artifacts,
                     document_id,
                     chapter.id,
@@ -78,7 +76,7 @@ def find_next_segment_work(
         for segment in draft.segments:
             if segment_is_complete(artifacts, document_id, segment.id):
                 continue
-            preview = _segment_preview(artifacts, document_id, segment.id, segment.text)
+            preview = segment_text_preview(artifacts, document_id, segment.id, segment.text)
             return SegmentWorkUnit(
                 chapter_id=chapter.id,
                 paragraph_id=paragraph.id,
@@ -88,7 +86,7 @@ def find_next_segment_work(
     return None
 
 
-def _iter_paragraphs(
+def iter_paragraphs(
     artifacts: ArtifactStore,
     document_id: DocumentId,
 ) -> Iterator[tuple[ChapterProposalItem, ParagraphProposalItem]]:
@@ -104,7 +102,7 @@ def _iter_paragraphs(
             yield chapter, paragraph
 
 
-def _paragraph_preview(
+def paragraph_preview(
     artifacts: ArtifactStore,
     document_id: DocumentId,
     chapter_id: ChapterId,
@@ -114,7 +112,7 @@ def _paragraph_preview(
     if artifacts.exists(draft_ref):
         draft = artifacts.read(draft_ref, ParagraphDraft)
         if draft.segments:
-            return _preview_text(draft.segments[0].text)
+            return preview_text(draft.segments[0].text)
     proposal_ref = paragraph_proposal_ref(document_id, chapter_id)
     if artifacts.exists(proposal_ref):
         proposal = artifacts.read(proposal_ref, ParagraphProposal)
@@ -124,7 +122,7 @@ def _paragraph_preview(
     return ""
 
 
-def _segment_preview(
+def segment_text_preview(
     artifacts: ArtifactStore,
     document_id: DocumentId,
     segment_id: SegmentId,
@@ -133,11 +131,11 @@ def _segment_preview(
     input_ref = segment_input_ref(document_id, segment_id)
     if artifacts.exists(input_ref):
         segment_input = artifacts.read(input_ref, SegmentInput)
-        return _preview_text(segment_input.segment_text)
-    return _preview_text(fallback_text)
+        return preview_text(segment_input.segment_text)
+    return preview_text(fallback_text)
 
 
-def _preview_text(text: str, *, limit: int = 40) -> str:
+def preview_text(text: str, *, limit: int = 40) -> str:
     compact = text.replace("\n", " ").strip()
     if len(compact) <= limit:
         return compact
@@ -149,7 +147,7 @@ def iter_segments_in_document_order(
     document_id: DocumentId,
 ) -> list[SegmentId]:
     segment_ids: list[SegmentId] = []
-    for _chapter, paragraph in _iter_paragraphs(artifacts, document_id):
+    for _chapter, paragraph in iter_paragraphs(artifacts, document_id):
         draft_ref = paragraph_draft_ref(document_id, paragraph.id)
         if not artifacts.exists(draft_ref):
             continue

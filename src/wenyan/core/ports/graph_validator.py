@@ -1,15 +1,14 @@
 from typing import Protocol
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 
 from wenyan.core.ports.artifact_ref import ArtifactRef
+from wenyan_models.artifacts.base import DEFAULT_ARTIFACT_CONFIG
 from wenyan_models.domain.ids import ChapterId, DocumentId, ParagraphId, SegmentId
-
-_DEFAULT_MODEL_CONFIG = ConfigDict(frozen=True, populate_by_name=True, extra="forbid")
 
 
 class ValidationIssue(BaseModel):
-    model_config = _DEFAULT_MODEL_CONFIG
+    model_config = DEFAULT_ARTIFACT_CONFIG
 
     code: str
     message: str
@@ -17,7 +16,7 @@ class ValidationIssue(BaseModel):
 
 
 class GraphValidationReport(BaseModel):
-    model_config = _DEFAULT_MODEL_CONFIG
+    model_config = DEFAULT_ARTIFACT_CONFIG
 
     issues: tuple[ValidationIssue, ...]
 

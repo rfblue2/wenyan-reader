@@ -35,7 +35,7 @@ def derive_paragraph_assembly_status(
     validation_ref = paragraph_assembly_validation_ref(document_id, paragraph_id)
     if not segments_complete:
         return _component_item(kind, UnitStatus.PENDING, artifacts, repo_root, package_ref)
-    current_hash = _compute_assembly_input_hash(artifacts, document_id, paragraph_id)
+    current_hash = compute_assembly_input_hash(artifacts, document_id, paragraph_id)
     if current_hash is None:
         return _component_item(kind, UnitStatus.PENDING, artifacts, repo_root, package_ref)
     if not artifacts.exists(package_ref) or not artifacts.exists(validation_ref):
@@ -48,7 +48,7 @@ def derive_paragraph_assembly_status(
     return _component_item(kind, UnitStatus.COMPLETE, artifacts, repo_root, package_ref)
 
 
-def _compute_assembly_input_hash(
+def compute_assembly_input_hash(
     artifacts: ArtifactStore,
     document_id: DocumentId,
     paragraph_id: ParagraphId,

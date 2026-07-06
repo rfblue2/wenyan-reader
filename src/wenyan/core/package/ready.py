@@ -10,7 +10,7 @@ from wenyan_models.artifacts.paragraph import ParagraphDraft
 from wenyan_models.domain.enums import ValidationStatus
 from wenyan_models.domain.ids import DocumentId, ParagraphId
 
-from wenyan.core.status.assembly import _compute_assembly_input_hash
+from wenyan.core.status.assembly import compute_assembly_input_hash
 
 
 def paragraph_segments_complete(
@@ -36,7 +36,7 @@ def paragraph_assembly_is_ready(
     validation_ref = paragraph_assembly_validation_ref(document_id, paragraph_id)
     if not artifacts.exists(package_ref) or not artifacts.exists(validation_ref):
         return False
-    current_hash = _compute_assembly_input_hash(artifacts, document_id, paragraph_id)
+    current_hash = compute_assembly_input_hash(artifacts, document_id, paragraph_id)
     if current_hash is None:
         return False
     validation = artifacts.read(validation_ref, ParagraphAssemblyValidationArtifact)

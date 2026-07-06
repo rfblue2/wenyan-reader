@@ -38,5 +38,5 @@ def test_minimax_client_uses_anthropic_compatible_endpoint(monkeypatch) -> None:
 class _FakePrompt:
     template_name = "test"
 
-    def render(self, _context: object) -> str:
+    def render(self) -> str:
         return "prompt"

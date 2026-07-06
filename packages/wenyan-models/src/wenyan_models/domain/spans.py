@@ -1,10 +1,9 @@
 from typing import Annotated, Self
 
-from pydantic import BaseModel, BeforeValidator, ConfigDict, model_validator
+from pydantic import BaseModel, BeforeValidator, model_validator
 
+from wenyan_models.artifacts.base import DEFAULT_ARTIFACT_CONFIG
 from wenyan_models.domain.ids import ChapterId, ParagraphId, SegmentId, chapter_id, paragraph_id, segment_id
-
-_DEFAULT_MODEL_CONFIG = ConfigDict(frozen=True, populate_by_name=True, extra="forbid")
 
 ChapterIdField = Annotated[ChapterId, BeforeValidator(chapter_id)]
 ParagraphIdField = Annotated[ParagraphId, BeforeValidator(paragraph_id)]
@@ -12,7 +11,7 @@ SegmentIdField = Annotated[SegmentId, BeforeValidator(segment_id)]
 
 
 class TextSpan(BaseModel):
-    model_config = _DEFAULT_MODEL_CONFIG
+    model_config = DEFAULT_ARTIFACT_CONFIG
 
     start: int
     end: int

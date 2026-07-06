@@ -42,7 +42,7 @@ class AnthropicLLMClient(LLMClient):
             "model": self._model,
             "max_tokens": 8192,
             "system": build_structured_system_prompt(model),
-            "messages": [{"role": "user", "content": prompt.render({})}],
+            "messages": [{"role": "user", "content": prompt.render()}],
         }
         headers = {
             "x-api-key": self._api_key,

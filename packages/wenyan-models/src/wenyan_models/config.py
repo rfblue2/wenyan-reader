@@ -1,14 +1,14 @@
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field
 
-_DEFAULT_MODEL_CONFIG = ConfigDict(frozen=True, populate_by_name=True, extra="forbid")
+from wenyan_models.artifacts.base import DEFAULT_ARTIFACT_CONFIG
 
 ModelProvider = Literal["mock", "anthropic", "minimax"]
 
 
 class ProviderModelConfig(BaseModel):
-    model_config = _DEFAULT_MODEL_CONFIG
+    model_config = DEFAULT_ARTIFACT_CONFIG
 
     model: str
 
@@ -19,7 +19,7 @@ class MockModelConfig(ProviderModelConfig):
 
 
 class ModelsConfig(BaseModel):
-    model_config = _DEFAULT_MODEL_CONFIG
+    model_config = DEFAULT_ARTIFACT_CONFIG
 
     provider: ModelProvider = "mock"
     anthropic: ProviderModelConfig
@@ -36,26 +36,26 @@ class ModelsConfig(BaseModel):
 
 
 class RetryConfig(BaseModel):
-    model_config = _DEFAULT_MODEL_CONFIG
+    model_config = DEFAULT_ARTIFACT_CONFIG
 
     max_attempts: int = Field(alias="maxAttempts")
     backoff_seconds: int = Field(alias="backoffSeconds")
 
 
 class ConcurrencyConfig(BaseModel):
-    model_config = _DEFAULT_MODEL_CONFIG
+    model_config = DEFAULT_ARTIFACT_CONFIG
 
     default: int
 
 
 class PromptsConfig(BaseModel):
-    model_config = _DEFAULT_MODEL_CONFIG
+    model_config = DEFAULT_ARTIFACT_CONFIG
 
     root: str
 
 
 class PreprocessingConfig(BaseModel):
-    model_config = _DEFAULT_MODEL_CONFIG
+    model_config = DEFAULT_ARTIFACT_CONFIG
 
     models: ModelsConfig
     retry: RetryConfig

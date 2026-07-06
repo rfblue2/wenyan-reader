@@ -5,7 +5,6 @@ from pathlib import Path
 
 from pydantic import BaseModel, TypeAdapter
 
-from wenyan.core.adapters.prompt_template import RenderedPrompt
 from wenyan.core.ports.llm_client import LLMClient, LLMParseError, StructuredPrompt
 from wenyan_models.artifacts.paragraph import ParagraphDraft, ParagraphDraftSegment
 from wenyan_models.artifacts.segment import TokenizationArtifact
@@ -57,12 +56,7 @@ class MockLLMClient(LLMClient):
         return TypeAdapter(model).validate_python(payload)
 
     def _chapter_proposal[T: BaseModel](self, prompt: StructuredPrompt, model: type[T]) -> T:
-        if isinstance(prompt, RenderedPrompt):
-            text = prompt.context_value("document_text")
-            rendered = prompt.render({})
-        else:
-            rendered = prompt.render({})
-            text = _extract_section(rendered, "Document text:", "DOCUMENT_ID:")
+        text = prompt.context_value("document_text")
         chapters: list[ChapterProposalItem] = []
         for match in re.finditer(r"(?m)^(.+第[一二三四五六七八九十百千]+)$", text):
             start = match.start()
@@ -79,53 +73,42 @@ class MockLLMClient(LLMClient):
         for index, chapter in enumerate(chapters):
             end = chapters[index + 1].start if index + 1 < len(chapters) else len(text)
             chapters[index] = chapter.model_copy(update={"end": end})
-        rendered = prompt.render({})
         proposal = ChapterProposal.model_validate(
             {
-                "documentId": _context_value(rendered, "document_id"),
+                "documentId": prompt.context_value("document_id"),
                 "model": "mock",
-                "inputHash": _context_value(rendered, "input_hash"),
+                "inputHash": prompt.context_value("input_hash"),
                 "attempts": 1,
-                "sourceHash": _context_value(rendered, "source_hash"),
+                "sourceHash": prompt.context_value("source_hash"),
                 "chapters": [chapter.model_dump(by_alias=True) for chapter in chapters],
             },
         )
         return proposal  # type: ignore[return-value]
 
     def _paragraph_proposal[T: BaseModel](self, prompt: StructuredPrompt, model: type[T]) -> T:
-        if isinstance(prompt, RenderedPrompt):
-            text = prompt.context_value("chapter_text")
-            rendered = prompt.render({})
-        else:
-            rendered = prompt.render({})
-            text = _extract_section(rendered, "Chapter text:", "DOCUMENT_ID:")
+        text = prompt.context_value("chapter_text")
         paragraphs = _paragraph_spans_from_blank_lines(text)
         proposal = ParagraphProposal.model_validate(
             {
-                "documentId": _context_value(rendered, "document_id"),
-                "chapterId": _context_value(rendered, "chapter_id"),
+                "documentId": prompt.context_value("document_id"),
+                "chapterId": prompt.context_value("chapter_id"),
                 "model": "mock",
-                "inputHash": _context_value(rendered, "input_hash"),
+                "inputHash": prompt.context_value("input_hash"),
                 "attempts": 1,
-                "chapterTextHash": _context_value(rendered, "chapter_text_hash"),
+                "chapterTextHash": prompt.context_value("chapter_text_hash"),
                 "paragraphs": [item.model_dump(by_alias=True) for item in paragraphs],
             },
         )
         return proposal  # type: ignore[return-value]
 
     def _paragraph_draft[T: BaseModel](self, prompt: StructuredPrompt, model: type[T]) -> T:
-        if isinstance(prompt, RenderedPrompt):
-            text = prompt.context_value("paragraph_text")
-            rendered = prompt.render({})
-        else:
-            rendered = prompt.render({})
-            text = _extract_section(rendered, "Paragraph text:", "PARAGRAPH_ID:")
+        text = prompt.context_value("paragraph_text")
         segments = _segments_from_sentences(text)
         draft = ParagraphDraft.model_validate(
             {
-                "paragraphId": _context_value(rendered, "paragraph_id"),
+                "paragraphId": prompt.context_value("paragraph_id"),
                 "model": "mock",
-                "inputHash": _context_value(rendered, "input_hash"),
+                "inputHash": prompt.context_value("input_hash"),
                 "attempts": 1,
                 "segments": [segment.model_dump(by_alias=True) for segment in segments],
             },
@@ -140,13 +123,8 @@ class MockLLMClient(LLMClient):
     ) -> T:
         fixture_path = self._fixture_dir / fixture_name
         payload = json.loads(fixture_path.read_text(encoding="utf-8"))
-        if isinstance(prompt, RenderedPrompt):
-            payload["segmentId"] = prompt.context_value("segment_id")
-            payload["text"] = prompt.context_value("segment_text")
-        else:
-            rendered = prompt.render({})
-            payload["segmentId"] = _context_value(rendered, "segment_id")
-            payload["text"] = _context_value(rendered, "segment_text")
+        payload["segmentId"] = prompt.context_value("segment_id")
+        payload["text"] = prompt.context_value("segment_text")
         artifact = TypeAdapter(model).validate_python(payload)
         if isinstance(artifact, TokenizationArtifact):
             return artifact.model_copy(
@@ -162,29 +140,15 @@ class MockLLMClient(LLMClient):
     ) -> T:
         fixture_path = self._fixture_dir / fixture_name
         payload = json.loads(fixture_path.read_text(encoding="utf-8"))
-        if isinstance(prompt, RenderedPrompt):
-            payload["segmentId"] = prompt.context_value("segment_id")
-            payload["inputHash"] = prompt.context_value("review_input_hash")
-        else:
-            rendered = prompt.render({})
-            payload["segmentId"] = _context_value(rendered, "segment_id")
-            payload["inputHash"] = _context_value(rendered, "review_input_hash")
+        payload["segmentId"] = prompt.context_value("segment_id")
+        payload["inputHash"] = prompt.context_value("review_input_hash")
         return TypeAdapter(model).validate_python(payload)
 
     def _glosses[T: BaseModel](self, prompt: StructuredPrompt, model: type[T]) -> T:
-        if isinstance(prompt, RenderedPrompt):
-            segment_id_value = prompt.context_value("segment_id")
-            input_hash = prompt.context_value("input_hash")
-            tokenization = json.loads(prompt.context_value("tokenization_json"))
-            candidate_glosses = json.loads(prompt.context_value("candidate_glosses_json"))
-        else:
-            rendered = prompt.render({})
-            segment_id_value = _context_value(rendered, "segment_id")
-            input_hash = _context_value(rendered, "input_hash")
-            tokenization = json.loads(_extract_section(rendered, "Tokenization:", "Candidate glosses:"))
-            candidate_glosses = json.loads(
-                _extract_section(rendered, "Candidate glosses:", "SEGMENT_ID:"),
-            )
+        segment_id_value = prompt.context_value("segment_id")
+        input_hash = prompt.context_value("input_hash")
+        tokenization = json.loads(prompt.context_value("tokenization_json"))
+        candidate_glosses = json.loads(prompt.context_value("candidate_glosses_json"))
         candidates_by_key = {
             (
                 entry["surface"],
@@ -244,25 +208,14 @@ class MockLLMClient(LLMClient):
     def _gloss_review[T: BaseModel](self, prompt: StructuredPrompt, model: type[T]) -> T:
         fixture_path = self._fixture_dir / "segment-gloss-review.json"
         payload = json.loads(fixture_path.read_text(encoding="utf-8"))
-        if isinstance(prompt, RenderedPrompt):
-            payload["segmentId"] = prompt.context_value("segment_id")
-            payload["inputHash"] = prompt.context_value("review_input_hash")
-        else:
-            rendered = prompt.render({})
-            payload["segmentId"] = _context_value(rendered, "segment_id")
-            payload["inputHash"] = _context_value(rendered, "review_input_hash")
+        payload["segmentId"] = prompt.context_value("segment_id")
+        payload["inputHash"] = prompt.context_value("review_input_hash")
         return TypeAdapter(model).validate_python(payload)
 
     def _grammar_notes[T: BaseModel](self, prompt: StructuredPrompt, model: type[T]) -> T:
-        if isinstance(prompt, RenderedPrompt):
-            segment_id_value = prompt.context_value("segment_id")
-            input_hash = prompt.context_value("input_hash")
-            tokenization = json.loads(prompt.context_value("tokenization_json"))
-        else:
-            rendered = prompt.render({})
-            segment_id_value = _context_value(rendered, "segment_id")
-            input_hash = _context_value(rendered, "input_hash")
-            tokenization = json.loads(_extract_section(rendered, "Tokenization:", "Local context:"))
+        segment_id_value = prompt.context_value("segment_id")
+        input_hash = prompt.context_value("input_hash")
+        tokenization = json.loads(prompt.context_value("tokenization_json"))
         grammar_notes: list[dict[str, object]] = []
         zhi_tokens = [token for token in tokenization["tokens"] if token["surface"] == "之"]
         if zhi_tokens:
@@ -285,27 +238,15 @@ class MockLLMClient(LLMClient):
     def _grammar_review[T: BaseModel](self, prompt: StructuredPrompt, model: type[T]) -> T:
         fixture_path = self._fixture_dir / "segment-grammar-review.json"
         payload = json.loads(fixture_path.read_text(encoding="utf-8"))
-        if isinstance(prompt, RenderedPrompt):
-            payload["segmentId"] = prompt.context_value("segment_id")
-            payload["inputHash"] = prompt.context_value("review_input_hash")
-        else:
-            rendered = prompt.render({})
-            payload["segmentId"] = _context_value(rendered, "segment_id")
-            payload["inputHash"] = _context_value(rendered, "review_input_hash")
+        payload["segmentId"] = prompt.context_value("segment_id")
+        payload["inputHash"] = prompt.context_value("review_input_hash")
         return TypeAdapter(model).validate_python(payload)
 
     def _context_notes[T: BaseModel](self, prompt: StructuredPrompt, model: type[T]) -> T:
-        if isinstance(prompt, RenderedPrompt):
-            segment_id_value = prompt.context_value("segment_id")
-            input_hash = prompt.context_value("input_hash")
-        else:
-            rendered = prompt.render({})
-            segment_id_value = _context_value(rendered, "segment_id")
-            input_hash = _context_value(rendered, "input_hash")
         payload = {
-            "segmentId": segment_id_value,
+            "segmentId": prompt.context_value("segment_id"),
             "model": "mock",
-            "inputHash": input_hash,
+            "inputHash": prompt.context_value("input_hash"),
             "attempts": 1,
             "contextNotes": [],
         }
@@ -314,13 +255,8 @@ class MockLLMClient(LLMClient):
     def _context_review[T: BaseModel](self, prompt: StructuredPrompt, model: type[T]) -> T:
         fixture_path = self._fixture_dir / "segment-context-review.json"
         payload = json.loads(fixture_path.read_text(encoding="utf-8"))
-        if isinstance(prompt, RenderedPrompt):
-            payload["segmentId"] = prompt.context_value("segment_id")
-            payload["inputHash"] = prompt.context_value("review_input_hash")
-        else:
-            rendered = prompt.render({})
-            payload["segmentId"] = _context_value(rendered, "segment_id")
-            payload["inputHash"] = _context_value(rendered, "review_input_hash")
+        payload["segmentId"] = prompt.context_value("segment_id")
+        payload["inputHash"] = prompt.context_value("review_input_hash")
         return TypeAdapter(model).validate_python(payload)
 
 
@@ -375,20 +311,3 @@ def _paragraph_spans_from_blank_lines(text: str) -> tuple[ParagraphProposalItem,
             ),
         )
     return tuple(paragraphs)
-
-
-def _extract_section(rendered: str, heading: str, next_marker: str) -> str:
-    if heading not in rendered:
-        raise LLMParseError(f"missing section: {heading}")
-    after_heading = rendered.split(heading, 1)[1].lstrip("\n")
-    if next_marker not in after_heading:
-        raise LLMParseError(f"missing marker: {next_marker}")
-    return after_heading.split(next_marker, 1)[0].rstrip(" \t")
-
-
-def _context_value(rendered: str, key: str) -> str:
-    marker = f"{key.upper()}:"
-    for line in rendered.splitlines():
-        if line.startswith(marker):
-            return line.removeprefix(marker).strip()
-    raise LLMParseError(f"missing {key} in prompt context")

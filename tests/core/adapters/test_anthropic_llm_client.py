@@ -13,7 +13,7 @@ class _SampleModel(BaseModel):
 class _FakePrompt:
     template_name = "test"
 
-    def render(self, _context: object) -> str:
+    def render(self) -> str:
         return "prompt"
 
 

@@ -8,8 +8,8 @@ from wenyan.core.ports.artifact_ref import (
 )
 from wenyan.core.ports.artifact_store import ArtifactStore
 from wenyan.core.run.segment_pipeline import pending_segment_subjobs
-from wenyan.core.run.work_queue import _iter_paragraphs
-from wenyan.core.status.assembly import _compute_assembly_input_hash
+from wenyan.core.run.work_queue import iter_paragraphs
+from wenyan.core.status.assembly import compute_assembly_input_hash
 from wenyan_models.artifacts.assembly import ParagraphAssemblyValidationArtifact
 from wenyan_models.artifacts.paragraph import ParagraphDraft
 from wenyan_models.domain.ids import DocumentId, ParagraphId
@@ -46,7 +46,7 @@ def _paragraph_assembly_is_stale(
     if not artifacts.exists(validation_ref):
         return True
 
-    current_hash = _compute_assembly_input_hash(artifacts, document_id, paragraph_id)
+    current_hash = compute_assembly_input_hash(artifacts, document_id, paragraph_id)
     if current_hash is None:
         return True
 
@@ -60,7 +60,7 @@ def find_stale_assembly_paragraphs(
     document_id: DocumentId,
 ) -> tuple[ParagraphId, ...]:
     stale: list[ParagraphId] = []
-    for _chapter, paragraph in _iter_paragraphs(artifacts, document_id):
+    for _chapter, paragraph in iter_paragraphs(artifacts, document_id):
         draft_ref = paragraph_draft_ref(document_id, paragraph.id)
         if not artifacts.exists(draft_ref):
             continue

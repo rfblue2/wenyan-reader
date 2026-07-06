@@ -9,7 +9,7 @@ from wenyan.bootstrap import build_job_context
 from wenyan.cli.status_scope import StatusScope, resolve_status_scope
 from wenyan.jobs.context import JobContext, JobOptions
 from wenyan.jobs.runners import SegmentJobRunner
-from wenyan_models.domain.ids import ChapterId, DocumentId, ParagraphId, SegmentId, document_id
+from wenyan_models.domain.ids import ChapterId, DocumentId, ParagraphId, SegmentId
 from wenyan_models.domain.results import JobFailure, JobOutcome, Promoted, Skipped, outcome_exit_code
 from wenyan_models.domain.targets import SegmentTarget, paragraph_batch_target, single_segment_target
 
@@ -44,9 +44,13 @@ def _resolve_scope(
 
 def resolve_document_context(document: str) -> tuple[JobContext, DocumentId]:
     ctx = build_job_context(_repo_root())
-    entry = ctx.registry.resolve(document)
-    doc_id = entry.document_id or document_id(document)
-    return ctx, doc_id
+    try:
+        entry = ctx.registry.resolve(document)
+    except ValueError as exc:
+        _bad_ref(exc)
+    if entry.document_id is None:
+        raise typer.BadParameter(f"document {document!r} has not been ingested yet")
+    return ctx, entry.document_id
 
 
 def resolve_document_context_with_ref(document: str) -> tuple[JobContext, DocumentId, str]:

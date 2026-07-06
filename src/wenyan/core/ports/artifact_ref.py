@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 
+from wenyan_models.artifacts.base import DEFAULT_ARTIFACT_CONFIG
 from wenyan_models.domain.enums import ArtifactKind
 from wenyan_models.domain.ids import (
     ChapterId,
@@ -10,11 +11,9 @@ from wenyan_models.domain.ids import (
     SegmentId,
 )
 
-_DEFAULT_MODEL_CONFIG = ConfigDict(frozen=True, populate_by_name=True, extra="forbid")
-
 
 class ArtifactRef(BaseModel):
-    model_config = _DEFAULT_MODEL_CONFIG
+    model_config = DEFAULT_ARTIFACT_CONFIG
 
     kind: ArtifactKind
     document_id: DocumentId
