@@ -1,77 +1,50 @@
+import json
+
+from wenyan.core.adapters.hashing import sha256_text
 from wenyan.core.gloss.glossary_draft import (
     load_candidate_glosses,
     normalize_gloss_reuse,
 )
-import json
-
-from wenyan.core.adapters.hashing import sha256_text
-from wenyan.core.adapters.prompt_template import RenderedPrompt, load_prompt_template
 from wenyan.core.ports.artifact_ref import (
     segment_glosses_ref,
     segment_input_ref,
     segment_tokenization_ref,
-    segment_tokenization_review_ref,
 )
-from wenyan.core.run.segment_pipeline import invalidate_segment_review
 from wenyan.jobs.context import JobContext, JobOptions
-from wenyan_models.artifacts.segment import (
-    GlossesArtifact,
-    TokenizationArtifact,
-    TokenizationReviewArtifact,
+from wenyan.jobs.segment_runner import (
+    SegmentAnnotateJobSpec,
+    load_approved_tokenization_review,
+    run_segment_annotate_job,
+    run_segment_batch,
 )
-from wenyan_models.domain.enums import ComponentKind, ReviewStatus
-from wenyan_models.domain.ids import DocumentId, SegmentId, segment_id
-from wenyan_models.domain.results import JobFailure, JobOutcome, Promoted, Skipped
-from wenyan_models.domain.targets import ParagraphBatch, SegmentTarget, SingleSegment
+from wenyan_models.artifacts.segment import GlossesArtifact, TokenizationArtifact
+from wenyan_models.domain.enums import ComponentKind
+from wenyan_models.domain.ids import ContentHash, DocumentId, SegmentId
+from wenyan_models.domain.results import JobFailure, JobOutcome
+from wenyan_models.domain.targets import SegmentTarget
 
 
-def run_gloss_segment(
-    ctx: JobContext,
-    document_id: DocumentId,
-    target: SegmentTarget,
-    options: JobOptions,
-) -> JobOutcome[GlossesArtifact]:
-    segment_ids = _resolve_segment_ids(ctx, document_id, target)
-    if not segment_ids:
-        return JobFailure(code="missing-segment", message="no segments to gloss")
-    last: GlossesArtifact | None = None
-    for segment_id_value in segment_ids:
-        outcome = _gloss_one(ctx, document_id, segment_id_value, options)
-        match outcome:
-            case JobFailure():
-                return outcome
-            case Skipped():
-                continue
-            case Promoted(artifact=artifact):
-                last = artifact
-    if last is None:
-        return Skipped(reason="all segments already glossed")
-    return Promoted(artifact=last)
-
-
-def _gloss_one(
+def _prepare_gloss(
     ctx: JobContext,
     document_id: DocumentId,
     segment_id_value: SegmentId,
     options: JobOptions,
-) -> JobOutcome[GlossesArtifact]:
-    upstream = _load_approved_tokenization_review(ctx, document_id, segment_id_value)
+) -> JobFailure | tuple[ContentHash, dict[str, str]]:
+    del options
+    upstream = load_approved_tokenization_review(
+        ctx,
+        document_id,
+        segment_id_value,
+        missing_review_message="approved tokenization review is required before glossing",
+        blocked_message="tokenization review must be approved before glossing",
+    )
     if isinstance(upstream, JobFailure):
         return upstream
     tokenization, tokenization_review = upstream
     input_ref = segment_input_ref(document_id, segment_id_value)
     if not ctx.artifacts.exists(input_ref):
         return JobFailure(code="missing-input", message="segment input is missing")
-    glosses_ref = segment_glosses_ref(document_id, segment_id_value)
     input_hash = sha256_text(tokenization_review.model_dump_json(by_alias=True))
-    if ctx.artifacts.exists(glosses_ref) and not options.force:
-        existing = ctx.artifacts.read(glosses_ref, GlossesArtifact)
-        if existing.input_hash == input_hash:
-            return Skipped(reason="glosses are current")
-    template = load_prompt_template(
-        ctx.repo_root / ctx.config.prompts.root,
-        "segment-gloss",
-    )
     all_candidates = load_candidate_glosses(ctx.artifacts, document_id, segment_id_value)
     context = {
         "segment_id": str(segment_id_value),
@@ -83,69 +56,57 @@ def _gloss_one(
             ensure_ascii=False,
         ),
     }
-    glosses = ctx.llm.complete_model(RenderedPrompt(template, context), GlossesArtifact)
-    glosses = normalize_gloss_reuse(glosses, tokenization, all_candidates)
-    glosses = glosses.model_copy(
-        update={
-            "segment_id": segment_id_value,
-            "input_hash": input_hash,
-            "model": ctx.config.models.active_model,
-            "attempts": 1,
-        },
-    )
-    if options.dry_run:
-        return Promoted(artifact=glosses)
-    invalidate_segment_review(
-        ctx.artifacts,
-        document_id,
-        segment_id_value,
-        ComponentKind.GLOSS_SEGMENT,
-        dry_run=False,
-    )
-    ctx.artifacts.write(glosses_ref, glosses, dry_run=False)
-    return Promoted(artifact=glosses)
+    return input_hash, context
 
 
-def _load_approved_tokenization_review(
+def _post_process_gloss(
+    glosses: GlossesArtifact,
     ctx: JobContext,
     document_id: DocumentId,
     segment_id_value: SegmentId,
-) -> JobFailure | tuple[TokenizationArtifact, TokenizationReviewArtifact]:
-    tokenization_ref = segment_tokenization_ref(document_id, segment_id_value)
-    if not ctx.artifacts.exists(tokenization_ref):
-        return JobFailure(code="missing-input", message="tokenization artifact is missing")
-    tokenization = ctx.artifacts.read(tokenization_ref, TokenizationArtifact)
-    review_ref = segment_tokenization_review_ref(document_id, segment_id_value)
-    if not ctx.artifacts.exists(review_ref):
-        return JobFailure(
-            code="missing-input",
-            message="approved tokenization review is required before glossing",
-        )
-    review = ctx.artifacts.read(review_ref, TokenizationReviewArtifact)
-    if review.status != ReviewStatus.APPROVED:
-        return JobFailure(
-            code="blocked-upstream",
-            message="tokenization review must be approved before glossing",
-        )
-    return tokenization, review
+    input_hash: ContentHash,
+) -> GlossesArtifact:
+    del input_hash
+    tokenization = ctx.artifacts.read(
+        segment_tokenization_ref(document_id, segment_id_value),
+        TokenizationArtifact,
+    )
+    all_candidates = load_candidate_glosses(ctx.artifacts, document_id, segment_id_value)
+    return normalize_gloss_reuse(glosses, tokenization, all_candidates)
 
 
-def _resolve_segment_ids(
+_GLOSS_SPEC = SegmentAnnotateJobSpec(
+    prompt_name="segment-gloss",
+    output_model=GlossesArtifact,
+    artifact_ref=segment_glosses_ref,
+    component_kind=ComponentKind.GLOSS_SEGMENT,
+    skip_reason="glosses are current",
+    prepare=_prepare_gloss,
+    post_process=_post_process_gloss,
+)
+
+
+def run_gloss_segment(
     ctx: JobContext,
     document_id: DocumentId,
     target: SegmentTarget,
-) -> list[SegmentId]:
-    match target:
-        case SingleSegment(segment_id=segment_id_value):
-            return [segment_id_value]
-        case ParagraphBatch(paragraph_id=paragraph_id_value):
-            from wenyan.core.ports.artifact_ref import paragraph_draft_ref
-            from wenyan_models.artifacts.paragraph import ParagraphDraft
+    options: JobOptions,
+) -> JobOutcome[GlossesArtifact]:
+    return run_segment_batch(
+        ctx,
+        document_id,
+        target,
+        options,
+        empty_message="no segments to gloss",
+        all_skipped_reason="all segments already glossed",
+        run_one=_gloss_one,
+    )
 
-            draft_ref = paragraph_draft_ref(document_id, paragraph_id_value)
-            if not ctx.artifacts.exists(draft_ref):
-                return []
-            draft = ctx.artifacts.read(draft_ref, ParagraphDraft)
-            return [segment_id(str(segment.id)) for segment in draft.segments]
-    return []
 
+def _gloss_one(
+    ctx: JobContext,
+    document_id: DocumentId,
+    segment_id_value: SegmentId,
+    options: JobOptions,
+) -> JobOutcome[GlossesArtifact]:
+    return run_segment_annotate_job(ctx, document_id, segment_id_value, options, _GLOSS_SPEC)
