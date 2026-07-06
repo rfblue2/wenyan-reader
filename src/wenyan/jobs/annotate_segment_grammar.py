@@ -1,5 +1,3 @@
-import json
-
 from wenyan.core.adapters.hashing import sha256_text
 from wenyan.core.adapters.prompt_template import RenderedPrompt, load_prompt_template
 from wenyan.core.notes.normalize_notes import normalize_grammar_notes
@@ -76,7 +74,7 @@ def _annotate_one(
         "segment_text": tokenization.text,
         "input_hash": str(input_hash),
         "tokenization_json": tokenization.model_dump_json(by_alias=True),
-        "local_context_json": json.dumps(segment_input.local_context, ensure_ascii=False),
+        "local_context_json": segment_input.local_context.model_dump_json(by_alias=True),
     }
     grammar_notes = ctx.llm.complete_model(RenderedPrompt(template, context), GrammarNotesArtifact)
     grammar_notes = grammar_notes.model_copy(

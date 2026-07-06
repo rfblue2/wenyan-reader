@@ -10,6 +10,7 @@ from wenyan_models.artifacts.base import (
     SegmentIdField,
 )
 from wenyan_models.domain.enums import ComponentKind, ReviewStatus, UnitStatus
+from wenyan_models.domain.review import ReviewFinding
 from wenyan_models.status.component import ComponentStatusItem
 
 
@@ -56,7 +57,7 @@ class ReviewShowItem(BaseModel):
 
     kind: ComponentKind
     status: ReviewStatus
-    findings: tuple[dict[str, object], ...] = ()
+    findings: tuple[ReviewFinding, ...] = ()
     finding_lines: tuple[str, ...] = Field(default=(), alias="findingLines")
     source_grounding: tuple[dict[str, object], ...] = Field(default=(), alias="sourceGrounding")
 

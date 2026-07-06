@@ -152,6 +152,8 @@ def test_render_segment_show_tokenization_only(tmp_workspace: Path) -> None:
 def test_render_segment_show_rejected_gloss_review(tmp_workspace: Path, monkeypatch) -> None:
     from wenyan.core.adapters import mock_llm_client
 
+    from wenyan_models.domain.review import ReviewFinding
+
     original = mock_llm_client.MockLLMClient._gloss_review
 
     def reject_review(self, prompt, model):  # type: ignore[no-untyped-def]
@@ -159,7 +161,11 @@ def test_render_segment_show_rejected_gloss_review(tmp_workspace: Path, monkeypa
         return result.model_copy(
             update={
                 "status": ReviewStatus.REJECTED,
-                "findings": ({"severity": "error", "message": "Wrong sense for 之."},),
+                "findings": (
+                    ReviewFinding.model_validate(
+                        {"severity": "error", "message": "Wrong sense for 之."},
+                    ),
+                ),
             },
         )
 

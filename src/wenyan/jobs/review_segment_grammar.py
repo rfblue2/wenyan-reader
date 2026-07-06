@@ -1,5 +1,3 @@
-import json
-
 from wenyan.core.adapters.hashing import sha256_text
 from wenyan.core.adapters.prompt_template import RenderedPrompt, load_prompt_template
 from wenyan.core.ports.artifact_ref import (
@@ -63,7 +61,7 @@ def run_review_segment_grammar(
         "tokenization_json": tokenization.model_dump_json(by_alias=True),
         "grammar_notes_json": grammar_notes.model_dump_json(by_alias=True),
         "glosses_json": glosses_json,
-        "local_context_json": json.dumps(segment_input.local_context, ensure_ascii=False),
+        "local_context_json": segment_input.local_context.model_dump_json(by_alias=True),
     }
     review = ctx.llm.complete_model(RenderedPrompt(template, context), GrammarReviewArtifact)
     review = review.model_copy(

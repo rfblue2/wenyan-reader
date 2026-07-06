@@ -6,8 +6,18 @@ from wenyan_models.artifacts.base import (
     ParagraphIdField,
     SegmentIdField,
 )
+from wenyan_models.artifacts.segment import NoteCitation
 from wenyan_models.domain.enums import ValidationStatus
 from wenyan_models.domain.validation import CheckResult
+
+
+class ParagraphContextNote(BaseModel):
+    model_config = DEFAULT_ARTIFACT_CONFIG
+
+    id: str
+    anchor_segment_ids: tuple[str, ...] = Field(alias="anchorSegmentIds")
+    body: str
+    sources: tuple[NoteCitation | str, ...] = ()
 
 
 class ParagraphDraftSegment(BaseModel):
@@ -25,7 +35,7 @@ class ParagraphDraft(BaseModel):
     input_hash: ContentHashField = Field(alias="inputHash")
     attempts: int
     segments: tuple[ParagraphDraftSegment, ...]
-    paragraph_context_notes: tuple[dict[str, object], ...] = Field(
+    paragraph_context_notes: tuple[ParagraphContextNote, ...] = Field(
         default=(),
         alias="paragraphContextNotes",
     )

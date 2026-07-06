@@ -11,6 +11,15 @@ from wenyan_models.artifacts.base import (
     SegmentIdField,
 )
 from wenyan_models.domain.enums import ReviewStatus
+from wenyan_models.domain.review import ReviewFinding
+
+
+class SegmentLocalContext(BaseModel):
+    model_config = DEFAULT_ARTIFACT_CONFIG
+
+    paragraph_summary: str = Field(default="", alias="paragraphSummary")
+    previous_segment: str | None = Field(default=None, alias="previousSegment")
+    next_segment: str | None = Field(default=None, alias="nextSegment")
 
 
 class GrammarNoteItem(BaseModel):
@@ -55,7 +64,10 @@ class SegmentInput(BaseModel):
     paragraph_id: ParagraphIdField = Field(alias="paragraphId")
     segment_id: SegmentIdField = Field(alias="segmentId")
     segment_text: str = Field(alias="segmentText")
-    local_context: dict[str, object] = Field(default_factory=dict, alias="localContext")
+    local_context: SegmentLocalContext = Field(
+        default_factory=SegmentLocalContext,
+        alias="localContext",
+    )
 
 
 class TokenItem(BaseModel):
@@ -86,7 +98,7 @@ class TokenizationReviewArtifact(BaseModel):
     input_hash: ContentHashField = Field(alias="inputHash")
     attempts: int
     status: ReviewStatus
-    findings: tuple[dict[str, object], ...] = ()
+    findings: tuple[ReviewFinding, ...] = ()
 
 
 class GlossEntry(BaseModel):
@@ -126,7 +138,7 @@ class GlossReviewArtifact(BaseModel):
     input_hash: ContentHashField = Field(alias="inputHash")
     attempts: int
     status: ReviewStatus
-    findings: tuple[dict[str, object], ...] = ()
+    findings: tuple[ReviewFinding, ...] = ()
 
 
 class GrammarNotesArtifact(BaseModel):
@@ -147,7 +159,7 @@ class GrammarReviewArtifact(BaseModel):
     input_hash: ContentHashField = Field(alias="inputHash")
     attempts: int
     status: ReviewStatus
-    findings: tuple[dict[str, object], ...] = ()
+    findings: tuple[ReviewFinding, ...] = ()
 
 
 class ContextNotesArtifact(BaseModel):
@@ -168,5 +180,5 @@ class ContextReviewArtifact(BaseModel):
     input_hash: ContentHashField = Field(alias="inputHash")
     attempts: int
     status: ReviewStatus
-    findings: tuple[dict[str, object], ...] = ()
+    findings: tuple[ReviewFinding, ...] = ()
     source_grounding: tuple[SourceGroundingItem, ...] = Field(default=(), alias="sourceGrounding")

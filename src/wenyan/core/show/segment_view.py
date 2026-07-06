@@ -10,7 +10,6 @@ from wenyan.core.ports.artifact_ref import (
     segment_tokenization_ref,
 )
 from wenyan.core.ports.artifact_store import ArtifactStore
-from wenyan.core.review.findings import format_review_findings
 from wenyan.core.run.segment_pipeline import read_review_component
 from wenyan.core.status.derivation import derive_segment_status, find_segment_location
 from wenyan_models.artifacts.segment import (
@@ -270,7 +269,9 @@ def _build_review_items(
             "kind": component,
             "status": review.status,
             "findings": list(review.findings),
-            "findingLines": list(format_review_findings(review.findings)),
+            "findingLines": list(
+                line for finding in review.findings if (line := finding.display_line())
+            ),
         }
         if isinstance(review, ContextReviewArtifact):
             review_payload["sourceGrounding"] = [

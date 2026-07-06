@@ -83,11 +83,10 @@ def _citation_to_reader_source(citation: NoteCitation) -> ReaderNoteSource:
     return ReaderNoteSource(label=citation.label, detail=citation.excerpt)
 
 
-def _reader_source_from_dict(source: dict[str, object]) -> ReaderNoteSource:
-    detail_value = source.get("detail", "")
-    if not detail_value:
-        detail_value = source.get("excerpt", "")
-    return ReaderNoteSource(label=str(source.get("label", "")), detail=str(detail_value))
+def _source_to_reader(source: NoteCitation | str) -> ReaderNoteSource:
+    if isinstance(source, NoteCitation):
+        return _citation_to_reader_source(source)
+    return ReaderNoteSource(label=str(source), detail="")
 
 
 def _lowest_start_token_id(output: CompiledSegmentInputs) -> str:
@@ -105,33 +104,30 @@ def _fold_paragraph_context_notes(
         return segments
 
     segment_index = {segment.id: index for index, segment in enumerate(segments)}
+    draft_segment_ids = {str(segment.id) for segment in draft.segments}
     updated = list(segments)
 
-    for note_dict in draft.paragraph_context_notes:
-        anchor_segment_ids = note_dict.get("anchorSegmentIds", ())
-        if not isinstance(anchor_segment_ids, (list, tuple)) or not anchor_segment_ids:
-            continue
-        target_segment_id = segment_id(str(anchor_segment_ids[0]))
+    for note in draft.paragraph_context_notes:
+        if not note.anchor_segment_ids:
+            raise ValueError(f"paragraph context note {note.id} has no anchor segment ids")
+        target_segment_id = segment_id(note.anchor_segment_ids[0])
+        if str(target_segment_id) not in draft_segment_ids:
+            raise ValueError(
+                f"paragraph context note {note.id} anchors unknown segment {target_segment_id}",
+            )
         if target_segment_id not in segment_index:
-            continue
+            raise ValueError(
+                f"paragraph context note {note.id} anchors segment {target_segment_id} not in draft",
+            )
 
         output = outputs_by_id[target_segment_id]
         anchor_token_id = _lowest_start_token_id(output)
-        sources_raw = note_dict.get("sources", ())
-        sources: tuple[ReaderNoteSource, ...] = ()
-        if isinstance(sources_raw, (list, tuple)):
-            sources = tuple(
-                _reader_source_from_dict(source)
-                if isinstance(source, dict)
-                else ReaderNoteSource(label=str(source), detail="")
-                for source in sources_raw
-            )
-
+        sources = tuple(_source_to_reader(source) for source in note.sources)
         reader_note = ReaderNote(
-            id=str(note_dict["id"]),
+            id=note.id,
             type="context",
             anchorTokenIds=(anchor_token_id,),
-            body=str(note_dict.get("body", "")),
+            body=note.body,
             sources=sources,
         )
         index = segment_index[target_segment_id]
