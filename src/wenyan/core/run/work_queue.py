@@ -1,3 +1,5 @@
+from collections.abc import Iterator
+
 from pydantic import BaseModel, ConfigDict
 
 from wenyan.core.ports.artifact_ref import (
@@ -10,15 +12,20 @@ from wenyan.core.ports.artifact_store import ArtifactStore
 from wenyan.core.run.segment_pipeline import segment_is_complete
 from wenyan_models.artifacts.paragraph import ParagraphDraft
 from wenyan_models.artifacts.segment import SegmentInput
-from wenyan_models.artifacts.structure import ChapterProposal, ParagraphProposal
+from wenyan_models.artifacts.structure import (
+    ChapterProposal,
+    ChapterProposalItem,
+    ParagraphProposal,
+    ParagraphProposalItem,
+)
 from wenyan_models.domain.ids import ChapterId, DocumentId, ParagraphId, SegmentId
 
 
-_DEFAULT_MODEL_CONFIG = {"frozen": True, "populate_by_name": True, "extra": "forbid"}
+_DEFAULT_MODEL_CONFIG = ConfigDict(frozen=True, populate_by_name=True, extra="forbid")
 
 
 class SegmentWorkUnit(BaseModel):
-    model_config = ConfigDict(**_DEFAULT_MODEL_CONFIG)
+    model_config = _DEFAULT_MODEL_CONFIG
 
     chapter_id: ChapterId
     paragraph_id: ParagraphId
@@ -27,7 +34,7 @@ class SegmentWorkUnit(BaseModel):
 
 
 class ParagraphWorkUnit(BaseModel):
-    model_config = ConfigDict(**_DEFAULT_MODEL_CONFIG)
+    model_config = _DEFAULT_MODEL_CONFIG
 
     chapter_id: ChapterId
     paragraph_id: ParagraphId
@@ -84,7 +91,7 @@ def find_next_segment_work(
 def _iter_paragraphs(
     artifacts: ArtifactStore,
     document_id: DocumentId,
-):
+) -> Iterator[tuple[ChapterProposalItem, ParagraphProposalItem]]:
     if not artifacts.exists(chapter_proposal_ref(document_id)):
         return
     chapter_proposal = artifacts.read(chapter_proposal_ref(document_id), ChapterProposal)

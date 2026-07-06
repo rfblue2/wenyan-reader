@@ -3,7 +3,6 @@ from pathlib import Path
 from wenyan.bootstrap import build_job_context
 from wenyan.core.ports.artifact_ref import (
     segment_gloss_review_ref,
-    segment_glosses_ref,
     segment_grammar_notes_ref,
     segment_grammar_review_ref,
     segment_tokenization_review_ref,

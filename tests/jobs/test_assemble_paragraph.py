@@ -11,7 +11,6 @@ from wenyan.jobs.ingest_document import run_ingest_document
 from wenyan.jobs.split_paragraphs import run_split_paragraphs
 from wenyan.jobs.split_segments import run_split_segments
 from wenyan.jobs.tokenize_segment import run_tokenize_segment
-from wenyan_models.artifacts.assembly import ParagraphAssemblyValidationArtifact
 from wenyan_models.domain.ids import paragraph_id
 from wenyan_models.domain.results import JobFailure, Promoted, Skipped, outcome_exit_code
 from wenyan_models.domain.targets import single_segment_target

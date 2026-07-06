@@ -53,7 +53,7 @@ def run_split_segments(
         ctx.repo_root / ctx.config.prompts.root,
         "paragraph-segmentation",
     )
-    context = {
+    context: dict[str, str | PromptTextSlice] = {
         "paragraph_text": PromptTextSlice(document_id, paragraph_start, paragraph_end),
         "paragraph_id": str(paragraph_id_value),
         "input_hash": str(input_hash),

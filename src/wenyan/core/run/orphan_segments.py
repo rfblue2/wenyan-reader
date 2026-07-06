@@ -10,11 +10,11 @@ from wenyan.core.run.work_queue import iter_segments_in_document_order
 from wenyan_models.artifacts.segment import SegmentInput
 from wenyan_models.domain.ids import DocumentId, SegmentId, segment_id
 
-_DEFAULT_MODEL_CONFIG = {"frozen": True, "populate_by_name": True, "extra": "forbid"}
+_DEFAULT_MODEL_CONFIG = ConfigDict(frozen=True, populate_by_name=True, extra="forbid")
 
 
 class OrphanSegmentItem(BaseModel):
-    model_config = ConfigDict(**_DEFAULT_MODEL_CONFIG)
+    model_config = _DEFAULT_MODEL_CONFIG
 
     segment_id: SegmentId
     path: str
@@ -22,7 +22,7 @@ class OrphanSegmentItem(BaseModel):
 
 
 class PruneOrphanSegmentsResult(BaseModel):
-    model_config = ConfigDict(**_DEFAULT_MODEL_CONFIG)
+    model_config = _DEFAULT_MODEL_CONFIG
 
     dry_run: bool
     removed: tuple[OrphanSegmentItem, ...]

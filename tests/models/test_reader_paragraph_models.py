@@ -1,4 +1,4 @@
-from wenyan_models.reader.paragraph import ParagraphPackage, ReaderNote, ReaderSegment, ReaderToken
+from wenyan_models.reader.paragraph import ParagraphPackage
 
 
 def test_paragraph_package_roundtrip_minimal():

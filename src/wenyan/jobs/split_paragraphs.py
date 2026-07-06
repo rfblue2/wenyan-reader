@@ -39,7 +39,7 @@ def run_split_paragraphs(
         ctx.repo_root / ctx.config.prompts.root,
         "paragraph-structure",
     )
-    context = {
+    context: dict[str, str | PromptTextSlice] = {
         "chapter_text": PromptTextSlice(document_id, chapter.start, chapter.end),
         "document_id": str(document_id),
         "chapter_id": str(chapter_id),

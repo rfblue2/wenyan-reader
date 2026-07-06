@@ -21,6 +21,13 @@ from wenyan_models.artifacts.segment import (
 from wenyan_models.domain.enums import ComponentKind, ReviewStatus, UnitStatus
 from wenyan_models.domain.ids import DocumentId, SegmentId
 
+type SegmentReviewArtifact = (
+    TokenizationReviewArtifact
+    | GlossReviewArtifact
+    | GrammarReviewArtifact
+    | ContextReviewArtifact
+)
+
 SEGMENT_SUBJOBS: tuple[ComponentKind, ...] = (
     ComponentKind.TOKENIZE_SEGMENT,
     ComponentKind.REVIEW_SEGMENT_TOKENIZATION,
@@ -46,7 +53,7 @@ _REVIEW_REF: dict[ComponentKind, Callable[[DocumentId, SegmentId], ArtifactRef]]
     ComponentKind.REVIEW_SEGMENT_CONTEXT: segment_context_review_ref,
 }
 
-_REVIEW_MODEL = {
+_REVIEW_MODEL: dict[ComponentKind, type[SegmentReviewArtifact]] = {
     ComponentKind.REVIEW_SEGMENT_TOKENIZATION: TokenizationReviewArtifact,
     ComponentKind.REVIEW_SEGMENT_GLOSS: GlossReviewArtifact,
     ComponentKind.REVIEW_SEGMENT_GRAMMAR: GrammarReviewArtifact,
@@ -102,10 +109,7 @@ def component_unit_status(
         review_ref = _REVIEW_REF[component](document_id, segment_id)
         if not artifacts.exists(review_ref):
             return UnitStatus.PENDING
-        review_model = _REVIEW_MODEL.get(component)
-        if review_model is None:
-            return UnitStatus.PENDING
-        review = artifacts.read(review_ref, review_model)
+        review = artifacts.read(review_ref, _REVIEW_MODEL[component])
         if review.status == ReviewStatus.APPROVED:
             return UnitStatus.COMPLETE
         return UnitStatus.BLOCKED
@@ -117,16 +121,13 @@ def read_review_component(
     document_id: DocumentId,
     segment_id: SegmentId,
     component: ComponentKind,
-) -> TokenizationReviewArtifact | GlossReviewArtifact | GrammarReviewArtifact | ContextReviewArtifact | None:
+) -> SegmentReviewArtifact | None:
     if component not in _REVIEW_REF:
         return None
     review_ref = _REVIEW_REF[component](document_id, segment_id)
     if not artifacts.exists(review_ref):
         return None
-    review_model = _REVIEW_MODEL.get(component)
-    if review_model is None:
-        return None
-    return artifacts.read(review_ref, review_model)
+    return artifacts.read(review_ref, _REVIEW_MODEL[component])
 
 
 _DRAFT_FOR_REVIEW: dict[ComponentKind, ComponentKind] = {

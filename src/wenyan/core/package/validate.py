@@ -97,10 +97,10 @@ def validate_document_package(
 
     status = ValidationStatus.PASSED if not checks else ValidationStatus.FAILED
     return PackageValidationArtifact(
-        input_hash=input_hash,
+        inputHash=input_hash,
         status=status,
         checks=tuple(checks),
-        paragraphs_packaged=paragraphs_packaged,
+        paragraphsPackaged=paragraphs_packaged,
     )
 
 

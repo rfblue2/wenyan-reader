@@ -1,5 +1,6 @@
 import codecs
 from pathlib import Path
+from typing import IO
 
 from wenyan_models.artifacts.normalized import TextByteIndex
 
@@ -29,7 +30,7 @@ def read_text_slice(path: Path, index: TextByteIndex, start: int, end: int) -> s
 
 
 def _seek_char_position(
-    handle,
+    handle: IO[bytes],
     decoder: codecs.IncrementalDecoder,
     *,
     target_char: int,
@@ -53,7 +54,12 @@ def _seek_char_position(
     return current_char, carry
 
 
-def _read_chars(handle, decoder: codecs.IncrementalDecoder, carry: str, length: int) -> str:
+def _read_chars(
+    handle: IO[bytes],
+    decoder: codecs.IncrementalDecoder,
+    carry: str,
+    length: int,
+) -> str:
     if length <= 0:
         return ""
     parts: list[str] = []

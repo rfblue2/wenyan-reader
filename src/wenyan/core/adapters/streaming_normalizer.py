@@ -3,9 +3,14 @@ import hashlib
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from typing import IO, Protocol
 
 from wenyan_models.artifacts.normalized import TextByteIndex
 from wenyan_models.domain.ids import ContentHash, parse_content_hash
+
+
+class _ByteHasher(Protocol):
+    def update(self, data: bytes, /) -> object: ...
 
 
 @dataclass(frozen=True)
@@ -77,7 +82,7 @@ def normalize_source_to_file(
         source_hash=parse_content_hash(f"sha256:{source_hasher.hexdigest()}"),
         normalized_hash=parse_content_hash(f"sha256:{normalized_hasher.hexdigest()}"),
         character_count=char_count,
-        text_index=TextByteIndex(stride=index_stride, byte_offsets=tuple(byte_offsets)),
+        text_index=TextByteIndex(stride=index_stride, byteOffsets=tuple(byte_offsets)),
     )
 
 
@@ -92,9 +97,9 @@ def _normalize_chunk(chunk: str, pending: str) -> tuple[str, str]:
 
 
 def _append_normalized_text(
-    destination,
+    destination: IO[bytes],
     normalized: str,
-    normalized_hasher,
+    normalized_hasher: _ByteHasher,
     char_count: int,
     index_stride: int,
     byte_offsets: list[int],

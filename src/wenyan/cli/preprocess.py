@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Annotated, TypeVar
+from typing import Annotated, Any
 
 import typer
 
@@ -35,6 +35,7 @@ from wenyan.jobs.package_document import run_package_document
 from wenyan.jobs.annotate_segment_context import run_annotate_segment_context
 from wenyan.jobs.annotate_segment_grammar import run_annotate_segment_grammar
 from wenyan.jobs.context import JobOptions
+from wenyan.jobs.runners import SegmentBatchJobRunner
 from wenyan.jobs.ingest_document import run_ingest_document
 from wenyan.jobs.prune_orphan_segments import run_prune_orphan_segments
 from wenyan.jobs.run_preprocess import run_preprocess
@@ -47,8 +48,6 @@ from wenyan.jobs.split_paragraphs import run_split_paragraphs
 from wenyan.jobs.split_segments import run_split_segments
 from wenyan.jobs.tokenize_segment import run_tokenize_segment
 from wenyan_models.domain.results import JobFailure, Promoted, Skipped, outcome_exit_code
-
-T = TypeVar("T")
 
 
 def _repo_root() -> Path:
@@ -118,7 +117,7 @@ def _run_segment_or_paragraph_batch_cmd(
     segment: str | None,
     paragraph: str | None,
     chapter: str | None,
-    runner,
+    runner: SegmentBatchJobRunner[Any],
     force: bool,
     dry_run: bool,
     as_json: bool,
@@ -445,7 +444,7 @@ def prune_cmd(
     as_json: bool = json_option,
 ) -> None:
     """Remove segment job directories not referenced by any current paragraph draft."""
-    ctx, doc_id = resolve_document_context_with_ref(document)
+    ctx, doc_id, _document_ref = resolve_document_context_with_ref(document)
     outcome = run_prune_orphan_segments(ctx, doc_id, JobOptions(dry_run=dry_run))
     if as_json:
         typer.echo(json.dumps({"outcome": outcome.model_dump(by_alias=True)}))

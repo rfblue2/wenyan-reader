@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from wenyan_models.artifacts.base import DEFAULT_ARTIFACT_CONFIG
 from wenyan_models.artifacts.segment import GlossEntry

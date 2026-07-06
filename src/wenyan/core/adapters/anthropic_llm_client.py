@@ -30,7 +30,7 @@ class AnthropicLLMClient(LLMClient):
         self._api_key = api_key
         self._model = model
         self._messages_url = f"{base_url.rstrip('/')}/v1/messages"
-        self._retry = retry or RetryConfig(max_attempts=3, backoff_seconds=2)
+        self._retry = retry or RetryConfig(maxAttempts=3, backoffSeconds=2)
         self._timeout = httpx.Timeout(120.0, connect=30.0)
 
     def complete_model[T: BaseModel](

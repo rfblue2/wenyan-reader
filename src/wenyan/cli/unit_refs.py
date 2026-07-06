@@ -1,23 +1,19 @@
 from __future__ import annotations
 
-from collections.abc import Callable
-from typing import NoReturn, TypeVar
+from pathlib import Path
+from typing import NoReturn
 
 import typer
 
 from wenyan.bootstrap import build_job_context
-from wenyan.cli.status_scope import resolve_status_scope
+from wenyan.cli.status_scope import StatusScope, resolve_status_scope
 from wenyan.jobs.context import JobContext, JobOptions
+from wenyan.jobs.runners import SegmentJobRunner
 from wenyan_models.domain.ids import ChapterId, DocumentId, ParagraphId, SegmentId, document_id
-from wenyan_models.domain.results import JobFailure, Promoted, Skipped, outcome_exit_code
+from wenyan_models.domain.results import JobFailure, JobOutcome, Promoted, Skipped, outcome_exit_code
 from wenyan_models.domain.targets import SegmentTarget, paragraph_batch_target, single_segment_target
 
-T = TypeVar("T")
-
-
-def _repo_root():
-    from pathlib import Path
-
+def _repo_root() -> Path:
     return Path.cwd()
 
 
@@ -32,7 +28,7 @@ def _resolve_scope(
     chapter: str | None = None,
     paragraph: str | None = None,
     segment: str | None = None,
-):
+) -> StatusScope:
     try:
         return resolve_status_scope(
             ctx.artifacts,
@@ -129,7 +125,7 @@ def job_options(force: bool, dry_run: bool) -> JobOptions:
     return JobOptions(force=force, dry_run=dry_run)
 
 
-def outcome_message(outcome: Promoted[T] | Skipped | JobFailure) -> str:
+def outcome_message[T](outcome: JobOutcome[T]) -> str:
     match outcome:
         case Promoted():
             return "complete"
@@ -139,8 +135,8 @@ def outcome_message(outcome: Promoted[T] | Skipped | JobFailure) -> str:
             return message
 
 
-def emit_job_outcome(
-    outcome: Promoted[T] | Skipped | JobFailure,
+def emit_job_outcome[T](
+    outcome: JobOutcome[T],
     *,
     as_json: bool,
 ) -> None:
@@ -152,13 +148,13 @@ def emit_job_outcome(
         typer.echo(outcome_message(outcome))
 
 
-def run_single_segment_job(
+def run_single_segment_job[T](
     document: str,
     segment: str,
     *,
     chapter: str | None,
     paragraph: str | None,
-    runner: Callable[[JobContext, DocumentId, SegmentId, JobOptions], Promoted[T] | Skipped | JobFailure],
+    runner: SegmentJobRunner[T],
     force: bool,
     dry_run: bool,
     as_json: bool,

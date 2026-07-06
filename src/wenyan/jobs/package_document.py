@@ -5,7 +5,6 @@ from wenyan.core.package.input_hash import package_input_hash
 from wenyan.core.package.promote import plan_content_writes, promote_content_writes
 from wenyan.core.package.validate import validate_document_package
 from wenyan.core.ports.artifact_ref import normalized_document_ref, package_validation_ref
-from wenyan.core.ports.artifact_store import ArtifactWrite
 from wenyan.jobs.context import JobContext, JobOptions
 from wenyan_models.artifacts.normalized import NormalizedDocument
 from wenyan_models.artifacts.package import PackageValidationArtifact

@@ -212,11 +212,15 @@ plugins = ["pydantic.mypy"]
 - Prefer `Protocol` over concrete inheritance for port interfaces.
 - Use `TypeVar` and generic `JobOutcome[T]` / `complete_model[T]` where appropriate.
 
-Local gate:
+Local gate (run all three before committing; same as CI):
 
 ```bash
+uv run ruff check packages/wenyan-models/src src/wenyan tests
 uv run mypy packages/wenyan-models/src src/wenyan
+uv run python -m pytest
 ```
+
+When a `Callable[...]` signature repeats or spans multiple lines, extract a named `type` alias (for example `SegmentJobRunner[T]` in `jobs/runners.py`) instead of inlining the full parameter list.
 
 ## Testing
 

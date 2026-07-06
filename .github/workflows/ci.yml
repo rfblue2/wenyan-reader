@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Ruff
+        run: uv run ruff check packages/wenyan-models/src src/wenyan tests
+
+      - name: Mypy
+        run: uv run mypy packages/wenyan-models/src src/wenyan
+
+      - name: Pytest
+        run: uv run python -m pytest

@@ -1,4 +1,4 @@
-from collections.abc import Callable
+from typing import cast
 
 from pydantic import BaseModel, ConfigDict
 
@@ -8,6 +8,7 @@ from wenyan.core.run.work_queue import (
     find_next_segment_work,
 )
 from wenyan.jobs.context import JobContext, JobOptions
+from wenyan.jobs.runners import SegmentJobRunner, SegmentSubjobRunner
 from wenyan.jobs.annotate_segment_context import run_annotate_segment_context
 from wenyan.jobs.annotate_segment_grammar import run_annotate_segment_grammar
 from wenyan.jobs.gloss_segment import run_gloss_segment
@@ -22,19 +23,33 @@ from wenyan_models.domain.ids import DocumentId, ParagraphId, SegmentId
 from wenyan_models.domain.results import JobFailure, JobOutcome, Promoted, Skipped, outcome_exit_code
 from wenyan_models.domain.targets import single_segment_target
 
-_DEFAULT_MODEL_CONFIG = {"frozen": True, "populate_by_name": True, "extra": "forbid"}
+_DEFAULT_MODEL_CONFIG = ConfigDict(frozen=True, populate_by_name=True, extra="forbid")
 
-_IMPLEMENTED_SUBJOBS: dict[
-    ComponentKind,
-    Callable[[JobContext, DocumentId, SegmentId, JobOptions], JobOutcome[object]],
-] = {
-    ComponentKind.TOKENIZE_SEGMENT: lambda ctx, doc_id, segment_id, options: run_tokenize_segment(
+
+def _wrap_segment_subjob[T](
+    runner: SegmentJobRunner[T],
+) -> SegmentSubjobRunner:
+    def wrapped(
+        ctx: JobContext,
+        doc_id: DocumentId,
+        segment_id: SegmentId,
+        options: JobOptions,
+    ) -> JobOutcome[object]:
+        return cast(JobOutcome[object], runner(ctx, doc_id, segment_id, options))
+
+    return wrapped
+
+
+_IMPLEMENTED_SUBJOBS: dict[ComponentKind, SegmentSubjobRunner] = {
+    ComponentKind.TOKENIZE_SEGMENT: _wrap_segment_subjob(
+        lambda ctx, doc_id, segment_id, options: run_tokenize_segment(
         ctx,
         doc_id,
         single_segment_target(segment_id),
         options,
+        ),
     ),
-    ComponentKind.REVIEW_SEGMENT_TOKENIZATION: (
+    ComponentKind.REVIEW_SEGMENT_TOKENIZATION: _wrap_segment_subjob(
         lambda ctx, doc_id, segment_id, options: run_review_segment_tokenization(
             ctx,
             doc_id,
@@ -42,13 +57,15 @@ _IMPLEMENTED_SUBJOBS: dict[
             options,
         )
     ),
-    ComponentKind.GLOSS_SEGMENT: lambda ctx, doc_id, segment_id, options: run_gloss_segment(
+    ComponentKind.GLOSS_SEGMENT: _wrap_segment_subjob(
+        lambda ctx, doc_id, segment_id, options: run_gloss_segment(
         ctx,
         doc_id,
         single_segment_target(segment_id),
         options,
+        ),
     ),
-    ComponentKind.REVIEW_SEGMENT_GLOSS: (
+    ComponentKind.REVIEW_SEGMENT_GLOSS: _wrap_segment_subjob(
         lambda ctx, doc_id, segment_id, options: run_review_segment_gloss(
             ctx,
             doc_id,
@@ -56,7 +73,7 @@ _IMPLEMENTED_SUBJOBS: dict[
             options,
         )
     ),
-    ComponentKind.ANNOTATE_SEGMENT_GRAMMAR: (
+    ComponentKind.ANNOTATE_SEGMENT_GRAMMAR: _wrap_segment_subjob(
         lambda ctx, doc_id, segment_id, options: run_annotate_segment_grammar(
             ctx,
             doc_id,
@@ -64,7 +81,7 @@ _IMPLEMENTED_SUBJOBS: dict[
             options,
         )
     ),
-    ComponentKind.REVIEW_SEGMENT_GRAMMAR: (
+    ComponentKind.REVIEW_SEGMENT_GRAMMAR: _wrap_segment_subjob(
         lambda ctx, doc_id, segment_id, options: run_review_segment_grammar(
             ctx,
             doc_id,
@@ -72,7 +89,7 @@ _IMPLEMENTED_SUBJOBS: dict[
             options,
         )
     ),
-    ComponentKind.ANNOTATE_SEGMENT_CONTEXT: (
+    ComponentKind.ANNOTATE_SEGMENT_CONTEXT: _wrap_segment_subjob(
         lambda ctx, doc_id, segment_id, options: run_annotate_segment_context(
             ctx,
             doc_id,
@@ -80,7 +97,7 @@ _IMPLEMENTED_SUBJOBS: dict[
             options,
         )
     ),
-    ComponentKind.REVIEW_SEGMENT_CONTEXT: (
+    ComponentKind.REVIEW_SEGMENT_CONTEXT: _wrap_segment_subjob(
         lambda ctx, doc_id, segment_id, options: run_review_segment_context(
             ctx,
             doc_id,
@@ -92,7 +109,7 @@ _IMPLEMENTED_SUBJOBS: dict[
 
 
 class RunPlan(BaseModel):
-    model_config = ConfigDict(**_DEFAULT_MODEL_CONFIG)
+    model_config = _DEFAULT_MODEL_CONFIG
 
     document_id: DocumentId
     stages_run: tuple[str, ...] = ()
@@ -140,7 +157,7 @@ def _run_next_paragraph(
         return _failure_from_outcome(
             document_id,
             ["split-segments"],
-            outcome,
+            cast(JobOutcome[object], outcome),
             paragraph_id=work.paragraph_id,
         )
     return Promoted(
@@ -168,7 +185,7 @@ def _run_next_segment(
                 return _failure_from_outcome(
                     document_id,
                     ["split-segments"],
-                    outcome,
+                    cast(JobOutcome[object], outcome),
                     paragraph_id=work.paragraph_id,
                 )
             continue

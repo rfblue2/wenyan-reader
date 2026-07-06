@@ -155,7 +155,7 @@ class MockLLMClient(LLMClient):
         if isinstance(artifact, TokenizationArtifact):
             return artifact.model_copy(
                 update={"tokens": drop_punctuation_tokens(artifact.tokens)},
-            )  # type: ignore[return-value]
+            )
         return artifact
 
     def _tokenization_review[T: BaseModel](

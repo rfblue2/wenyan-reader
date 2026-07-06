@@ -37,7 +37,7 @@ def _compile_segment(output: CompiledSegmentInputs) -> ReaderSegment:
             surface=token.surface,
             start=token.start,
             end=token.end,
-            gloss_id=gloss_by_token.get(token.id, ""),
+            glossId=gloss_by_token.get(token.id, ""),
         )
         for token in output.tokenization.tokens
     )
@@ -48,7 +48,7 @@ def _compile_segment(output: CompiledSegmentInputs) -> ReaderSegment:
     return ReaderSegment(
         id=output.segment_id,
         text=output.text,
-        new_gloss_ids=output.glosses.new_gloss_ids,
+        newGlossIds=output.glosses.new_gloss_ids,
         tokens=tokens,
         notes=tuple(notes),
     )
@@ -59,7 +59,7 @@ def _grammar_notes_to_reader(notes: tuple[GrammarNoteItem, ...]) -> tuple[Reader
         ReaderNote(
             id=note.id,
             type="grammar",
-            anchor_token_ids=note.anchor_token_ids,
+            anchorTokenIds=note.anchor_token_ids,
             body=note.body,
         )
         for note in notes
@@ -71,7 +71,7 @@ def _context_notes_to_reader(notes: tuple[ContextNoteItem, ...]) -> tuple[Reader
         ReaderNote(
             id=note.id,
             type="context",
-            anchor_token_ids=note.anchor_token_ids,
+            anchorTokenIds=note.anchor_token_ids,
             body=note.body,
             sources=tuple(_citation_to_reader_source(source) for source in note.sources),
         )
@@ -130,7 +130,7 @@ def _fold_paragraph_context_notes(
         reader_note = ReaderNote(
             id=str(note_dict["id"]),
             type="context",
-            anchor_token_ids=(anchor_token_id,),
+            anchorTokenIds=(anchor_token_id,),
             body=str(note_dict.get("body", "")),
             sources=sources,
         )

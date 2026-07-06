@@ -9,6 +9,7 @@ from wenyan.core.assembly.load_segment_outputs import (
     load_all_segment_outputs,
 )
 from wenyan.core.ports.artifact_ref import (
+    ArtifactRef,
     paragraph_assembly_package_ref,
     paragraph_assembly_validation_ref,
     paragraph_draft_ref,
@@ -69,7 +70,7 @@ def _component_item(
     status: UnitStatus,
     artifacts: ArtifactStore,
     repo_root: Path,
-    ref,
+    ref: ArtifactRef,
 ) -> ComponentStatusItem:
     artifact_path_value = (
         artifact_path(repo_root, ref).relative_to(repo_root).as_posix() if artifacts.exists(ref) else None

@@ -3,7 +3,6 @@ from wenyan_models.artifacts.segment import (
     GlossDecision,
     GlossEntry,
     GlossesArtifact,
-    TokenItem,
     TokenizationArtifact,
 )
 

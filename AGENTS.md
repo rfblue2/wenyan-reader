@@ -42,6 +42,18 @@ Most project details live in the architecture docs. Start there before making de
 - When changing artifact shapes or status semantics, update the artifact documentation.
 - After doc edits, check terminology against the vocabulary above.
 
+## Before committing
+
+When the editor asks for a commit, run the full local gate first and fix anything that fails:
+
+```bash
+uv run ruff check packages/wenyan-models/src src/wenyan tests
+uv run mypy packages/wenyan-models/src src/wenyan
+uv run python -m pytest
+```
+
+Do not commit until all three pass. This matches [CI](.github/workflows/ci.yml).
+
 ## Running Tests
 
 Always invoke pytest through **uv** — do not use bare `python` or `python3`:
