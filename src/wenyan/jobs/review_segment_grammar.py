@@ -1,4 +1,3 @@
-from wenyan.core.adapters.hashing import sha256_text
 from wenyan.core.ports.artifact_ref import (
     segment_grammar_notes_ref,
     segment_grammar_review_ref,
@@ -39,7 +38,7 @@ def _prepare_grammar_review(
         )
     segment_input = ctx.artifacts.read(input_ref, SegmentInput)
     tokenization = ctx.artifacts.read(tokenization_ref, TokenizationArtifact)
-    input_hash = sha256_text(grammar_notes.model_dump_json(by_alias=True))
+    input_hash = ctx.hasher.sha256_text(grammar_notes.model_dump_json(by_alias=True))
     glosses_json = "null"
     glosses_ref = segment_glosses_ref(document_id, segment_id_value)
     if ctx.artifacts.exists(glosses_ref):

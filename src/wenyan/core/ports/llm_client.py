@@ -3,6 +3,10 @@ from typing import Protocol
 from pydantic import BaseModel
 
 
+class LLMParseError(RuntimeError):
+    pass
+
+
 class StructuredPrompt(Protocol):
     @property
     def template_name(self) -> str: ...

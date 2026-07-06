@@ -1,6 +1,5 @@
 import json
 
-from wenyan.core.adapters.hashing import sha256_text
 from wenyan.core.gloss.glossary_draft import (
     load_candidate_glosses,
     load_glossary_draft,
@@ -40,7 +39,7 @@ def _prepare_gloss_review(
         )
     segment_input = ctx.artifacts.read(input_ref, SegmentInput)
     tokenization = ctx.artifacts.read(tokenization_ref, TokenizationArtifact)
-    input_hash = sha256_text(glosses.model_dump_json(by_alias=True))
+    input_hash = ctx.hasher.sha256_text(glosses.model_dump_json(by_alias=True))
     context = {
         "segment_id": str(segment_id_value),
         "review_input_hash": str(input_hash),

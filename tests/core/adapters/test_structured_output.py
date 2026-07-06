@@ -1,7 +1,7 @@
 import pytest
 from pydantic import BaseModel
 
-from wenyan.core.adapters.mock_llm_client import LLMParseError
+from wenyan.core.ports.llm_client import LLMParseError
 from wenyan.core.adapters.structured_output import (
     build_structured_system_prompt,
     extract_json_text,

@@ -2,7 +2,7 @@ import httpx
 from pydantic import BaseModel
 
 from wenyan.core.adapters.anthropic_llm_client import AnthropicLLMClient
-from wenyan.core.adapters.mock_llm_client import LLMParseError
+from wenyan.core.ports.llm_client import LLMParseError
 from wenyan_models.config import RetryConfig
 
 

@@ -1,5 +1,3 @@
-from wenyan.core.adapters.hashing import sha256_text
-from wenyan.core.adapters.prompt_template import RenderedPrompt, load_prompt_template
 from wenyan.core.ports.artifact_ref import (
     chapter_proposal_ref,
     paragraph_proposal_ref,
@@ -30,15 +28,11 @@ def run_split_paragraphs(
     chapter_length = chapter.end - chapter.start
     proposal_ref = paragraph_proposal_ref(document_id, chapter_id)
     chapter_text = ctx.normalized_text.read_slice(document_id, chapter.start, chapter.end)
-    input_hash = sha256_text(chapter_text)
+    input_hash = ctx.hasher.sha256_text(chapter_text)
     if ctx.artifacts.exists(proposal_ref) and not options.force:
         existing = ctx.artifacts.read(proposal_ref, ParagraphProposal)
         if existing.input_hash == input_hash:
             return Skipped(reason="paragraph proposal is current")
-    template = load_prompt_template(
-        ctx.repo_root / ctx.config.prompts.root,
-        "paragraph-structure",
-    )
     context: dict[str, str | PromptTextSlice] = {
         "chapter_text": PromptTextSlice(document_id, chapter.start, chapter.end),
         "document_id": str(document_id),
@@ -46,8 +40,13 @@ def run_split_paragraphs(
         "input_hash": str(input_hash),
         "chapter_text_hash": str(input_hash),
     }
+    prompt = ctx.prompts.build_prompt(
+        "paragraph-structure",
+        context,
+        normalized_text=ctx.normalized_text,
+    )
     proposal = ctx.llm.complete_model(
-        RenderedPrompt(template, context, normalized_text=ctx.normalized_text),
+        prompt,
         ParagraphProposal,
     )
     proposal = proposal.model_copy(

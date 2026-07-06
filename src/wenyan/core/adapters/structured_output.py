@@ -3,7 +3,7 @@ import re
 
 from pydantic import BaseModel, TypeAdapter
 
-from wenyan.core.adapters.mock_llm_client import LLMParseError
+from wenyan.core.ports.llm_client import LLMParseError
 
 
 def build_structured_system_prompt(model: type[BaseModel]) -> str:

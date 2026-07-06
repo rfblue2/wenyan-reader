@@ -6,7 +6,7 @@ from pathlib import Path
 from pydantic import BaseModel, TypeAdapter
 
 from wenyan.core.adapters.prompt_template import RenderedPrompt
-from wenyan.core.ports.llm_client import LLMClient, StructuredPrompt
+from wenyan.core.ports.llm_client import LLMClient, LLMParseError, StructuredPrompt
 from wenyan_models.artifacts.paragraph import ParagraphDraft, ParagraphDraftSegment
 from wenyan_models.artifacts.segment import TokenizationArtifact
 from wenyan_models.artifacts.structure import ChapterProposal, ChapterProposalItem, ParagraphProposal, ParagraphProposalItem
@@ -16,10 +16,6 @@ from wenyan_models.domain.ids import (
     segment_id,
 )
 from wenyan_models.text.tokenization import drop_punctuation_tokens
-
-
-class LLMParseError(RuntimeError):
-    pass
 
 
 class MockLLMClient(LLMClient):

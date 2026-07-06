@@ -1,6 +1,5 @@
 import json
 
-from wenyan.core.adapters.hashing import sha256_text
 from wenyan.core.gloss.glossary_draft import (
     load_candidate_glosses,
     normalize_gloss_reuse,
@@ -44,7 +43,7 @@ def _prepare_gloss(
     input_ref = segment_input_ref(document_id, segment_id_value)
     if not ctx.artifacts.exists(input_ref):
         return JobFailure(code="missing-input", message="segment input is missing")
-    input_hash = sha256_text(tokenization_review.model_dump_json(by_alias=True))
+    input_hash = ctx.hasher.sha256_text(tokenization_review.model_dump_json(by_alias=True))
     all_candidates = load_candidate_glosses(ctx.artifacts, document_id, segment_id_value)
     context = {
         "segment_id": str(segment_id_value),

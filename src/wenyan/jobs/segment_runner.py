@@ -4,7 +4,6 @@ from typing import Protocol, cast
 
 from pydantic import BaseModel
 
-from wenyan.core.adapters.prompt_template import RenderedPrompt, load_prompt_template
 from wenyan.core.ports.artifact_ref import (
     ArtifactRef,
     paragraph_draft_ref,
@@ -190,11 +189,8 @@ def run_segment_annotate_job[T: BaseModel](
         reason=spec.skip_reason,
     ):
         return skip
-    template = load_prompt_template(
-        ctx.repo_root / ctx.config.prompts.root,
-        spec.prompt_name,
-    )
-    artifact = ctx.llm.complete_model(RenderedPrompt(template, context), spec.output_model)
+    prompt = ctx.prompts.build_prompt(spec.prompt_name, context)
+    artifact = ctx.llm.complete_model(prompt, spec.output_model)
     if spec.post_process is not None:
         artifact = spec.post_process(artifact, ctx, document_id, segment_id_value, input_hash)
     artifact = stamp_segment_metadata(
@@ -237,11 +233,8 @@ def run_segment_review_job[T: BaseModel](
         reason=spec.skip_reason,
     ):
         return skip
-    template = load_prompt_template(
-        ctx.repo_root / ctx.config.prompts.root,
-        spec.prompt_name,
-    )
-    review = ctx.llm.complete_model(RenderedPrompt(template, context), spec.output_model)
+    prompt = ctx.prompts.build_prompt(spec.prompt_name, context)
+    review = ctx.llm.complete_model(prompt, spec.output_model)
     review = stamp_segment_metadata(
         review,
         segment_id_value=segment_id_value,

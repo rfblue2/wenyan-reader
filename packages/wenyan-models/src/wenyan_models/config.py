@@ -13,15 +13,18 @@ class ProviderModelConfig(BaseModel):
     model: str
 
 
+class MockModelConfig(ProviderModelConfig):
+    model: str = "mock"
+    fixture_dir: str = Field(default="tests/fixtures/llm", alias="fixtureDir")
+
+
 class ModelsConfig(BaseModel):
     model_config = _DEFAULT_MODEL_CONFIG
 
     provider: ModelProvider = "mock"
     anthropic: ProviderModelConfig
     minimax: ProviderModelConfig
-    mock: ProviderModelConfig = Field(
-        default_factory=lambda: ProviderModelConfig(model="mock"),
-    )
+    mock: MockModelConfig = Field(default_factory=MockModelConfig)
 
     @property
     def active_model(self) -> str:

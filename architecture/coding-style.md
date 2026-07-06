@@ -72,7 +72,7 @@ Do **not** use `json.loads` + manual dict access for structured data that has a 
 
 ### Exceptions (non-Pydantic allowed)
 
-- **`JobContext`** — frozen `@dataclass` holding port `Protocol` instances; Pydantic cannot validate runtime protocol objects.
+- `JobContext` — frozen `@dataclass` holding port `Protocol` instances (`ArtifactStore`, `ContentHasher`, `PromptLoader`, …); Pydantic cannot validate runtime protocol objects.
 - **Port `Protocol` definitions** in `core/ports/`.
 - **Thin adapter internals** — local variables that never cross a boundary.
 
@@ -172,6 +172,8 @@ Jobs depend on protocols, not concrete classes:
 | `SpanValidator` | Returns `SpanValidationResult` (Pydantic) |
 | `StatusReader` | Returns status payload models |
 | `GraphValidator` | Returns `GraphValidationReport` (Pydantic) |
+| `ContentHasher` | `sha256_text(text) -> ContentHash` |
+| `PromptLoader` | `build_prompt(template_name, context) -> StructuredPrompt` |
 
 `ArtifactRef` is a frozen Pydantic model built through per-kind factory functions so required scope IDs are enforced.
 

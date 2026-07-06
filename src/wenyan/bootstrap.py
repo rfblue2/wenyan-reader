@@ -1,8 +1,10 @@
 from pathlib import Path
 
 from wenyan.core.adapters.anthropic_llm_client import AnthropicLLMClient
+from wenyan.core.adapters.content_hasher import Sha256ContentHasher
 from wenyan.core.adapters.filesystem_artifact_store import FilesystemArtifactStore
 from wenyan.core.adapters.filesystem_normalized_text_store import FilesystemNormalizedTextStore
+from wenyan.core.adapters.filesystem_prompt_loader import FilesystemPromptLoader
 from wenyan.core.adapters.minimax_llm_client import MiniMaxLLMClient
 from wenyan.core.adapters.mock_llm_client import MockLLMClient
 from wenyan.core.adapters.pure_span_validator import PureSpanValidator
@@ -24,6 +26,8 @@ def build_job_context(repo_root: Path) -> JobContext:
         registry=YamlSourceRegistry(repo_root),
         llm=_build_llm_client(config, repo_root),
         spans=PureSpanValidator(),
+        hasher=Sha256ContentHasher(),
+        prompts=FilesystemPromptLoader(repo_root / config.prompts.root),
     )
 
 
@@ -38,4 +42,4 @@ def _build_llm_client(config: PreprocessingConfig, repo_root: Path) -> LLMClient
         if not config.minimax_api_key:
             raise ValueError("MINIMAX_API_KEY is required when models.provider is minimax")
         return MiniMaxLLMClient(config.minimax_api_key, model, retry=config.retry)
-    return MockLLMClient(repo_root / "tests" / "fixtures" / "llm")
+    return MockLLMClient(repo_root / config.models.mock.fixture_dir)

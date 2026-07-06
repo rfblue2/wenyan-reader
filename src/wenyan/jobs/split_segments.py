@@ -1,5 +1,3 @@
-from wenyan.core.adapters.hashing import sha256_text
-from wenyan.core.adapters.prompt_template import RenderedPrompt, load_prompt_template
 from wenyan.core.ports.artifact_ref import (
     chapter_proposal_ref,
     paragraph_draft_ref,
@@ -44,22 +42,23 @@ def run_split_segments(
     paragraph_end = chapter.start + paragraph_item.end
     draft_ref = paragraph_draft_ref(document_id, paragraph_id_value)
     paragraph_text = ctx.normalized_text.read_slice(document_id, paragraph_start, paragraph_end)
-    input_hash = sha256_text(paragraph_text)
+    input_hash = ctx.hasher.sha256_text(paragraph_text)
     if ctx.artifacts.exists(draft_ref) and not options.force:
         existing = ctx.artifacts.read(draft_ref, ParagraphDraft)
         if existing.input_hash == input_hash:
             return Skipped(reason="paragraph draft is current")
-    template = load_prompt_template(
-        ctx.repo_root / ctx.config.prompts.root,
-        "paragraph-segmentation",
-    )
     context: dict[str, str | PromptTextSlice] = {
         "paragraph_text": PromptTextSlice(document_id, paragraph_start, paragraph_end),
         "paragraph_id": str(paragraph_id_value),
         "input_hash": str(input_hash),
     }
+    prompt = ctx.prompts.build_prompt(
+        "paragraph-segmentation",
+        context,
+        normalized_text=ctx.normalized_text,
+    )
     draft = ctx.llm.complete_model(
-        RenderedPrompt(template, context, normalized_text=ctx.normalized_text),
+        prompt,
         ParagraphDraft,
     )
     draft = draft.model_copy(
