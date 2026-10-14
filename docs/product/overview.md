@@ -1,55 +1,42 @@
-# Preprocessing
+# Product Overview
 
-## Purpose
+> **Product** — what Wenyan Reader is and the principles behind it.
 
-Define the local editorial pipeline for turning a full Classical Chinese document into reader-ready content packages.
+Wenyan Reader helps English-speaking learners read Classical Chinese (文言文) texts. Readers move through a document one bite-sized segment at a time and reveal glosses or notes only when they need help.
 
-The reader app consumes curated local files. LLMs may assist preprocessing, but runtime reading should not depend on live LLM calls.
+There are two parts:
 
-## Design Principles
+| Part | Users | State |
+|---|---|---|
+| **Reader app** — local web app that displays packaged documents | students | not built; UX in [Reader UX](reader-ux.md) |
+| **Preprocessing pipeline** — `wenyan` CLI plus agent skills that turn a full source text into a reader package | editors | working through packaging; context notes are agent-driven |
 
-- Treat every source input as a full document.
-- Use LLMs for content-bearing decisions.
-- Use deterministic code for validation, packaging, IDs, hashes, and resumability.
-- Process large documents in bounded jobs, down to a text segment whenever possible.
-- Preserve intermediate artifacts so the pipeline can be audited, retried, and improved.
-- Keep final reader files separate from preprocessing artifacts.
+## Principles
 
-## Subdocs
+- **No LLM at read time.** LLMs assist preprocessing only. The reader consumes validated local files.
+- **Full documents.** A source is always a complete document; it is split into chapters, paragraphs, and segments for processing.
+- **LLMs decide content, code decides structure.** Boundaries, tokens, glosses, and notes are content decisions. Code owns hashes, validation, assembly, packaging, and status.
+- **Small, resumable units.** Each segment's jobs run and rerun independently; one bad gloss does not redo the paragraph.
+- **Auditable artifacts.** Every intermediate result is a committed file. Status is derived from those files, so deleting a file rejects it.
+- **Reviews are separate from drafts.** Each draft is checked by a separate review pass before it reaches the reader.
+- **Quiet reading.** Help is on demand; the default view is just the text.
 
-- [Model Strategy](../architecture/model-strategy.md)
-- [Operation Scope](../spec/operation-scope.md)
-- [Pipeline Stages](../spec/pipeline.md)
-- [Job Execution](../architecture/job-execution.md)
-- [Editor Workflow](editor-guide.md)
-- [Preprocessing CLI Spec](../spec/cli.md)
-- [CLI Tech Stack](../architecture/cli.md)
-- [Intermediate Artifacts](../spec/artifacts.md)
-- [Source Grounding](../spec/source-grounding.md)
-- [Review And Quality Jobs](../spec/quality-gates.md)
+## Content model
 
-## Pipeline Overview
+| Unit | Meaning |
+|---|---|
+| document | Canonical source and content unit (e.g. 孫子兵法). |
+| chapter | Top-level structural division (e.g. 始計第一). |
+| paragraph | Unit for context framing and segment discovery. |
+| segment | What the reader sees at once, and the smallest unit preprocessed — usually one sentence. |
+| token | A clickable, glossable span within a segment. |
+| gloss | One sense of a surface form: pinyin plus English. Tokens point to a gloss by id. |
+| note | A grammar or context explanation anchored to tokens. |
 
-```mermaid
-flowchart LR
-  FullDocument[Full Document Source] --> Normalize[Normalize]
-  Normalize --> DiscoverStructure[Discover Structure]
-  DiscoverStructure --> ChapterPass[Chapter Passes]
-  ChapterPass --> ParagraphJobs[Paragraph Structure Jobs]
-  ParagraphJobs --> SegmentJobs[Focused Segment Subjobs]
-  SegmentJobs --> DraftParagraph[Draft Paragraph Package]
-  DraftParagraph --> Validate[Structural Validation]
-  Validate --> ContentQA[Review And Quality Jobs]
-  ContentQA --> Package[Reader Document Package]
-```
+Full vocabulary: [Glossary](../glossary.md).
 
-## Final Outputs
+## Where to go next
 
-The pipeline produces the local storage package consumed by the reader:
-
-- `document.json`
-- `glosses/index.json`
-- `chapters/*/chapter.json`
-- `chapters/*/paragraphs/*.json`
-
-Generated intermediate files are useful, but the reader should depend only on validated package files.
+- How editors use the pipeline: [Editor Guide](editor-guide.md)
+- What the pipeline does: [Pipeline](../spec/pipeline.md)
+- Reader file format: [Reader Package](../spec/reader-package.md)

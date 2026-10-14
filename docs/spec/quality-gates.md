@@ -1,309 +1,74 @@
-# Review And Quality Jobs
+# Quality Gates
 
-## Purpose
+> **Spec** — the deterministic checks and review passes that gate content today, and how failures block work. Planned checks live in the [backlog](../backlog.md).
 
-Define the review, validation, and blocking jobs used by the preprocessing pipeline.
+Two kinds of gate:
 
-Quality checks should be explicit jobs, not hidden inside drafting calls. Deterministic validation proves that artifacts are structurally sound. LLM review checks editorial correctness, source support, and Classical Chinese interpretation.
+- **Deterministic checks** in code prove structure: spans, ids, anchors, gloss references.
+- **Reviews** judge editorial content: token boundaries, gloss sense, pinyin, grammar accuracy, source support. LLM reviews run as separate jobs after drafting; context review is done by editor + agent.
 
-## Job Principles
+## Deterministic checks
 
-- Use deterministic code for shape, path, hash, offset, anchor, reconstruction, and reachability checks.
-- Use LLM review for content judgments: gloss sense, pinyin, grammar explanation, segmentation quality, and source-grounded context.
-- Keep review scoped to the smallest useful unit. Segment review should be split into focused review subjobs whenever tokenization, glossing, grammar, or context can be checked independently.
-- Mark the smallest affected unit as blocked after review rejection.
-- Preserve review reports as intermediate artifacts so failures are auditable and prompts can be improved.
+| Gate | When | Checks | Output |
+|---|---|---|---|
+| Paragraph spans | `split-paragraphs` | Spans (after sorting) are contiguous, non-overlapping, and cover the chapter. Failure writes nothing. | `paragraph-proposal.validation.json` |
+| Gloss and grammar prerequisites | `gloss-segment`, `annotate-segment-grammar` | Tokenization review is approved, else `blocked-upstream`. | — |
+| Draft cleanup | after each LLM draft | Drop punctuation tokens; rewrite candidate gloss hits to `reuse-existing` and merge duplicate new glosses; drop grammar notes with bad anchors, empty bodies, or duplicate ids. | — |
+| Paragraph assembly | `assemble-paragraph` | See [Reader Package — Validation](reader-package.md#validation). | `jobs/assembly/<id>/validation.json` |
+| Document package | `package-document` | See [Reader Package — Validation](reader-package.md#validation). | `jobs/package/validation.json` |
+| Normalized document | `validate-artifacts` | Manifest and sidecar exist; sidecar hash matches. | stdout |
 
-## Deterministic Validation Jobs
+The chapter proposal validation file is written by the editor + agent, not code. `split-segments` writes a `passed` validation without running checks.
 
-### Chapter Span Validation
+## Reviews
 
-Scope: document-level chapter proposal.
+Every review writes `*-review.json` with `approved` or `rejected` and `findings`. Checklists live in the prompts and skills; the essentials:
 
-Inputs:
+### Tokenization (`review-segment-tokenization`)
 
-- `normalized-document.json`
-- `chapter-proposal.json`
+Input: the tokenization artifact.
 
-Checks:
+- No punctuation- or whitespace-only tokens.
+- Not too coarse: split phrases across particles (`國/之/大事`, not `國之大事`).
+- Not too fine: keep names, titles, places, and fixed compounds whole (`孫子`, `大事`, `死生`, `存亡`).
+- No overlaps, wrong surfaces, bad offsets, or missing glossable characters.
 
-- Chapter spans are ordered.
-- Chapter spans do not overlap.
-- Chapter spans do not omit text.
-- Chapter span text reconstructs the normalized document exactly.
-- Chapter IDs are stable for unchanged spans when possible.
+### Gloss (`review-segment-gloss`)
 
-Output:
+Input: segment text, tokenization, glosses, candidate glosses.
 
-- `structure/chapter-proposal.validation.json`
+- Exactly one decision per token.
+- Correct sense in context; pinyin (with tone) matches that sense, not a default reading — e.g. `將` is `jiàng` "general" in `四曰將`, `jiāng` "will" in `將聽吾計`.
+- No `create-new` that duplicates a candidate.
 
-### Paragraph Span Validation
+On approval, merges new glosses into `indexes/glossary-draft.json`.
 
-Scope: chapter-level paragraph proposal.
+### Grammar (`review-segment-grammar`)
 
-Inputs:
+Input: segment text, tokenization, grammar notes, glosses (if present).
 
-- Chapter text from the normalized document.
-- `structure/chapters/chapter-id/paragraph-proposal.json`
+- Notes describe constructions actually present, anchored to the right tokens.
+- Useful, not generic filler; no conflict with selected gloss senses.
+- An empty note list is acceptable.
 
-Checks:
+### Context notes
 
-- Paragraph spans are ordered.
-- Paragraph spans do not overlap.
-- Paragraph spans do not omit text.
-- Paragraph span text reconstructs the chapter exactly.
-- Paragraph IDs are stable for unchanged spans when possible.
+Drafted with [drafting-context-notes](../../.opencode/skills/drafting-context-notes/SKILL.md) and reviewed with [reviewing-context-notes](../../.opencode/skills/reviewing-context-notes/SKILL.md). Requires an approved tokenization review.
 
-Output:
+Drafting rules:
 
-- `structure/chapters/chapter-id/paragraph-proposal.validation.json`
+- Research historical, biographical, and scholarly claims on the web; do not rely on model memory.
+- Claims beyond the segment text need `sources`; each citation has `label` and `excerpt`, optional `url` and `accessedAt`. If no source supports a claim, omit the note.
+- Write `contextNotes: []` when nothing is needed (common for titles).
+- Do not duplicate paragraph-level context notes. Grammar notes never carry sources.
 
-### Segment Reconstruction Validation
-
-Scope: paragraph structure job.
-
-Inputs:
-
-- Paragraph text.
-- `jobs/paragraphs/paragraph-id/draft.json`
-
-Checks:
-
-- Segment strings are ordered.
-- Segment strings concatenate back to the paragraph text, modulo explicitly allowed paragraph separators.
-- Segment IDs are unique within the paragraph.
-- Paragraph-level context note anchors point to existing segment IDs.
-- Source IDs referenced by paragraph-level context notes exist in the job input.
-
-Output:
-
-- `jobs/paragraphs/paragraph-id/validation.json`
-
-### Segment Output Validation
-
-Scope: segment subjobs during `assemble-paragraph`.
-
-Inputs:
-
-- `jobs/segments/segment-id/input.json`
-- Accepted segment subjob outputs for the segment.
-
-Checks:
-
-- Segment text matches the segment subjob input.
-- Token offsets match the segment text.
-- Token IDs are unique within the segment.
-- Token coverage satisfies the configured policy.
-- Every token references an existing candidate gloss or newly proposed gloss.
-- Every new gloss has required fields.
-- Note anchors reference tokens in the same segment.
-- Source IDs referenced by segment-local context notes exist in the job input.
-
-### Paragraph Package Validation
-
-Scope: paragraph assembly job.
-
-Inputs:
-
-- Paragraph structure draft.
-- Completed segment subjob outputs for the paragraph.
-- Assembled paragraph package.
-
-Checks:
-
-- All required segment subjob outputs are present or intentionally blocked.
-- Segment order matches the paragraph structure draft.
-- Segment texts reconstruct the paragraph.
-- Segment notes, tokens, and new gloss IDs satisfy the final storage schema.
-- Paragraph package is reachable from the chapter manifest.
-
-Output:
-
-- `jobs/assembly/paragraph-id/validation.json`
-
-### Document Package Validation
-
-Scope: final package.
-
-Inputs:
-
-- `document.json`
-- `glosses/index.json`
-- `chapters/*/chapter.json`
-- `chapters/*/paragraphs/*.json`
-
-Checks:
-
-- All referenced paths exist.
-- All IDs are unique within their scope.
-- Every token points to an existing gloss.
-- Every note anchors to tokens in the same segment.
-- All chapters, paragraphs, and segments are reachable from `document.json`.
-
-Output:
-
-- `jobs/package/validation.json`
-
-Runs as part of `package-document`.
-
-## LLM Review Jobs
-
-### Paragraph Structure Review
-
-Scope: paragraph structure job (`review-paragraph-structure`).
-
-Inputs:
-
-- Original paragraph.
-- Neighboring paragraph window.
-- Chapter title and chapter summary.
-- Proposed segment boundaries.
-- Optional paragraph-level context notes.
-- Relevant source snippets for paragraph-level context notes.
-
-Review checklist:
-
-- Segment boundaries are pedagogically useful and do not split tightly coupled text badly.
-- Segment boundaries preserve the full paragraph text.
-- Paragraph-level context notes really need paragraph-level framing.
-- Context notes avoid unsupported claims and cite source IDs where needed.
-- Anchors point to the right segment IDs.
-
-Output:
-
-- `jobs/paragraphs/paragraph-id/review.json`
-
-Failure behavior:
-
-- Write `jobs/paragraphs/paragraph-id/review.json` with findings and required fixes.
-- Exit non-zero on rejection; mark the paragraph structure component blocked in status.
-
-### Segment Tokenization Review
-
-Scope: `tokenize-segment` job.
-
-Inputs:
-
-- Original segment.
-- Minimal local context needed to interpret the segment.
-- Produced token surfaces and offsets.
-
-Review checklist:
-
-- Tokenization identifies the intended glossable units.
-- No token is punctuation or whitespace only.
-- **Single-character tokens are preferred** for ordinary words and particles; reject overly coarse phrase tokens (for example `國之大事` instead of `國` / `之` / `大事`).
-- Multi-character tokens are appropriate only for names, titles, places, and fixed compounds (`孫子`, `大事`, `死生`, `存亡`, `兵者` in topic use).
-- Token boundaries are pedagogically useful.
-- Multi-character names, places, idioms, titles, and fixed expressions are not split incorrectly.
-- Offsets preserve the original segment text.
-
-Failure behavior:
-
-- Write the review artifact with findings and required fixes.
-- Exit non-zero on rejection; block only the tokenization subjob.
-
-### Segment Gloss Review
-
-Scope: `gloss-segment` job.
-
-Inputs:
-
-- Original segment.
-- Reviewed tokenization output.
-- Candidate glossary entries.
-- Produced gloss decisions and new gloss entries.
-
-Review checklist:
-
-- Gloss sense selection is correct in the local context.
-- Homonyms and polysemous words are disambiguated correctly; **pinyin matches the contextual reading** (tone included), not merely a default homograph reading.
-- Pinyin is accurate for the chosen sense.
-- New glosses are necessary and not duplicates of existing entries.
-
-Failure behavior:
-
-- Write the review artifact with findings and required fixes.
-- Exit non-zero on rejection; block only the gloss subjob.
-
-### Segment Grammar Review
-
-Scope: `annotate-segment-grammar` job.
-
-Inputs:
-
-- Original segment.
-- Reviewed tokenization and gloss outputs.
-- Produced grammar notes.
-
-Review checklist:
-
-- Grammar notes describe constructions actually present in the segment.
-- Grammar notes are anchored to the right tokens.
-- Grammar notes are useful for comprehension rather than generic explanation.
-- Grammar notes do not conflict with selected gloss senses.
-
-Failure behavior:
-
-- Write the review artifact with findings and required fixes.
-- Exit non-zero on rejection; block only the grammar subjob.
-
-### Segment Context Review
-
-Scope: `annotate-segment-context` job.
-
-Inputs:
-
-- Original segment.
-- Minimal local context needed to interpret the segment.
-- Reviewed tokenization and gloss outputs.
-- Produced segment-local context notes.
-- Relevant source snippets for segment-local context notes.
-
-Review checklist:
-
-- Context notes are useful and anchored correctly.
-- Context notes are source-grounded when they make factual or interpretive claims.
-- Context notes avoid unsupported historical, literary, or biographical claims.
-- Context notes do not duplicate paragraph-level context notes.
-
-Failure behavior:
-
-- Write the review artifact with findings and required fixes.
-- Exit non-zero on rejection; block only the context subjob.
-
-### Paragraph Assembly Validation
-
-Scope: `assemble-paragraph` (deterministic only).
-
-Assembly does not introduce new editorial content. Validation checks reconstruction, schema shape, gloss references, and note anchors. Cross-segment editorial quality is covered by segment subjob reviews. There is no LLM paragraph assembly review step.
-
-### Document Consistency Review
-
-Scope: document-level index and final package. Runs as part of `package-document`.
-
-Inputs:
-
-- Document-level entity and term indexes.
-- Glossary index.
-- Completed chapters and paragraphs.
-- Prior review findings.
-
-Review checklist:
-
-- Recurring people, places, titles, and interpretive claims are consistent across the document.
-- Gloss entries are not duplicated for the same surface and sense.
-- Distinct senses of the same surface form have distinct gloss entries.
-- Newly introduced glosses appear at their first canonical occurrence in document order.
-- Source-grounded claims use consistent source references.
-
-Failure behavior:
-
-- Produce targeted reruns for affected segments, paragraph notes, or glossary entries.
-- Do not rewrite the whole document when only a segment or glossary entry is affected.
+Review checklist: anchored correctly; factual claims cited; no unsupported historical, literary, or biographical claims; no duplication; no conflict with glosses. The review may record `sourceGrounding` per note with `sourceIndexes` into its `sources`.
 
 ## Blocking
 
-Review or validation failure should mark the smallest affected unit as blocked. A blocked segment subjob should not prevent completed sibling segments from remaining usable, though it can prevent final paragraph packaging until the block is resolved.
+- A rejected review blocks only that component. Status shows it `blocked` with the findings as `requiredFixes`.
+- A blocked tokenization review makes gloss and grammar fail `blocked-upstream`.
+- A blocked segment leaves sibling segments usable but prevents its paragraph from assembling, and so from packaging.
+- To unblock: rerun the draft (which deletes the paired review), edit the artifact, or delete it, then rerun the review.
 
-Blocked state is reflected in status and in the component's review artifact. The editor resolves blocks by fixing inputs, deleting rejected artifacts, or rerunning the focused command.
+There is no retry counter: a component is blocked only by a rejected review, never by repeated failures.

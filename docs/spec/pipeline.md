@@ -1,155 +1,111 @@
-# Pipeline Stages
+# Pipeline
 
-## Source Normalization
+> **Spec** — what each preprocessing stage does today, at what scope, and who decides (LLM, code, or editor + agent skill). Commands: [CLI](cli.md). Files: [Artifacts](artifacts.md). Planned changes live in the [backlog](../backlog.md).
 
-Scope: full document.
+A source is always a full document. The pipeline splits it into chapters → paragraphs → segments, then runs eight components per segment, assembles paragraphs, and packages the document for the reader.
 
-LLM use: none.
+```mermaid
+flowchart LR
+  Source[Full document] --> Ingest[Ingest + normalize]
+  Ingest --> Chapters[Chapter boundaries]
+  Chapters --> Paragraphs[Paragraph spans]
+  Paragraphs --> Segments[Segments]
+  Segments --> Components[8 segment components]
+  Components --> Assemble[Assemble paragraph]
+  Assemble --> Package[Package document]
+```
 
-Prepare the source text for annotation while preserving the text that the reader will display.
+## Stages
 
-Responsibilities:
+| Stage | Scope | Decided by | Command | Prompt |
+|---|---|---|---|---|
+| Ingest + normalize | document | code | `ingest-document` | — |
+| Chapter boundaries | document | editor + agent | [preparing-source-structure](../../.opencode/skills/preparing-source-structure/SKILL.md) skill | — |
+| Paragraph spans | chapter | LLM, validated by code | `split-paragraphs` | `paragraph-structure.md` |
+| Segments | paragraph | LLM | `split-segments` | `paragraph-segmentation.md` |
+| Tokenization | segment | LLM, punctuation dropped by code | `tokenize-segment` | `segment-tokenization.md` |
+| Gloss selection | segment | LLM, deduped by code | `gloss-segment` | `segment-gloss.md` |
+| Grammar notes | segment | LLM, normalized by code | `annotate-segment-grammar` | `segment-grammar.md` |
+| Context notes | segment | editor + agent (web research) | [drafting-context-notes](../../.opencode/skills/drafting-context-notes/SKILL.md) skill | — |
+| Reviews (tokenization, gloss, grammar) | segment | LLM | `review-segment-*` | `segment-*-review.md` |
+| Context review | segment | editor + agent | [reviewing-context-notes](../../.opencode/skills/reviewing-context-notes/SKILL.md) skill | — |
+| Assembly | paragraph | code | `assemble-paragraph` | — |
+| Packaging | document | code | `package-document` | — |
 
-- Normalize file encoding.
-- Decide punctuation handling.
-- Preserve the canonical displayed segment string.
-- Avoid silently changing the Classical Chinese text during later stages.
+Prompts live in `prompts/`. `segment-context*.md` prompts exist but are unused while context jobs are stubs.
 
-## Structure Discovery
+Deterministic code owns: normalization, document ids, hashes, span checks, punctuation filtering, gloss dedup, note normalization, assembly, packaging, and status. The LLM mints chapter-internal ids (paragraphs, segments, tokens, notes, glosses).
 
-Scope: full document for chapter discovery, then chapter level for paragraph discovery.
+## Ingest and normalize
 
-LLM use: yes.
+- Strict UTF-8 decode; CRLF/CR → LF; trailing newline ensured.
+- Text is otherwise preserved exactly. `document.yaml` normalization and punctuation policies are recorded, not applied.
+- Assigns a document UUID and computes source and normalized hashes.
 
-The source is always a full document, but chapter and paragraph units should usually be decided by the LLM. If the raw source contains obvious headings or paragraph breaks, those should be supplied to the model as evidence rather than treated as unquestionable structure.
+## Chapter boundaries
 
-The model should propose chapter and paragraph spans. Deterministic validation should then check that:
+The editor and agent agree on boundaries interactively and write `chapter-proposal.json` plus its validation file by hand. Source headings are used as evidence by the agent; no CLI command or LLM job is involved. `split-paragraphs` does not check the chapter validation file.
 
-- Spans are ordered.
-- Spans do not overlap.
-- Spans do not omit text.
-- Span text reconstructs the normalized document or chapter exactly.
-- Proposed IDs are stable for unchanged spans when possible.
+## Paragraph spans
 
-Responsibilities:
+The model receives the full chapter text and proposes paragraph spans. Code checks that spans are contiguous, non-overlapping, and cover the chapter from start to end (spans are sorted first, so order is not enforced). Ids are re-minted on every run.
 
-- Preserve original text order.
-- Assign UUIDs to chapters and paragraphs.
-- Write initial chapter and paragraph structure proposals.
-- Allow a single paragraph to be reprocessed without changing stable IDs elsewhere.
+## Segments
 
-## Segmentation
+The model splits one paragraph into reader segments:
 
-Scope: paragraph.
+- Usually one full sentence per segment.
+- Combine consecutive very short sentences; split very long sentences (~48+ characters) at clause boundaries.
+- Do not split on commas alone.
 
-LLM use: yes, bounded to one paragraph at a time.
+It may also emit paragraph-level context notes anchored to segment ids. No reconstruction check runs at this stage; segment text is checked against the draft only at assembly.
 
-Split the paragraph into reader segments. Segments should usually be one full sentence. Combine consecutive very short sentences when they read better together; split only very long sentences (roughly over 48 characters) at natural clause boundaries. Do not split on commas alone within a sentence. The goal is pedagogical readability, not mechanical comma splitting.
+Once segments exist, each becomes the resumable container for eight components:
 
-Deterministic validation should verify that segment strings concatenate back to the paragraph text, modulo explicitly allowed paragraph separators.
+```text
+tokenize → review tokenization ┬→ gloss   → review gloss
+                               ├→ grammar → review grammar
+                               └→ context → review context   (skills)
+```
 
-Once segment boundaries are accepted, each segment becomes a container for focused resumable subjobs: tokenization, glossing, grammar annotation, context annotation, and focused review. A paragraph may be partially processed while some segment subjobs have succeeded and others remain pending, failed, or blocked.
+Gloss and grammar require an approved tokenization review. `run` executes components sequentially in this order.
 
 ## Tokenization
 
-Scope: segment.
+Identify glossable units. Punctuation and whitespace stay in the text but are never tokens.
 
-LLM use: yes.
+- Default to one character per token.
+- Use multi-character tokens only for names, titles, places (`孫子`), fixed compounds whose sense is not the sum of parts (`大事`, `死生`), and set phrases in context.
+- Do not merge across `之` or similar particles (`國/之/大事`).
 
-Identify glossable units within each segment. Punctuation and whitespace are not tokens; they remain in the segment text for display but are never glossed.
+Rules are enforced by the prompt; code only drops punctuation tokens. Offsets are not checked against the text.
 
-**Default to one character per token** for ordinary words and grammatical particles. Use multi-character tokens only when the reader should gloss a span as one unit:
+## Gloss selection
 
-- Personal names, titles, and place names (`孫子`)
-- Fixed binomes or compounds whose sense is not merely the sum of parts (`大事`, `死生`, `存亡`)
-- Established idioms or set phrases in context (`兵者` as a topic label)
+For each token, the model either reuses a document gloss (`reuse-existing`) or proposes a new sense (`create-new`) with surface, pinyin, and English gloss. Distinct senses of one surface get distinct entries.
 
-Do not merge across `之` or similar particles (`國/之/大事`, not `國之大事`). Do not produce long phrase tokens spanning multiple content words.
+Candidates are the glossary draft plus glosses from earlier approved segments, filtered to surfaces present in the segment. After the call, code rewrites candidate hits to `reuse-existing` and merges duplicate new entries.
 
-Each token occurrence receives offsets into the segment text and later points to a document-level `glossId`.
+On approved gloss review, new glosses are merged into `indexes/glossary-draft.json`, which becomes the reader gloss index.
 
-## Gloss Drafting
+## Grammar notes
 
-Scope: segment for local sense selection; full document for glossary aggregation.
+Segment-scoped notes on salient Classical Chinese constructions, anchored to token ids. Written only when useful to comprehension. No sources.
 
-LLM use: yes.
+## Context notes
 
-Create or reuse document-level gloss entries.
+Segment-local notes on people, places, historical setting, literary references, and interpretation an English-speaking learner is unlikely to know. Drafted and reviewed with agent skills because they need web research and citations. Rules: [Quality Gates — Context notes](quality-gates.md#context-notes).
 
-Recommended priority:
+## Reviews
 
-- Reuse an existing gloss entry when the same sense has already appeared; use `reuse-existing` with the document glossary id.
-- Create `create-new` only for senses not already in the glossary.
-- Use deterministic dictionaries or curated lexicons when available.
-- Use LLM assistance for unresolved or context-sensitive cases.
-- Create separate gloss entries for distinct senses of the same surface form.
+Each LLM review sees the draft it reviews plus the segment text (gloss review also gets candidates; grammar review also gets glosses). It returns `approved` or `rejected` with findings. Rejection blocks the component until the editor reruns or deletes artifacts. Details: [Quality Gates](quality-gates.md).
 
-Each gloss must include:
+## Assembly and packaging
 
-- Surface form.
-- Pinyin.
-- English gloss.
+`assemble-paragraph` joins the paragraph draft with each segment's tokenization, glosses, grammar notes, and context notes into the [reader paragraph shape](reader-package.md#paragraph-file), validates it, and stages it under `jobs/assembly/`. `package-document` promotes all current, passed paragraphs to `content/` with the document manifest, chapter files, and gloss index. Neither calls an LLM.
 
-For each token occurrence, the model should decide whether it uses an existing `glossId` or requires a new gloss entry. This handles homonyms and polysemy.
+## Model use
 
-The model must justify new gloss entries internally in intermediate output, but the final reader package should store only the fields required by the storage format unless review metadata is intentionally preserved.
+One configured provider and model serve every LLM job, drafts and reviews alike. Providers: `mock` (default, fixtures), `anthropic`, and `minimax`. Configuration: [Model Strategy](../architecture/model-strategy.md).
 
-## Note Drafting
-
-Scope: segment by default; paragraph only for cross-segment context notes.
-
-LLM use: yes, with source grounding for context notes.
-
-Create grammar and context notes only when useful to comprehension.
-
-Grammar notes should be drafted at segment scope. They should explain salient Classical Chinese constructions in the anchored text without paying for paragraph-level context unless the construction truly depends on a larger span.
-
-Context notes should explain information needed to understand the passage, such as:
-
-- People.
-- Places.
-- Historical setting.
-- Literary references.
-- Common scholarly interpretation.
-- Clarifying information that an English-speaking learner is unlikely to know.
-
-Context notes may be drafted at paragraph scope when the note applies across multiple text segments or requires paragraph-level framing. Segment-local context notes should be drafted at segment scope.
-
-For context notes, the model should not rely only on memory. The relevant job should provide source snippets or reference material when available, and the model should cite those source IDs in note metadata.
-
-## Structural Validation
-
-Scope: segment, paragraph, chapter, or full document depending on the check.
-
-LLM use: none.
-
-Validation should check:
-
-- File paths.
-- JSON shape.
-- UUID format.
-- Token offsets.
-- Token coverage.
-- Gloss references.
-- Note anchors.
-- Reachability from `document.json`.
-
-## Review And Quality Jobs
-
-Scope: segment for tokenization, glosses, and grammar; paragraph only for paragraph-level context notes and paragraph reconstruction checks.
-
-LLM use: yes.
-
-Since first-stage content review will be LLM-based rather than mandatory human review, QA should be a separate pass from drafting.
-
-It should check:
-
-- The selected gloss is correct in the local segment context.
-- Homonyms and polysemous words are disambiguated correctly.
-- Pinyin is accurate.
-- Grammar notes describe the construction actually present.
-- Context notes are not hallucinated.
-- Context notes are grounded in real sources.
-- Recurring people, places, and interpretive claims are consistent across the document.
-
-See [Review And Quality Jobs](quality-gates.md) for the concrete validation and review job definitions.
+Each call sends the paragraph or segment it operates on, never the whole document (`split-paragraphs` sends one chapter).

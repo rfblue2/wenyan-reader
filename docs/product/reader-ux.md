@@ -1,14 +1,12 @@
-# App UX
+# Reader UX
 
-## Purpose
+> **Product** — intended student-facing reading experience. **Not built yet**; see the [backlog](../backlog.md). Data comes from the [Reader Package](../spec/reader-package.md).
 
-Define the student-facing reading experience for the Classical Chinese reader.
-
-The app should prioritize uninterrupted reading. Glosses, grammar notes, and context notes exist to support comprehension, but they should not dominate the page or become the default reading mode.
+Prioritize uninterrupted reading. Glosses and notes support comprehension but never dominate the page.
 
 ## Core Principles
 
-- Show a bite-sized text segment by default.
+- Show one segment at a time.
 - Keep the main reading surface visually quiet.
 - Let the reader request help only when needed.
 - Preserve access to all glosses and notes wherever they appear.
@@ -18,37 +16,11 @@ The app should prioritize uninterrupted reading. Glosses, grammar notes, and con
 
 ### Library View
 
-Shows the available curated documents.
-
-Minimum required information:
-
-- Document title.
-
-Low-fidelity layout:
-
-```text
-+------------------------------------------------------+
-| Classical Chinese Reader                             |
-+------------------------------------------------------+
-|                                                      |
-|  Documents                                           |
-|                                                      |
-|  +------------------------------------------------+  |
-|  | 三國志                                          |  |
-|  +------------------------------------------------+  |
-|                                                      |
-|  +------------------------------------------------+  |
-|  | 史記                                            |  |
-|  +------------------------------------------------+  |
-|                                                      |
-+------------------------------------------------------+
-```
+Lists available documents by title.
 
 ### Reader View
 
-Shows the current text segment and reading controls.
-
-Core elements:
+Shows the current segment and reading controls:
 
 - Current segment text.
 - Previous and next navigation.
@@ -74,13 +46,11 @@ Default quiet reading layout:
 +------------------------------------------------------+
 ```
 
-The default state should not show glosses, translations, note text, or visible annotation clutter.
+The default state shows no glosses, translations, note text, or annotation marks.
 
 ### Segment Text
 
-Renders the Classical Chinese text while preserving the original segment string.
-
-Each glossable token should be clickable. Punctuation and non-glossable separators should render as part of the text but should not behave like tokens.
+Renders the segment `text` exactly. Each token is clickable; punctuation renders as text but is not clickable.
 
 Token interaction model:
 
@@ -104,9 +74,9 @@ Punctuation:
 
 Clicking a token opens the gloss for that specific token occurrence.
 
-The displayed gloss comes from the token occurrence's `glossId`, not from a raw lookup by surface form. This is necessary because the same written form may have different meanings in different contexts.
+The gloss comes from the occurrence's `glossId`, not a lookup by surface, because one character can have several senses.
 
-The reader should also provide a way to reveal glosses first introduced by the current segment. A gloss is considered new if the current segment is its first canonical occurrence in the document, based on content order, not saved user history.
+**New Words** reveals the segment's `newGlossIds`: glosses whose first occurrence in document order is this segment (content-defined, not per-user).
 
 Single-token gloss popover:
 
@@ -151,11 +121,7 @@ New glosses for current segment:
 
 ## Notes Behavior
 
-Grammar and context notes should be hidden by default.
-
-When notes are enabled, the app may show subtle anchors on the relevant text span. Selecting an anchor opens the associated note.
-
-Grammar notes explain salient Classical Chinese constructions. Context notes explain historical, literary, biographical, geographic, or interpretive context needed to understand the passage.
+Notes are hidden by default. **Notes** shows subtle anchors on annotated spans; selecting one opens the note. Grammar notes explain constructions; context notes explain historical, literary, biographical, geographic, or interpretive background.
 
 Notes-enabled layout:
 
@@ -197,23 +163,7 @@ Selected note layout:
 
 ## Local User State
 
-The first-stage app should not store local user state.
-
-Do not persist:
-
-- Reading progress.
-- Last-opened document, chapter, paragraph, or segment.
-- Glosses the reader has opened.
-- Notes the reader has opened.
-- Per-user seen or introduced status.
-
-The current reading position can be represented by the route or URL while the app is open. If the page is reloaded without a segment in the URL, the app can return to the document or chapter start.
-
-Important distinctions:
-
-- A reader can always click any token and see its gloss.
-- A gloss can be listed as new for a segment when that segment contains the first canonical occurrence of its `glossId` in the document.
-- Notes remain available from the segment that contains them, without tracking whether the reader has seen them.
+None in the first stage: no reading progress, last position, opened glosses or notes, or per-user "seen" state. The current position lives in the URL; without one, open the document or chapter start.
 
 ## Open Questions For Later
 
