@@ -150,4 +150,4 @@ These are sufficient on their own:
 
 - [reviewing-context-notes](../reviewing-context-notes/SKILL.md)
 - [preprocessing-segments](../preprocessing-segments/SKILL.md)
-- [source-grounding.md](../../../docs/spec/source-grounding.md)
+- [Quality Gates — Context notes](../../../docs/spec/quality-gates.md#context-notes)
