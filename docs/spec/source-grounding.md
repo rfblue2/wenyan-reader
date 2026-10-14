@@ -23,4 +23,4 @@ If no source supports a claim, omit the note or reject it in [reviewing-context-
 
 Context review records `sourceGrounding` with `sourceIndexes` (0-based into each note's `sources` array) when verifying citations.
 
-See [Review And Quality Jobs](review-and-quality-jobs.md) for validation and blocking behavior.
+See [Review And Quality Jobs](quality-gates.md) for validation and blocking behavior.

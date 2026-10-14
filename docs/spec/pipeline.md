@@ -152,4 +152,4 @@ It should check:
 - Context notes are grounded in real sources.
 - Recurring people, places, and interpretive claims are consistent across the document.
 
-See [Review And Quality Jobs](review-and-quality-jobs.md) for the concrete validation and review job definitions.
+See [Review And Quality Jobs](quality-gates.md) for the concrete validation and review job definitions.

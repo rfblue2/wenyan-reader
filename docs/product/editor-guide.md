@@ -53,7 +53,7 @@ The raw source is always treated as a full document. A chapter excerpt or paragr
 
 ## CLI Reference
 
-The editor workflow uses the preprocessing CLI, but this document describes the editor journey rather than command internals. See [CLI Spec](../cli-spec.md) for command behavior, options, outputs, and status payloads.
+The editor workflow uses the preprocessing CLI, but this document describes the editor journey rather than command internals. See [CLI Spec](../spec/cli.md) for command behavior, options, outputs, and status payloads.
 
 ## User Flow: Add A New Document Step By Step
 
@@ -164,7 +164,7 @@ wenyan preprocess assemble-paragraph <document-id> --paragraph <paragraph-id>
 wenyan preprocess status <document-id> --paragraph <paragraph-id>
 ```
 
-The editor reviews the staged `jobs/assembly/paragraph-id/package.json` before packaging. A paragraph is complete when `assemble-paragraph` succeeds. See [Storage Format](../storage-format.md) for the reader paragraph schema.
+The editor reviews the staged `jobs/assembly/paragraph-id/package.json` before packaging. A paragraph is complete when `assemble-paragraph` succeeds. See [Storage Format](../spec/reader-package.md) for the reader paragraph schema.
 
 
 

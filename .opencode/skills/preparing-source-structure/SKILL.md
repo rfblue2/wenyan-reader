@@ -138,5 +138,5 @@ Downstream preprocessing (paragraphs, segments, tokenization) stays on the CLI.
 
 - Normalization rules and policies: [normalization-rules.md](normalization-rules.md)
 - Chapter proposal JSON shape and span invariants: [chapter-structure-format.md](chapter-structure-format.md)
-- Artifact layout: [architecture/preprocessing/intermediate-artifacts.md](../../../architecture/preprocessing/intermediate-artifacts.md)
-- Editor journey (downstream CLI): [architecture/preprocessing/editor-workflow.md](../../../architecture/preprocessing/editor-workflow.md)
+- Artifact layout: [docs/spec/artifacts.md](../../../docs/spec/artifacts.md)
+- Editor journey (downstream CLI): [docs/product/editor-guide.md](../../../docs/product/editor-guide.md)

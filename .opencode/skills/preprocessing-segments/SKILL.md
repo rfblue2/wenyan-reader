@@ -45,7 +45,7 @@ When every segment in a paragraph is finished, run assembly explicitly — `run 
 
 1. `assemble-paragraph` — deterministic compile to `jobs/assembly/<paragraph-id>/package.json` + `validation.json`
 
-A paragraph is complete when assembly validation passes. See [Storage Format](../../../architecture/storage-format.md) for the reader paragraph schema.
+A paragraph is complete when assembly validation passes. See [Reader Package](../../../docs/spec/reader-package.md) for the reader paragraph schema.
 
 ## Slice scope (current implementation)
 
@@ -176,7 +176,7 @@ uv run wenyan preprocess run <slug> --segment <segment-id>
 
 ## Reference
 
-- Editor journey: [architecture/preprocessing/editor-workflow.md](../../../architecture/preprocessing/editor-workflow.md)
-- CLI behavior: [architecture/cli-spec.md](../../../architecture/cli-spec.md)
-- Artifact layout: [architecture/preprocessing/intermediate-artifacts.md](../../../architecture/preprocessing/intermediate-artifacts.md)
+- Editor journey: [docs/product/editor-guide.md](../../../docs/product/editor-guide.md)
+- CLI behavior: [docs/spec/cli.md](../../../docs/spec/cli.md)
+- Artifact layout: [docs/spec/artifacts.md](../../../docs/spec/artifacts.md)
 - Upstream chapter work: [preparing-source-structure](../preparing-source-structure/SKILL.md)

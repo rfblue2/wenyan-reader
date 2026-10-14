@@ -109,8 +109,8 @@ Committed artifacts under `preprocess/documents/` let CI resume or validate the 
 
 ## Further reading
 
-- [Editor workflow](architecture/preprocessing/editor-workflow.md) — full editorial journey
-- [CLI spec](architecture/cli-spec.md) — commands, options, and status payloads
-- [Preprocessing overview](architecture/preprocessing/README.md) — pipeline stages and design principles
+- [Editor workflow](docs/product/editor-guide.md) — full editorial journey
+- [CLI spec](docs/spec/cli.md) — commands, options, and status payloads
+- [Preprocessing overview](docs/product/overview.md) — pipeline stages and design principles
 
 Several later-stage commands (`run`, etc.) are registered but not yet fully implemented in the current vertical slice.

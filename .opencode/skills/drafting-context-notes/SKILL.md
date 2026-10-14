@@ -150,4 +150,4 @@ These are sufficient on their own:
 
 - [reviewing-context-notes](../reviewing-context-notes/SKILL.md)
 - [preprocessing-segments](../preprocessing-segments/SKILL.md)
-- [source-grounding.md](../../../architecture/preprocessing/source-grounding.md)
+- [source-grounding.md](../../../docs/spec/source-grounding.md)
