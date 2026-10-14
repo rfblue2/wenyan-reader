@@ -6,7 +6,7 @@ Define the local content representation for curated Classical Chinese documents.
 
 The first-stage app should use local files as the source of truth. The format must support full documents with chapters, paragraphs, and many bite-sized reading segments without requiring a single huge JSON file.
 
-Preprocessing writes validated package files under `content/documents/<document-id>/`. Intermediate preprocessing artifacts live separately under `preprocess/documents/<document-id>/`. See [Intermediate Artifacts](preprocessing/intermediate-artifacts.md).
+Preprocessing writes validated package files under `content/documents/<document-id>/`. Intermediate preprocessing artifacts live separately under `preprocess/documents/<document-id>/`. See [Intermediate Artifacts](artifacts.md).
 
 ## Design Goals
 

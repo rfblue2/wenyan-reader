@@ -11,7 +11,7 @@ This spec currently covers preprocessing only.
 Preprocessing uses two on-disk roots:
 
 - `preprocess/documents/<document-id>/` — intermediate artifacts, job outputs, validation reports, and diagnostics. Paths in this spec are relative to this root unless noted otherwise.
-- `content/documents/<document-id>/` — validated reader package files consumed by the app (`document.json`, `glosses/index.json`, `chapters/`, etc.). See [Storage Format](storage-format.md).
+- `content/documents/<document-id>/` — validated reader package files consumed by the app (`document.json`, `glosses/index.json`, `chapters/`, etc.). See [Storage Format](reader-package.md).
 
 Commands accept `<document-id>` as a UUID or as a source slug resolved through `sources/registry.yaml`.
 
@@ -109,7 +109,7 @@ Primary output:
 
 - `preprocess/documents/document-id/normalized-document.json`
 
-Chapter structure is prepared interactively before downstream preprocessing. See the `preparing-source-structure` project skill and `structure/chapter-proposal.json` in [Intermediate Artifacts](preprocessing/intermediate-artifacts.md).
+Chapter structure is prepared interactively before downstream preprocessing. See the `preparing-source-structure` project skill and `structure/chapter-proposal.json` in [Intermediate Artifacts](artifacts.md).
 
 ### `split-paragraphs`
 
@@ -290,7 +290,7 @@ Prerequisites:
 
 Primary outputs:
 
-- `jobs/assembly/paragraph-id/package.json` — reader-shaped paragraph package staged under preprocess; same schema as the final paragraph file in [Storage Format](storage-format.md)
+- `jobs/assembly/paragraph-id/package.json` — reader-shaped paragraph package staged under preprocess; same schema as the final paragraph file in [Storage Format](reader-package.md)
 - `jobs/assembly/paragraph-id/validation.json`
 
 Skips when `package.json` is current (same computed input hash) unless `--force`. Non-zero exit on validation failure; does not leave a promoted `package.json`.
@@ -625,5 +625,5 @@ Segment-level status returns a `SegmentShowView` with source text, tokens, notes
 
 ## Related Docs
 
-- [CLI Tech Stack](tech-stack/cli.md)
-- [Preprocessing](preprocessing/README.md)
+- [CLI Tech Stack](../architecture/cli.md)
+- [Preprocessing](../product/overview.md)

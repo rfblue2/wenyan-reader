@@ -32,13 +32,13 @@ Development decisions:
 
 ## Current Constraints
 
-These come from [App UX](../app-ux.md) and [Storage Format](../storage-format.md):
+These come from [App UX](../product/reader-ux.md) and [Storage Format](../spec/reader-package.md):
 
 - The reader consumes validated local package files only.
 - Runtime reading must not depend on live LLM calls.
 - Large documents should load incrementally.
 - The first stage does not store local user state.
-- Content shapes should come from the shared `wenyan-models` library; see [Tech Stack README](README.md).
+- Content shapes should come from the shared `wenyan-models` library; see [Tech Stack README](overview.md).
 
 ## Open Questions For Later
 
@@ -49,6 +49,6 @@ These come from [App UX](../app-ux.md) and [Storage Format](../storage-format.md
 
 ## Related Docs
 
-- [App UX](../app-ux.md)
-- [Storage Format](../storage-format.md)
+- [App UX](../product/reader-ux.md)
+- [Storage Format](../spec/reader-package.md)
 - [CLI](cli.md)

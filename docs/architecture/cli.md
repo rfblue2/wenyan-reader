@@ -4,7 +4,7 @@
 
 Define libraries, project structure, and implementation patterns for the preprocessing CLI.
 
-Command behavior, flags, scopes, and output shapes are defined in the [CLI Spec](../cli-spec.md). This doc does not repeat them. When implementation choices matter for a particular command, note them here and link to the spec.
+Command behavior, flags, scopes, and output shapes are defined in the [CLI Spec](../spec/cli.md). This doc does not repeat them. When implementation choices matter for a particular command, note them here and link to the spec.
 
 ## Decision Summary
 
@@ -102,7 +102,7 @@ Principles:
 
 ## CLI Wiring
 
-Register commands to match the [CLI Spec](../cli-spec.md). Each command module exports a Typer callback.
+Register commands to match the [CLI Spec](../spec/cli.md). Each command module exports a Typer callback.
 
 Implementation patterns:
 
@@ -124,7 +124,7 @@ This implements the atomic-write requirement from the CLI spec and preprocessing
 
 Pydantic models in `wenyan-models` represent artifact types, status payloads, and reader package files. The CLI imports them for validation, serialization, and machine-readable output.
 
-- `core/status/` derives effective status from files on disk. Behavior follows the CLI spec and [Intermediate Artifacts](../preprocessing/intermediate-artifacts.md).
+- `core/status/` derives effective status from files on disk. Behavior follows the CLI spec and [Intermediate Artifacts](../spec/artifacts.md).
 - `core/validate/` implements graph-integrity checks: schema match, input-hash match, referential integrity, and stale downstream detection.
 
 Do not maintain a separate status database. The artifact graph on disk is the source of truth.
@@ -143,9 +143,9 @@ Secrets belong in environment variables or a gitignored local override. Committe
 
 ## Job Execution
 
-Artifact-producing commands delegate to `jobs/` modules. Job modules call into shared helpers for input hashes, prompt versions, artifact reuse, and job metadata recording. Behavioral rules come from the CLI spec and [Job Execution](../preprocessing/job-execution.md).
+Artifact-producing commands delegate to `jobs/` modules. Job modules call into shared helpers for input hashes, prompt versions, artifact reuse, and job metadata recording. Behavioral rules come from the CLI spec and [Job Execution](job-execution.md).
 
-Chained multi-command execution lives in `core/run/`. LLM-facing work lives in `llm/` and uses httpx with explicit timeouts and retry policy. Model choice and prompt versioning are covered in [Model Strategy](../preprocessing/model-strategy.md).
+Chained multi-command execution lives in `core/run/`. LLM-facing work lives in `llm/` and uses httpx with explicit timeouts and retry policy. Model choice and prompt versioning are covered in [Model Strategy](model-strategy.md).
 
 ## Testing
 
@@ -186,8 +186,8 @@ Local development assumes macOS or Linux with Python 3.12+. No container require
 
 ## Related Docs
 
-- [CLI Spec](../cli-spec.md)
-- [Preprocessing](../preprocessing/README.md)
-- [Intermediate Artifacts](../preprocessing/intermediate-artifacts.md)
-- [Editor Workflow](../preprocessing/editor-workflow.md)
-- [Storage Format](../storage-format.md)
+- [CLI Spec](../spec/cli.md)
+- [Preprocessing](../product/overview.md)
+- [Intermediate Artifacts](../spec/artifacts.md)
+- [Editor Workflow](../product/editor-guide.md)
+- [Storage Format](../spec/reader-package.md)

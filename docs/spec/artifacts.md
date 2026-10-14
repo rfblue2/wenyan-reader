@@ -9,7 +9,7 @@ The reader should consume only the final validated package files.
 ## Workspace Roots
 
 - `preprocess/documents/<document-id>/` — all intermediate artifacts described in this document.
-- `content/documents/<document-id>/` — validated reader package files. See [Storage Format](../storage-format.md).
+- `content/documents/<document-id>/` — validated reader package files. See [Storage Format](reader-package.md).
 
 Paths below are relative to `preprocess/documents/<document-id>/` unless noted otherwise.
 
@@ -347,11 +347,11 @@ all segment subjobs complete (×8 per segment)
 
 `assemble-paragraph` joins the paragraph draft and accepted segment subjob outputs into a reader-shaped `package.json` under `jobs/assembly/paragraph-id/` and writes `validation.json`. It does not call an LLM and does not write to `content/`. A paragraph is complete when assembly validation passes.
 
-Deleting or changing any segment subjob output invalidates `package.json` and `validation.json` for that paragraph. See [CLI Spec](../cli-spec.md) for command behavior.
+Deleting or changing any segment subjob output invalidates `package.json` and `validation.json` for that paragraph. See [CLI Spec](cli.md) for command behavior.
 
 ## Paragraph Assembly Package (`package.json`)
 
-`jobs/assembly/paragraph-id/package.json` is the staged paragraph package. It uses the same schema as the final paragraph file in [Storage Format](../storage-format.md). Job metadata fields (`model`, `inputHash`, `attempts`) are not stored on this file.
+`jobs/assembly/paragraph-id/package.json` is the staged paragraph package. It uses the same schema as the final paragraph file in [Storage Format](reader-package.md). Job metadata fields (`model`, `inputHash`, `attempts`) are not stored on this file.
 
 ```json
 {

@@ -15,7 +15,7 @@ Behavioral requirements live in the other architecture docs. This folder records
 
 The first implementation stage focuses on the preprocessing CLI. The reader web app is deferred; see [Web App](webapp.md).
 
-Command behavior, artifact paths, status semantics, flags, and output shapes are defined in the [CLI Spec](../cli-spec.md). The CLI tech stack doc covers libraries, project structure, and implementation patterns only.
+Command behavior, artifact paths, status semantics, flags, and output shapes are defined in the [CLI Spec](../spec/cli.md). The CLI tech stack doc covers libraries, project structure, and implementation patterns only.
 
 ## Shared Constraints
 
@@ -32,7 +32,7 @@ These apply to the CLI now and to the web app later:
 
 | Concern | Choice | Notes |
 | --- | --- | --- |
-| Content IDs | UUID v4 | Matches [Storage Format](../storage-format.md). |
+| Content IDs | UUID v4 | Matches [Storage Format](../spec/reader-package.md). |
 | JSON on disk | UTF-8, pretty-printed in examples | Production writers may compact; readers must accept either. |
 | Shared models | Pydantic v2 in `wenyan-models` | Single source of truth for reader package files, preprocessing artifacts, and status payloads. CLI and web app both depend on this library. |
 | Schema export | JSON Schema from Pydantic models | Generated schemas support web-app type generation and non-Python validation when needed. |
@@ -42,9 +42,9 @@ These apply to the CLI now and to the web app later:
 
 Define content shapes once in `wenyan-models` and reuse them across preprocessing and reading:
 
-- Reader package models mirror [Storage Format](../storage-format.md).
-- Preprocessing artifact models mirror [Intermediate Artifacts](../preprocessing/intermediate-artifacts.md).
-- Status payload models mirror the examples in [CLI Spec](../cli-spec.md).
+- Reader package models mirror [Storage Format](../spec/reader-package.md).
+- Preprocessing artifact models mirror [Intermediate Artifacts](../spec/artifacts.md).
+- Status payload models mirror the examples in [CLI Spec](../spec/cli.md).
 
 The shared library should stay free of CLI, LLM, and UI dependencies so it remains safe to import from any runtime. Preprocessing and reading code validate against the same models rather than maintaining parallel JSON definitions.
 

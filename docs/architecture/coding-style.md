@@ -242,6 +242,6 @@ When a `Callable[...]` signature repeats or spans multiple lines, extract a name
 
 ## Related docs
 
-- [CLI Tech Stack](tech-stack/cli.md) — libraries, repo layout, tooling
-- [CLI Spec](cli-spec.md) — command behavior and artifact paths
-- [Intermediate Artifacts](preprocessing/intermediate-artifacts.md) — JSON shapes on disk
+- [CLI Tech Stack](cli.md) — libraries, repo layout, tooling
+- [CLI Spec](../spec/cli.md) — command behavior and artifact paths
+- [Intermediate Artifacts](../spec/artifacts.md) — JSON shapes on disk

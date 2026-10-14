@@ -34,7 +34,7 @@ Most project details live in the architecture docs. Start there before making de
 
 ## Editing Guidance
 
-- Follow [Coding Style](architecture/coding-style.md) for Python layer boundaries, Pydantic usage, ports, and static typing.
+- Follow [Coding Style](docs/architecture/coding-style.md) for Python layer boundaries, Pydantic usage, ports, and static typing.
 - For interactive source normalization and chapter boundaries, use the [preparing-source-structure](.opencode/skills/preparing-source-structure/SKILL.md) skill.
 - For segment-local **context notes** (draft or review), use [drafting-context-notes](.opencode/skills/drafting-context-notes/SKILL.md) and [reviewing-context-notes](.opencode/skills/reviewing-context-notes/SKILL.md). The editor only needs document slug + chapter/paragraph/segment ordinals (same as `preprocess status --segment`); context annotate/review CLI commands are stubbed.
 - Keep architecture docs concise and cross-link rather than duplicating large sections.
@@ -67,4 +67,4 @@ uv run python -m pytest tests/jobs/test_gloss_segment.py -q
 - **No live LLM:** Job and pipeline tests use `build_job_context(tmp_workspace)` with `models.provider: mock` and `MockLLMClient` fixtures under `tests/fixtures/llm/`. The `tmp_workspace` fixture clears `WENYAN_MODEL_PROVIDER`, `WENYAN_MODEL`, and API key env vars so a developer `.env` does not leak in.
 - **Bounded waits:** If a test run seems stuck, do not poll indefinitely. Re-run with a subprocess timeout (60–120s) or a narrow path to tell a hung interpreter from a slow test. A healthy full suite finishes in seconds.
 
-See also [CLI Tech Stack — Testing](architecture/tech-stack/cli.md#testing).
+See also [CLI Tech Stack — Testing](docs/architecture/cli.md#testing).

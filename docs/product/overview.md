@@ -17,16 +17,16 @@ The reader app consumes curated local files. LLMs may assist preprocessing, but 
 
 ## Subdocs
 
-- [Model Strategy](model-strategy.md)
-- [Operation Scope](operation-scope.md)
-- [Pipeline Stages](pipeline-stages.md)
-- [Job Execution](job-execution.md)
-- [Editor Workflow](editor-workflow.md)
-- [Preprocessing CLI Spec](../cli-spec.md)
-- [CLI Tech Stack](../tech-stack/cli.md)
-- [Intermediate Artifacts](intermediate-artifacts.md)
-- [Source Grounding](source-grounding.md)
-- [Review And Quality Jobs](review-and-quality-jobs.md)
+- [Model Strategy](../architecture/model-strategy.md)
+- [Operation Scope](../spec/operation-scope.md)
+- [Pipeline Stages](../spec/pipeline.md)
+- [Job Execution](../architecture/job-execution.md)
+- [Editor Workflow](editor-guide.md)
+- [Preprocessing CLI Spec](../spec/cli.md)
+- [CLI Tech Stack](../architecture/cli.md)
+- [Intermediate Artifacts](../spec/artifacts.md)
+- [Source Grounding](../spec/source-grounding.md)
+- [Review And Quality Jobs](../spec/quality-gates.md)
 
 ## Pipeline Overview
 
