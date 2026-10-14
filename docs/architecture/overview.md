@@ -1,54 +1,102 @@
-# Tech Stack
+# Architecture Overview
 
-## Purpose
+> **Architecture** — how the preprocessing CLI is built: packages, layout, dependencies, configuration. Behavior is defined in the [specs](../spec/); code conventions in [Coding Style](coding-style.md).
 
-Record framework, tooling, and implementation choices for the Classical Chinese reader project.
+## Stack
 
-Behavioral requirements live in the other architecture docs. This folder records how those requirements are implemented.
+| Area | Choice |
+|---|---|
+| Language | Python 3.12+ |
+| Packaging | uv workspace; hatchling builds; console script `wenyan = "wenyan.cli:app"` |
+| CLI | Typer; Rich for segment status rendering |
+| Data models | Pydantic v2, in the shared `wenyan-models` package |
+| HTTP / LLM | httpx (sync) against the Anthropic Messages API |
+| Config | PyYAML + hand-rolled `.env` loader |
+| Quality gate | Ruff (lint), mypy `--strict` with the Pydantic plugin, pytest — all run in CI (`.github/workflows/ci.yml`) |
 
-## Subdocs
+There is no async code, worker pool, database, or published distribution. The reader web app is not started ([Web App](webapp.md)).
 
-- [CLI](cli.md)
-- [Web App](webapp.md)
+## Packages
 
-## Scope For Now
+| Package | Path | Depends on | Role |
+|---|---|---|---|
+| `wenyan-models` | `packages/wenyan-models/src/wenyan_models/` | pydantic only | Source of truth for artifact, reader package, status, and config shapes. Safe to import from any runtime, including a future web app. |
+| `wenyan` | `src/wenyan/` | `wenyan-models`, typer, rich, httpx, pyyaml | Preprocessing CLI. |
 
-The first implementation stage focuses on the preprocessing CLI. The reader web app is deferred; see [Web App](webapp.md).
+## Layout
 
-Command behavior, artifact paths, status semantics, flags, and output shapes are defined in the [CLI Spec](../spec/cli.md). The CLI tech stack doc covers libraries, project structure, and implementation patterns only.
+```text
+config/preprocessing.yaml   committed defaults (models, retry, concurrency, prompts root)
+prompts/                    one Markdown template per LLM task
+sources/                    source texts + registry.yaml
+preprocess/                 committed intermediate artifacts
+content/                    committed reader packages
+.opencode/skills/           agent skills for interactive steps
 
-## Shared Constraints
+packages/wenyan-models/src/wenyan_models/
+  artifacts/    preprocessing artifact models; DEFAULT_ARTIFACT_CONFIG; *IdField aliases
+  reader/       reader package models
+  status/       status payloads per scope
+  show/         SegmentShowView (segment status)
+  domain/       ids, enums, JobOutcome, spans, targets, validation, review findings
+  text/         tokenization text helpers
+  config.py     PreprocessingConfig
+  sources.py    RegistryEntry, DocumentYaml
 
-- The app runs locally for development.
-- Production deployment is out of scope for the first stage.
-- Runtime reading should not depend on live LLM calls.
-- Content should be stored in local files.
-- The reader should load large documents incrementally.
-- The app should not store local user state in the first stage.
+src/wenyan/
+  bootstrap.py  composition root: build_job_context()
+  cli/          Typer app (preprocess.py), option/scope parsing, unit refs, Rich output
+  jobs/         one module per command; segment_runner; JobContext/JobOptions
+  core/
+    ports/      Protocol interfaces + ArtifactRef factories
+    adapters/   filesystem store/status/validator, YAML registry, LLM clients, hashing, paths
+    config/     config loader
+    assembly/   paragraph compile, validation, input hash
+    package/    document package build, validate, promote
+    gloss/      candidate filtering, glossary draft merge, reuse normalization
+    notes/      note normalization
+    run/        segment pipeline order, work queue, orphan/stale pruning
+    status/     status derivation
+    show/       segment view builder
 
-## Cross-Cutting Decisions
+tests/          mirrors src/ (cli, core, jobs, models, prompts, integration); fixtures/llm holds mock responses
+```
 
-These apply to the CLI now and to the web app later:
+## Request flow
 
-| Concern | Choice | Notes |
-| --- | --- | --- |
-| Content IDs | UUID v4 | Matches [Storage Format](../spec/reader-package.md). |
-| JSON on disk | UTF-8, pretty-printed in examples | Production writers may compact; readers must accept either. |
-| Shared models | Pydantic v2 in `wenyan-models` | Single source of truth for reader package files, preprocessing artifacts, and status payloads. CLI and web app both depend on this library. |
-| Schema export | JSON Schema from Pydantic models | Generated schemas support web-app type generation and non-Python validation when needed. |
-| Hashing | SHA-256, prefixed `sha256:` | Used for source, normalized text, and artifact input hashes. |
+```text
+cli/preprocess.py ─ parse args, resolve unit refs (cli/unit_refs, cli/status_scope)
+  → bootstrap.build_job_context()  ─ load config, wire adapters into JobContext
+  → jobs/<command>.run_*(ctx, ids, options) → JobOutcome
+  → cli prints outcome / JSON, maps to exit code
+```
 
-## Shared Library Strategy
+`status` and `validate-artifacts` construct their adapters directly in `cli/preprocess.py` rather than through `JobContext`.
 
-Define content shapes once in `wenyan-models` and reuse them across preprocessing and reading:
+## Configuration
 
-- Reader package models mirror [Storage Format](../spec/reader-package.md).
-- Preprocessing artifact models mirror [Intermediate Artifacts](../spec/artifacts.md).
-- Status payload models mirror the examples in [CLI Spec](../spec/cli.md).
+`core/config/loader.py` builds a `PreprocessingConfig`. Precedence, highest first:
 
-The shared library should stay free of CLI, LLM, and UI dependencies so it remains safe to import from any runtime. Preprocessing and reading code validate against the same models rather than maintaining parallel JSON definitions.
+1. Shell environment
+2. `<repo>/.env` (gitignored; applied with `setdefault`, so the shell wins)
+3. `WENYAN_CONFIG` file, else `<repo>/.wenyan/config.yaml` (gitignored)
+4. `config/preprocessing.yaml`
+5. Model defaults (`provider: mock`)
 
-## Open Questions
+Environment variables read: `WENYAN_MODEL_PROVIDER` (`mock` | `anthropic` | `minimax`), `WENYAN_MODEL` (model id for the active provider), `ANTHROPIC_API_KEY`, `MINIMAX_API_KEY`, `WENYAN_CONFIG`.
 
-- Where should generated JSON Schema files live in the repo, and how should the web app consume them?
-- Should SQLite be introduced early for indexing, or deferred until search/import requirements are clearer?
+`config.concurrency` is loaded but unused.
+
+## Cross-cutting conventions
+
+| Concern | Convention |
+|---|---|
+| Ids | Document ids are code-minted UUID v4. Chapter ids come from the editor; paragraph, segment, token, note, and gloss ids come from the model. |
+| Hashing | SHA-256, `sha256:` prefix (`core/adapters/hashing.py`). |
+| JSON | camelCase aliases on disk; models reject unknown fields. |
+| Status | Derived from files on disk; no status store. |
+
+## Open questions
+
+- Generate JSON Schema or TypeScript types from `wenyan-models` for the web app? (Not done today.)
+- Introduce SQLite for indexing, or defer until search is needed?

@@ -67,4 +67,4 @@ uv run python -m pytest tests/jobs/test_gloss_segment.py -q
 - **No live LLM:** Job and pipeline tests use `build_job_context(tmp_workspace)` with `models.provider: mock` and `MockLLMClient` fixtures under `tests/fixtures/llm/`. The `tmp_workspace` fixture clears `WENYAN_MODEL_PROVIDER`, `WENYAN_MODEL`, and API key env vars so a developer `.env` does not leak in.
 - **Bounded waits:** If a test run seems stuck, do not poll indefinitely. Re-run with a subprocess timeout (60–120s) or a narrow path to tell a hung interpreter from a slow test. A healthy full suite finishes in seconds.
 
-See also [CLI Tech Stack — Testing](docs/architecture/cli.md#testing).
+See also [Jobs and LLM — Testing](docs/architecture/jobs-and-llm.md#testing).
