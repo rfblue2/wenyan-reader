@@ -1,54 +1,20 @@
-# Web App Tech Stack
+# Web App
 
-## Purpose
+> **Architecture** — placeholder. The reader web app is not designed or built ([backlog](../backlog.md) F1). UX: [Reader UX](../product/reader-ux.md). Data: [Reader Package](../spec/reader-package.md).
 
-Reserve a dedicated document for reader app framework, tooling, and implementation choices.
+## Constraints
 
-This has not been designed yet. The first implementation stage focuses on the preprocessing CLI. See [CLI](cli.md).
+- Reads validated files under `content/` only; no LLM calls.
+- Loads large documents incrementally (per paragraph file).
+- No local user state; the reading position lives in the URL.
+- Content shapes come from `wenyan-models`.
 
-## Decisions To Make
+## Decisions to make
 
-Frontend decisions:
-
-- App framework.
-- Routing approach.
-- Styling approach.
-- State management.
-- URL representation for the current document, chapter, paragraph, and segment.
-- Rendering strategy for clickable Classical Chinese tokens.
-
-Content loading decisions:
-
-- How the app discovers local reader packages on disk.
-- Build-time or runtime validation strategy for loaded content.
-- Incremental loading strategy for large documents.
-
-Development decisions:
-
-- Package manager.
-- Test runner.
-- Formatter and linter.
-- Local dev server.
-
-## Current Constraints
-
-These come from [App UX](../product/reader-ux.md) and [Storage Format](../spec/reader-package.md):
-
-- The reader consumes validated local package files only.
-- Runtime reading must not depend on live LLM calls.
-- Large documents should load incrementally.
-- The first stage does not store local user state.
-- Content shapes should come from the shared `wenyan-models` library; see [Tech Stack README](overview.md).
-
-## Open Questions For Later
-
-- Should the app be built with a simple SPA stack or a framework with filesystem routing?
-- How should the web app consume shared models: generated TypeScript types from exported JSON Schema, a Python sidecar, or both?
-- Should validation run as part of app startup, tests, or a dedicated content build step?
-- Should SQLite be introduced early for indexing, or deferred until search/import requirements are clearer?
-
-## Related Docs
-
-- [App UX](../product/reader-ux.md)
-- [Storage Format](../spec/reader-package.md)
-- [CLI](cli.md)
+| Area | Questions |
+|---|---|
+| Framework | Simple SPA or filesystem-routed framework? Routing and URL shape for document / chapter / paragraph / segment. |
+| Rendering | Clickable token rendering over the segment text. Styling and state management. |
+| Content loading | How packages are discovered on disk; build-time vs runtime validation. |
+| Shared types | Generated TypeScript from exported JSON Schema, a Python sidecar, or both? |
+| Tooling | Package manager, test runner, linter, dev server. |

@@ -106,6 +106,6 @@ Each LLM review sees the draft it reviews plus the segment text (gloss review al
 
 ## Model use
 
-One configured provider and model serve every LLM job, drafts and reviews alike. Providers: `mock` (default, fixtures), `anthropic`, and `minimax`. Configuration: [Model Strategy](../architecture/model-strategy.md).
+One configured provider and model serve every LLM job, drafts and reviews alike. Providers: `mock` (default, fixtures), `anthropic`, and `minimax`. Configuration: [Jobs and LLM](../architecture/jobs-and-llm.md).
 
 Each call sends the paragraph or segment it operates on, never the whole document (`split-paragraphs` sends one chapter).
