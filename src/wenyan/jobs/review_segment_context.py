@@ -4,7 +4,7 @@ from wenyan_models.domain.results import JobFailure, JobOutcome
 
 from wenyan.jobs.context import JobContext, JobOptions
 
-_REVIEW_SKILL = ".cursor/skills/reviewing-context-notes/SKILL.md"
+_REVIEW_SKILL = ".opencode/skills/reviewing-context-notes/SKILL.md"
 
 
 def run_review_segment_context(

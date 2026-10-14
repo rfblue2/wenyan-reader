@@ -253,7 +253,7 @@ wenyan preprocess annotate-segment-context <document-id> --paragraph <paragraph-
 
 Scope: one segment, or pending segments under one paragraph.
 
-**Stubbed.** Returns `not-implemented` and points to `.cursor/skills/drafting-context-notes/SKILL.md`. Use that skill to write `context-notes.json` with inline citations.
+**Stubbed.** Returns `not-implemented` and points to `.opencode/skills/drafting-context-notes/SKILL.md`. Use that skill to write `context-notes.json` with inline citations.
 
 Primary output:
 
@@ -267,7 +267,7 @@ wenyan preprocess review-segment-context <document-id> --segment <segment-id>
 
 Scope: one segment context output.
 
-**Stubbed.** Returns `not-implemented` and points to `.cursor/skills/reviewing-context-notes/SKILL.md`.
+**Stubbed.** Returns `not-implemented` and points to `.opencode/skills/reviewing-context-notes/SKILL.md`.
 
 Primary output:
 

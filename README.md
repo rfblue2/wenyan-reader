@@ -50,7 +50,7 @@ This assigns a document UUID, updates `sources/registry.yaml`, and writes `prepr
 
 ### 2. Define chapter structure (interactive)
 
-Work with a local agent using the [preparing-source-structure](.cursor/skills/preparing-source-structure/SKILL.md) skill to normalize and agree on chapter boundaries. The agent writes `preprocess/documents/<document-id>/structure/chapter-proposal.json`.
+Work with a local agent using the [preparing-source-structure](.opencode/skills/preparing-source-structure/SKILL.md) skill to normalize and agree on chapter boundaries. The agent writes `preprocess/documents/<document-id>/structure/chapter-proposal.json`.
 
 ```shell
 uv run wenyan preprocess validate-artifacts sunzi-bingfa

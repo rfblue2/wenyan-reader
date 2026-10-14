@@ -76,7 +76,7 @@ The editor then checks the normalized text and source metadata before asking the
 
 ### 2. Define Chapter Structure (interactive)
 
-Chapter boundaries are prepared interactively with a local agent using the [preparing-source-structure](../../.cursor/skills/preparing-source-structure/SKILL.md) skill. The agent and editor write `preprocess/documents/<document-id>/structure/chapter-proposal.json` after agreeing on boundaries.
+Chapter boundaries are prepared interactively with a local agent using the [preparing-source-structure](../../.opencode/skills/preparing-source-structure/SKILL.md) skill. The agent and editor write `preprocess/documents/<document-id>/structure/chapter-proposal.json` after agreeing on boundaries.
 
 ```shell
 wenyan preprocess status <document-id>
