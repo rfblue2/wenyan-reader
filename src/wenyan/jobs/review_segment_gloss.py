@@ -1,5 +1,6 @@
 import json
 
+from wenyan.core.gloss.filter_candidates import filter_candidates_by_token_surfaces
 from wenyan.core.gloss.glossary_draft import (
     load_candidate_glosses,
     load_glossary_draft,
@@ -40,6 +41,8 @@ def _prepare_gloss_review(
     segment_input = ctx.artifacts.read(input_ref, SegmentInput)
     tokenization = ctx.artifacts.read(tokenization_ref, TokenizationArtifact)
     input_hash = ctx.hasher.sha256_text(glosses.model_dump_json(by_alias=True))
+    all_candidates = load_candidate_glosses(ctx.artifacts, document_id, segment_id_value)
+    prompt_candidates = filter_candidates_by_token_surfaces(all_candidates, tokenization)
     context = {
         "segment_id": str(segment_id_value),
         "review_input_hash": str(input_hash),
@@ -47,10 +50,7 @@ def _prepare_gloss_review(
         "tokenization_json": tokenization.model_dump_json(by_alias=True),
         "glosses_json": glosses.model_dump_json(by_alias=True),
         "candidate_glosses_json": json.dumps(
-            [
-                entry.model_dump(by_alias=True)
-                for entry in load_candidate_glosses(ctx.artifacts, document_id, segment_id_value)
-            ],
+            [entry.model_dump(by_alias=True) for entry in prompt_candidates],
             ensure_ascii=False,
         ),
     }

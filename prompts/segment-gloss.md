@@ -6,7 +6,7 @@ Select or propose glosses for each token in the reviewed tokenization below.
 
 - Provide **one `glossDecisions` entry per token** in the tokenization. Do not merge, split, or skip tokens.
 - Gloss the **local sense of each token surface** as tokenized. If tokenization used single characters (`國`, `之`, `不`), gloss each character separately; do not gloss a multi-word phrase unless that exact surface appears as one token.
-- **Reuse before creating.** The candidate glosses list is the document glossary so far. When a token's local sense matches an existing entry (same surface, pinyin, and gloss sense), you **must** use `reuse-existing` with that entry's `glossId`. Do not mint a new id for the same sense.
+- **Reuse before creating.** The candidate glosses list contains only entries whose surface appears among this segment's token surfaces (not the entire document glossary). When a token's local sense matches an existing entry (same surface, pinyin, and gloss sense), you **must** use `reuse-existing` with that entry's `glossId`. Do not mint a new id for the same sense.
 - Create `create-new` only for senses not already in candidate glosses. Distinct senses of the same character still get separate gloss entries.
 - **Pinyin must match local sense**, especially for polyphonic characters. Use tone-marked Hanyu Pinyin (`jiàng`, not `jiang`).
   - In `四曰將` (commander as one of the five factors), `將` → **`jiàng`**, gloss “general; commander”.

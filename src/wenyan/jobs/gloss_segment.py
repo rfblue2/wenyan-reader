@@ -1,5 +1,6 @@
 import json
 
+from wenyan.core.gloss.filter_candidates import filter_candidates_by_token_surfaces
 from wenyan.core.gloss.glossary_draft import (
     load_candidate_glosses,
     normalize_gloss_reuse,
@@ -45,13 +46,14 @@ def _prepare_gloss(
         return JobFailure(code="missing-input", message="segment input is missing")
     input_hash = ctx.hasher.sha256_text(tokenization_review.model_dump_json(by_alias=True))
     all_candidates = load_candidate_glosses(ctx.artifacts, document_id, segment_id_value)
+    prompt_candidates = filter_candidates_by_token_surfaces(all_candidates, tokenization)
     context = {
         "segment_id": str(segment_id_value),
         "segment_text": tokenization.text,
         "input_hash": str(input_hash),
         "tokenization_json": tokenization.model_dump_json(by_alias=True),
         "candidate_glosses_json": json.dumps(
-            [entry.model_dump(by_alias=True) for entry in all_candidates],
+            [entry.model_dump(by_alias=True) for entry in prompt_candidates],
             ensure_ascii=False,
         ),
     }

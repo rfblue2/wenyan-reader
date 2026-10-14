@@ -32,7 +32,7 @@ Tokenization:
 Glosses:
 {{glosses_json}}
 
-Candidate glosses (document glossary so far — reuse these ids when matched):
+Candidate glosses (entries whose surface appears among this segment's token surfaces — reuse these ids when matched):
 {{candidate_glosses_json}}
 
 SEGMENT_ID: {{segment_id}}
