@@ -15,9 +15,9 @@ Each `ContextNoteItem` may include a `sources` array of self-contained citation 
 | `url` | Optional | Web reference |
 | `accessedAt` | Optional | ISO date for web sources |
 
-There is no shared snippet registry on segment input. The [drafting-context-notes](../../.cursor/skills/drafting-context-notes/SKILL.md) skill researches and writes citations during interactive preprocessing.
+There is no shared snippet registry on segment input. The [drafting-context-notes](../../.opencode/skills/drafting-context-notes/SKILL.md) skill researches and writes citations during interactive preprocessing.
 
-If no source supports a claim, omit the note or reject it in [reviewing-context-notes](../../.cursor/skills/reviewing-context-notes/SKILL.md) rather than inventing a citation.
+If no source supports a claim, omit the note or reject it in [reviewing-context-notes](../../.opencode/skills/reviewing-context-notes/SKILL.md) rather than inventing a citation.
 
 ## Review handoff
 

@@ -4,7 +4,7 @@ from wenyan_models.domain.ids import DocumentId
 from wenyan_models.domain.results import JobFailure, JobOutcome
 from wenyan_models.domain.targets import SegmentTarget
 
-_DRAFT_SKILL = ".cursor/skills/drafting-context-notes/SKILL.md"
+_DRAFT_SKILL = ".opencode/skills/drafting-context-notes/SKILL.md"
 
 
 def run_annotate_segment_context(

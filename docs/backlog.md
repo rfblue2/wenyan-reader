@@ -16,6 +16,8 @@ Editor-captured ideas for what to work on next. When asked what is left to do, s
 
 6. **Automated context note annotation** — Automate context-note drafting with a higher-quality model (today context notes are skill/CLI-driven with stubbed annotate/review commands).
 
+7. **Audit and trim agent skills** — Skills under `.opencode/skills/` were moved from `.cursor/skills/` as-is. Remove content that duplicates the CLI spec and editor guide, link to the wiki instead, and check each skill's workflow against current CLI behavior.
+
 ## Open findings
 
 Carried over from the removed architecture and code audits. To be re-audited.
