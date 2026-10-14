@@ -14,7 +14,9 @@
 | Config | PyYAML + hand-rolled `.env` loader |
 | Quality gate | Ruff (lint), mypy `--strict` with the Pydantic plugin, pytest — all run in CI (`.github/workflows/ci.yml`) |
 
-There is no async code, worker pool, database, or published distribution. The reader web app is not started ([Web App](webapp.md)).
+There is no async code or worker pool yet ([Job execution proposal](../proposals/job-execution.md)). The reader web app is not started ([Web App](webapp.md)).
+
+Out of scope for the CLI stage: a reader UI or dev server, publishing to PyPI, and an embedded database or search index.
 
 ## Packages
 
@@ -85,7 +87,7 @@ cli/preprocess.py ─ parse args, resolve unit refs (cli/unit_refs, cli/status_s
 
 Environment variables read: `WENYAN_MODEL_PROVIDER` (`mock` | `anthropic` | `minimax`), `WENYAN_MODEL` (model id for the active provider), `ANTHROPIC_API_KEY`, `MINIMAX_API_KEY`, `WENYAN_CONFIG`.
 
-`config.concurrency` is loaded but unused.
+`config.concurrency` is loaded but unused; see the [Job execution proposal](../proposals/job-execution.md#concurrency-and-rate-limits).
 
 ## Cross-cutting conventions
 
@@ -98,5 +100,5 @@ Environment variables read: `WENYAN_MODEL_PROVIDER` (`mock` | `anthropic` | `min
 
 ## Open questions
 
-- Generate JSON Schema or TypeScript types from `wenyan-models` for the web app? (Not done today.)
+- How should the web app consume `wenyan-models`: exported JSON Schema, generated TypeScript, or both? (Backlog H9.)
 - Introduce SQLite for indexing, or defer until search is needed?

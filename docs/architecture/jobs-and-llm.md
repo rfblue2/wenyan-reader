@@ -1,6 +1,8 @@
 # Jobs and LLM
 
-> **Architecture** — how jobs execute and call models. Behavior contracts: [CLI](../spec/cli.md), [Artifacts](../spec/artifacts.md). Proposed changes: [LLM output correctness](../proposals/llm-output-correctness.md), [backlog](../backlog.md).
+> **Architecture** — how jobs execute and call models today. Behavior contracts: [CLI](../spec/cli.md), [Artifacts](../spec/artifacts.md).
+>
+> Planned: [Job execution](../proposals/job-execution.md) (context, concurrency, metadata, failures) · [Model routing](../proposals/model-routing.md) · [LLM output correctness](../proposals/llm-output-correctness.md) · [Artifact graph integrity](../proposals/artifact-graph-integrity.md).
 
 ## Job shape
 
@@ -51,7 +53,7 @@ Templates live in `prompts/<name>.md` with `{{placeholder}}` slots filled from t
 | `anthropic` | `AnthropicLLMClient` | `https://api.anthropic.com/v1/messages` | `claude-opus-4-8` |
 | `minimax` | `MiniMaxLLMClient` (subclass) | `https://api.minimax.io/anthropic` | `MiniMax-M2.5-highspeed` |
 
-One provider and model serve every job. `.env.example` suggests MiniMax for development and Anthropic for higher-quality runs.
+One provider and model serve every job, drafts and reviews alike ([Model routing proposal](../proposals/model-routing.md)). `.env.example` suggests MiniMax for development and Anthropic for higher-quality runs.
 
 Request: raw httpx, `max_tokens: 8192`, timeout 120 s (connect 30 s), no temperature.
 
@@ -63,7 +65,7 @@ Prompt-only:
 2. `extract_json_text` strips code fences or slices from the first `{` to the last `}`.
 3. `parse_model_json` validates with Pydantic (`extra="forbid"`); failure raises `LLMParseError`.
 
-No provider JSON mode or tool use.
+No provider JSON mode or tool use ([LLM output correctness proposal](../proposals/llm-output-correctness.md)).
 
 ### Retries
 
