@@ -1,13 +1,13 @@
 from pydantic import BaseModel, Field
 
-from wenyan_models.artifacts.base import (
-    DEFAULT_ARTIFACT_CONFIG,
+from wenyan_models.base import DEFAULT_ARTIFACT_CONFIG
+from wenyan_models.domain.enums import UnitStatus
+from wenyan_models.domain.ids import (
     ChapterIdField,
     DocumentIdField,
     ParagraphIdField,
     SegmentIdField,
 )
-from wenyan_models.domain.enums import UnitStatus
 from wenyan_models.status.common import ScopeSegment
 from wenyan_models.status.component import ComponentStatusItem
 

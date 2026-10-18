@@ -2,7 +2,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from wenyan_models.artifacts.base import DEFAULT_ARTIFACT_CONFIG
+from wenyan_models.base import DEFAULT_ARTIFACT_CONFIG
 
 
 class StatusCounts(BaseModel):

@@ -1,3 +1,4 @@
+from wenyan.core.hashing import sha256_text
 from wenyan.core.ports.artifact_ref import segment_tokenization_ref, segment_tokenization_review_ref
 from wenyan.jobs.context import JobContext, JobOptions
 from wenyan.jobs.segment_runner import SegmentReviewJobSpec, run_segment_review_job
@@ -17,7 +18,7 @@ def _prepare_tokenization_review(
     if not ctx.artifacts.exists(tokenization_ref):
         return JobFailure(code="missing-input", message="tokenization artifact is missing")
     tokenization = ctx.artifacts.read(tokenization_ref, TokenizationArtifact)
-    input_hash = ctx.hasher.sha256_text(tokenization.model_dump_json(by_alias=True))
+    input_hash = sha256_text(tokenization.model_dump_json(by_alias=True))
     context = {
         "segment_id": str(segment_id_value),
         "review_input_hash": str(input_hash),

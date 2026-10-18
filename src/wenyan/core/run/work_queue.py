@@ -10,7 +10,7 @@ from wenyan.core.ports.artifact_ref import (
 )
 from wenyan.core.ports.artifact_store import ArtifactStore
 from wenyan.core.run.segment_pipeline import segment_is_complete
-from wenyan_models.artifacts.base import DEFAULT_ARTIFACT_CONFIG
+from wenyan_models.base import DEFAULT_ARTIFACT_CONFIG
 from wenyan_models.artifacts.paragraph import ParagraphDraft
 from wenyan_models.artifacts.segment import SegmentInput
 from wenyan_models.artifacts.structure import (

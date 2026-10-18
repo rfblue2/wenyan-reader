@@ -12,7 +12,7 @@ Each command has a module in `src/wenyan/jobs/` with one entrypoint:
 def run_<command>(ctx: JobContext, <ids>, options: JobOptions) -> JobOutcome[T]
 ```
 
-- `JobContext` (frozen dataclass): `repo_root`, `config`, and ports — `artifacts`, `normalized_text`, `registry`, `llm`, `spans`, `hasher`, `prompts`. Built by `bootstrap.build_job_context()`.
+- `JobContext` (frozen dataclass): `repo_root`, `config`, and the ports. Built by `bootstrap.build_job_context()`.
 - `JobOptions`: `force`, `dry_run`.
 - `JobOutcome[T] = Promoted[T] | Skipped | JobFailure`. Expected failures are returned, not raised.
 

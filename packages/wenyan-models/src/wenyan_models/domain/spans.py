@@ -1,13 +1,9 @@
-from typing import Annotated, Self
+from typing import Self
 
-from pydantic import BaseModel, BeforeValidator, model_validator
+from pydantic import BaseModel, model_validator
 
-from wenyan_models.artifacts.base import DEFAULT_ARTIFACT_CONFIG
-from wenyan_models.domain.ids import ChapterId, ParagraphId, SegmentId, chapter_id, paragraph_id, segment_id
-
-ChapterIdField = Annotated[ChapterId, BeforeValidator(chapter_id)]
-ParagraphIdField = Annotated[ParagraphId, BeforeValidator(paragraph_id)]
-SegmentIdField = Annotated[SegmentId, BeforeValidator(segment_id)]
+from wenyan_models.base import DEFAULT_ARTIFACT_CONFIG
+from wenyan_models.domain.ids import ChapterIdField, ParagraphIdField, SegmentIdField
 
 
 class TextSpan(BaseModel):

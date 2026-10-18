@@ -1,4 +1,6 @@
-from typing import NewType
+from typing import Annotated, NewType
+
+from pydantic import BeforeValidator
 
 DocumentId = NewType("DocumentId", str)
 ChapterId = NewType("ChapterId", str)
@@ -42,3 +44,10 @@ def parse_content_hash(value: str) -> ContentHash:
     if not value.startswith("sha256:"):
         raise ValueError("content hash must start with sha256:")
     return ContentHash(value)
+
+
+DocumentIdField = Annotated[DocumentId, BeforeValidator(document_id)]
+ChapterIdField = Annotated[ChapterId, BeforeValidator(chapter_id)]
+ParagraphIdField = Annotated[ParagraphId, BeforeValidator(paragraph_id)]
+SegmentIdField = Annotated[SegmentId, BeforeValidator(segment_id)]
+ContentHashField = Annotated[ContentHash, BeforeValidator(parse_content_hash)]

@@ -16,7 +16,7 @@ jobs/           application services, one module per command
 core/<logic>/   deterministic logic (assembly, package, gloss, notes, run, status, show)
 core/ports/     Protocol interfaces
   ↓
-core/adapters/  filesystem, YAML, LLM providers, hashing
+core/adapters/  filesystem, YAML, LLM providers
   ↓
 wenyan_models/  Pydantic models, enums, branded ids
 ```
@@ -30,7 +30,7 @@ wenyan_models/  Pydantic models, enums, branded ids
 
 ## Pydantic
 
-Default config for artifact, reader, status, and domain models is `DEFAULT_ARTIFACT_CONFIG` in `wenyan_models/artifacts/base.py`:
+Default config for artifact, reader, status, and domain models is `DEFAULT_ARTIFACT_CONFIG` in `wenyan_models/base.py`:
 
 ```python
 ConfigDict(frozen=True, populate_by_name=True, validate_by_name=True, extra="forbid")
@@ -76,8 +76,6 @@ Each variant has a `kind` literal. Branch with exhaustive `match`; map to exit c
 | `SourceRegistry` | `RegistryEntry`, `DocumentYaml` |
 | `LLMClient` | `complete_model` |
 | `PromptLoader` | `build_prompt(template_name, context)` |
-| `ContentHasher` | `sha256_text` |
-| `SpanValidator` | span validation results |
 | `StatusReader` | status payloads |
 | `GraphValidator` | validation report |
 
@@ -108,7 +106,7 @@ Build `ArtifactRef`s only through the per-kind factories in `core/ports/artifact
 
 Tracked in the [backlog](../backlog.md) (H6, H8):
 
-- `core/status`, `core/run`, `core/assembly`, and `core/package` import `core.adapters` (hashing, paths); `core/run/stale_assembly.py`, `core/run/orphan_segments.py`, and `core/package/promote.py` touch the filesystem directly.
+- `core/status`, `core/run`, `core/assembly`, and `core/package` import `core.adapters.paths`; `core/run/stale_assembly.py`, `core/run/orphan_segments.py`, and `core/package/promote.py` touch the filesystem directly.
 - `cli/preprocess.py` constructs `FilesystemStatusReader` and `FilesystemGraphValidator` outside `bootstrap.py`.
 - `core/status/derivation.py` builds payloads from hand-written camelCase dicts.
 - Several internal frozen dataclasses (assembly inputs, package collection, status rows) and `json.loads` use in `MockLLMClient`.

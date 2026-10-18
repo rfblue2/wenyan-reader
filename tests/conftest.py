@@ -4,7 +4,7 @@ import shutil
 
 import pytest
 
-from wenyan.core.adapters.hashing import sha256_text
+from wenyan.core.hashing import sha256_text
 from wenyan.core.ports.artifact_ref import (
     chapter_proposal_ref,
     chapter_proposal_validation_ref,
@@ -13,9 +13,9 @@ from wenyan.core.ports.artifact_ref import (
 from wenyan.core.ports.artifact_store import ArtifactWrite
 from wenyan.jobs.context import JobContext
 from wenyan_models.artifacts.normalized import NormalizedDocument
-from wenyan_models.artifacts.structure import ChapterProposal, SpanValidationArtifact
-from wenyan_models.domain.enums import ValidationStatus
+from wenyan_models.artifacts.structure import ChapterProposal
 from wenyan_models.domain.ids import DocumentId
+from wenyan_models.domain.validation import ValidationReport
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -31,7 +31,7 @@ def install_sunzi_chapter_proposal(ctx: JobContext, document_id: DocumentId) -> 
     chapters = payload["chapters"]
     chapters[-1]["end"] = normalized.character_count
     proposal = ChapterProposal.model_validate(payload)
-    validation = SpanValidationArtifact(status=ValidationStatus.PASSED, checks=())
+    validation = ValidationReport.from_checks()
     ctx.artifacts.write_batch(
         [
             ArtifactWrite(ref=chapter_proposal_ref(document_id), payload=proposal),

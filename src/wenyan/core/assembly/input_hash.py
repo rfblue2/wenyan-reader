@@ -4,7 +4,7 @@ import json
 
 from wenyan_models.artifacts.paragraph import ParagraphDraft
 
-from wenyan.core.adapters.hashing import sha256_text
+from wenyan.core.hashing import sha256_text
 from wenyan.core.assembly.load_segment_outputs import CompiledSegmentInputs
 
 

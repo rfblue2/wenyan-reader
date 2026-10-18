@@ -1,3 +1,4 @@
+from wenyan.core.hashing import sha256_text
 from wenyan.core.ports.artifact_ref import (
     chapter_proposal_ref,
     paragraph_proposal_ref,
@@ -5,8 +6,10 @@ from wenyan.core.ports.artifact_ref import (
 )
 from wenyan.core.ports.artifact_store import ArtifactWrite
 from wenyan.core.ports.prompt_context import PromptTextSlice
+from wenyan.core.spans import validate_spans
 from wenyan.jobs.context import JobContext, JobOptions
-from wenyan_models.artifacts.structure import ChapterProposal, ParagraphProposal, SpanValidationArtifact
+from wenyan_models.artifacts.structure import ChapterProposal, ParagraphProposal
+from wenyan_models.domain.enums import ValidationStatus
 from wenyan_models.domain.ids import ChapterId, DocumentId, paragraph_id
 from wenyan_models.domain.results import JobFailure, JobOutcome, Promoted, Skipped
 from wenyan_models.domain.spans import ParagraphSpan
@@ -28,7 +31,7 @@ def run_split_paragraphs(
     chapter_length = chapter.end - chapter.start
     proposal_ref = paragraph_proposal_ref(document_id, chapter_id)
     chapter_text = ctx.normalized_text.read_slice(document_id, chapter.start, chapter.end)
-    input_hash = ctx.hasher.sha256_text(chapter_text)
+    input_hash = sha256_text(chapter_text)
     if ctx.artifacts.exists(proposal_ref) and not options.force:
         existing = ctx.artifacts.read(proposal_ref, ParagraphProposal)
         if existing.input_hash == input_hash:
@@ -63,13 +66,9 @@ def run_split_paragraphs(
         ParagraphSpan(id=paragraph_id(str(item.id)), start=item.start, end=item.end)
         for item in proposal.paragraphs
     )
-    validation = ctx.spans.validate_paragraphs(chapter_length, paragraph_spans)
-    if validation.status.value == "failed":
+    validation = validate_spans(chapter_length, paragraph_spans)
+    if validation.status == ValidationStatus.FAILED:
         return JobFailure(code="validation", message="paragraph span validation failed")
-    validation_artifact = SpanValidationArtifact(
-        status=validation.status,
-        checks=validation.checks,
-    )
     if options.dry_run:
         return Promoted(artifact=proposal)
     ctx.artifacts.write_batch(
@@ -77,7 +76,7 @@ def run_split_paragraphs(
             ArtifactWrite(ref=proposal_ref, payload=proposal),
             ArtifactWrite(
                 ref=paragraph_proposal_validation_ref(document_id, chapter_id),
-                payload=validation_artifact,
+                payload=validation,
             ),
         ],
         dry_run=False,

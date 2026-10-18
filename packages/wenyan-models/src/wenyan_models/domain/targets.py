@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 
-from wenyan_models.artifacts.base import DEFAULT_ARTIFACT_CONFIG
+from wenyan_models.base import DEFAULT_ARTIFACT_CONFIG
 from wenyan_models.domain.ids import ParagraphId, SegmentId
 
 

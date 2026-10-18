@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from wenyan.bootstrap import build_job_context
-from wenyan.core.adapters.hashing import sha256_text
+from wenyan.core.hashing import sha256_text
 from wenyan.core.ports.artifact_ref import (
     segment_context_notes_ref,
     segment_context_review_ref,

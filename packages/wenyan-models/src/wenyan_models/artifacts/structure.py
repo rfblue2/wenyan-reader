@@ -1,14 +1,12 @@
 from pydantic import BaseModel, Field
 
-from wenyan_models.artifacts.base import (
-    DEFAULT_ARTIFACT_CONFIG,
+from wenyan_models.base import DEFAULT_ARTIFACT_CONFIG
+from wenyan_models.domain.ids import (
     ChapterIdField,
     ContentHashField,
     DocumentIdField,
     ParagraphIdField,
 )
-from wenyan_models.domain.enums import ValidationStatus
-from wenyan_models.domain.validation import CheckResult
 
 
 class ChapterProposalItem(BaseModel):
@@ -51,10 +49,3 @@ class ParagraphProposal(BaseModel):
     attempts: int
     chapter_text_hash: ContentHashField = Field(alias="chapterTextHash")
     paragraphs: tuple[ParagraphProposalItem, ...]
-
-
-class SpanValidationArtifact(BaseModel):
-    model_config = DEFAULT_ARTIFACT_CONFIG
-
-    status: ValidationStatus
-    checks: tuple[CheckResult, ...] = ()

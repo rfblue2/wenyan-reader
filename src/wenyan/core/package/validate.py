@@ -1,9 +1,8 @@
 from collections.abc import Mapping
 
 from wenyan_models.artifacts.package import PackageValidationArtifact
-from wenyan_models.domain.enums import ValidationStatus
 from wenyan_models.domain.ids import ChapterId, ContentHash, ParagraphId
-from wenyan_models.domain.validation import CheckResult
+from wenyan_models.domain.validation import CheckResult, validation_status
 from wenyan_models.reader.document import ChapterPackage, DocumentManifest, GlossIndex
 from wenyan_models.reader.paragraph import ParagraphPackage
 
@@ -95,10 +94,9 @@ def validate_document_package(
             CheckResult(code="unique-paragraph-ids", message="duplicate paragraph ids in document"),
         )
 
-    status = ValidationStatus.PASSED if not checks else ValidationStatus.FAILED
     return PackageValidationArtifact(
         inputHash=input_hash,
-        status=status,
+        status=validation_status(checks),
         checks=tuple(checks),
         paragraphsPackaged=paragraphs_packaged,
     )

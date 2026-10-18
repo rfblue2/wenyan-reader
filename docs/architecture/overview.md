@@ -36,7 +36,7 @@ content/                    committed reader packages
 .opencode/skills/           agent skills for interactive steps
 
 packages/wenyan-models/src/wenyan_models/
-  artifacts/    preprocessing artifact models; DEFAULT_ARTIFACT_CONFIG; *IdField aliases
+  artifacts/    preprocessing artifact models
   reader/       reader package models
   status/       status payloads per scope
   show/         SegmentShowView (segment status)
@@ -51,7 +51,7 @@ src/wenyan/
   jobs/         one module per command; segment_runner; JobContext/JobOptions
   core/
     ports/      Protocol interfaces + ArtifactRef factories
-    adapters/   filesystem store/status/validator, YAML registry, LLM clients, hashing, paths
+    adapters/   filesystem store/status/validator, YAML registry, LLM clients, paths
     config/     config loader
     assembly/   paragraph compile, validation, input hash
     package/    document package build, validate, promote
@@ -94,7 +94,7 @@ Environment variables read: `WENYAN_MODEL_PROVIDER` (`mock` | `anthropic` | `min
 | Concern | Convention |
 |---|---|
 | Ids | Document ids are code-minted UUID v4. Chapter ids come from the editor; paragraph, segment, token, note, and gloss ids come from the model. |
-| Hashing | SHA-256, `sha256:` prefix (`core/adapters/hashing.py`). |
+| Hashing | SHA-256, `sha256:` prefix. |
 | JSON | camelCase aliases on disk; models reject unknown fields. |
 | Status | Derived from files on disk; no status store. |
 
