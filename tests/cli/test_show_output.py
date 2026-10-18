@@ -3,7 +3,7 @@ from pathlib import Path
 from wenyan.bootstrap import build_job_context
 from wenyan.cli.status_output import StatusDisplayContext, render_status
 from wenyan.cli.status_scope import resolve_status_scope, segment_handle_for_id
-from wenyan.core.ports.artifact_ref import segment_context_notes_ref, segment_grammar_notes_ref
+from wenyan.core.ports.artifact_ref import SegmentArtifactKind, SegmentRef
 from wenyan.core.show.segment_view import build_segment_show_view
 from wenyan.jobs.context import JobOptions
 from wenyan.jobs.gloss_segment import run_gloss_segment
@@ -61,7 +61,6 @@ def test_build_segment_show_view_includes_gloss_rows(tmp_workspace: Path) -> Non
 
     payload = build_segment_show_view(
         ctx.artifacts,
-        tmp_workspace,
         document_id=doc_id,
         document_ref="sunzi-bingfa",
         segment_id=segment_id_value,
@@ -87,7 +86,6 @@ def test_render_segment_show_displays_gloss_table(tmp_workspace: Path) -> None:
     ctx, doc_id, segment_id_value = _prepare_segment_with_glosses(tmp_workspace)
     payload = build_segment_show_view(
         ctx.artifacts,
-        tmp_workspace,
         document_id=doc_id,
         document_ref="sunzi-bingfa",
         segment_id=segment_id_value,
@@ -136,7 +134,6 @@ def test_render_segment_show_tokenization_only(tmp_workspace: Path) -> None:
     ctx, doc_id, segment_id_value = _prepare_segment_tokenized(tmp_workspace)
     payload = build_segment_show_view(
         ctx.artifacts,
-        tmp_workspace,
         document_id=doc_id,
         document_ref="sunzi-bingfa",
         segment_id=segment_id_value,
@@ -177,7 +174,6 @@ def test_render_segment_show_rejected_gloss_review(tmp_workspace: Path, monkeypa
     run_review_segment_gloss(ctx, doc_id, segment_id_value, JobOptions())
     payload = build_segment_show_view(
         ctx.artifacts,
-        tmp_workspace,
         document_id=doc_id,
         document_ref="sunzi-bingfa",
         segment_id=segment_id_value,
@@ -193,12 +189,11 @@ def test_render_segment_show_rejected_gloss_review(tmp_workspace: Path, monkeypa
 
 
 def test_render_segment_show_displays_context_review_findings(tmp_workspace: Path) -> None:
-    from wenyan.core.ports.artifact_ref import segment_context_review_ref
     from wenyan_models.artifacts.segment import ContextReviewArtifact
 
     ctx, doc_id, segment_id_value = _prepare_segment_with_glosses(tmp_workspace)
     ctx.artifacts.write(
-        segment_context_review_ref(doc_id, segment_id_value),
+        SegmentRef(SegmentArtifactKind.CONTEXT_REVIEW, doc_id, segment_id_value),
         ContextReviewArtifact(
             segmentId=segment_id_value,
             model="mock",
@@ -216,7 +211,6 @@ def test_render_segment_show_displays_context_review_findings(tmp_workspace: Pat
     )
     payload = build_segment_show_view(
         ctx.artifacts,
-        tmp_workspace,
         document_id=doc_id,
         document_ref="sunzi-bingfa",
         segment_id=segment_id_value,
@@ -234,7 +228,6 @@ def test_build_segment_show_view_includes_notes(tmp_workspace: Path) -> None:
     ctx, doc_id, segment_id_value = _prepare_segment_with_glosses(tmp_workspace)
     token_id = build_segment_show_view(
         ctx.artifacts,
-        tmp_workspace,
         document_id=doc_id,
         document_ref="sunzi-bingfa",
         segment_id=segment_id_value,
@@ -252,9 +245,13 @@ def test_build_segment_show_view_includes_notes(tmp_workspace: Path) -> None:
             ),
         ),
     )
-    ctx.artifacts.write(segment_grammar_notes_ref(doc_id, segment_id_value), grammar, dry_run=False)
     ctx.artifacts.write(
-        segment_context_notes_ref(doc_id, segment_id_value),
+        SegmentRef(SegmentArtifactKind.GRAMMAR_NOTES, doc_id, segment_id_value),
+        grammar,
+        dry_run=False,
+    )
+    ctx.artifacts.write(
+        SegmentRef(SegmentArtifactKind.CONTEXT_NOTES, doc_id, segment_id_value),
         ContextNotesArtifact(
             segmentId=segment_id_value,
             model="mock",
@@ -279,7 +276,6 @@ def test_build_segment_show_view_includes_notes(tmp_workspace: Path) -> None:
 
     payload = build_segment_show_view(
         ctx.artifacts,
-        tmp_workspace,
         document_id=doc_id,
         document_ref="sunzi-bingfa",
         segment_id=segment_id_value,
@@ -296,13 +292,12 @@ def test_render_segment_show_displays_notes(tmp_workspace: Path) -> None:
     ctx, doc_id, segment_id_value = _prepare_segment_with_glosses(tmp_workspace)
     token_id = build_segment_show_view(
         ctx.artifacts,
-        tmp_workspace,
         document_id=doc_id,
         document_ref="sunzi-bingfa",
         segment_id=segment_id_value,
     ).tokens[0].token_id
     ctx.artifacts.write(
-        segment_grammar_notes_ref(doc_id, segment_id_value),
+        SegmentRef(SegmentArtifactKind.GRAMMAR_NOTES, doc_id, segment_id_value),
         GrammarNotesArtifact(
             segmentId=segment_id_value,
             model="mock",
@@ -320,7 +315,6 @@ def test_render_segment_show_displays_notes(tmp_workspace: Path) -> None:
     )
     payload = build_segment_show_view(
         ctx.artifacts,
-        tmp_workspace,
         document_id=doc_id,
         document_ref="sunzi-bingfa",
         segment_id=segment_id_value,

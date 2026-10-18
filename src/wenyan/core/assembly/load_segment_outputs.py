@@ -1,11 +1,6 @@
 from dataclasses import dataclass
 
-from wenyan.core.ports.artifact_ref import (
-    segment_context_notes_ref,
-    segment_glosses_ref,
-    segment_grammar_notes_ref,
-    segment_tokenization_ref,
-)
+from wenyan.core.ports.artifact_ref import SegmentArtifactKind, SegmentRef
 from wenyan.core.ports.artifact_store import ArtifactStore
 from wenyan_models.artifacts.paragraph import ParagraphDraft
 from wenyan_models.artifacts.segment import (
@@ -36,10 +31,10 @@ def load_segment_outputs(
     document_id: DocumentId,
     segment_id: SegmentId,
 ) -> CompiledSegmentInputs:
-    tokenization_ref = segment_tokenization_ref(document_id, segment_id)
-    glosses_ref = segment_glosses_ref(document_id, segment_id)
-    grammar_notes_ref = segment_grammar_notes_ref(document_id, segment_id)
-    context_notes_ref = segment_context_notes_ref(document_id, segment_id)
+    tokenization_ref = SegmentRef(SegmentArtifactKind.TOKENIZATION, document_id, segment_id)
+    glosses_ref = SegmentRef(SegmentArtifactKind.GLOSSES, document_id, segment_id)
+    grammar_notes_ref = SegmentRef(SegmentArtifactKind.GRAMMAR_NOTES, document_id, segment_id)
+    context_notes_ref = SegmentRef(SegmentArtifactKind.CONTEXT_NOTES, document_id, segment_id)
     for ref, label in (
         (tokenization_ref, "tokenization"),
         (glosses_ref, "glosses"),

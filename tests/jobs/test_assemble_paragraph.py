@@ -1,10 +1,7 @@
 from pathlib import Path
 
 from wenyan.bootstrap import build_job_context
-from wenyan.core.ports.artifact_ref import (
-    paragraph_assembly_package_ref,
-    paragraph_assembly_validation_ref,
-)
+from wenyan.core.ports.artifact_ref import ParagraphArtifactKind, ParagraphRef
 from wenyan.jobs.assemble_paragraph import run_assemble_paragraph
 from wenyan.jobs.context import JobOptions
 from wenyan.jobs.ingest_document import run_ingest_document
@@ -26,8 +23,10 @@ def test_assemble_paragraph_writes_package_and_validation(tmp_workspace: Path) -
     outcome = run_assemble_paragraph(ctx, doc_id, paragraph_id_value, JobOptions())
     assert outcome_exit_code(outcome) == 0
     assert isinstance(outcome, Promoted)
-    package_ref = paragraph_assembly_package_ref(doc_id, paragraph_id_value)
-    validation_ref = paragraph_assembly_validation_ref(doc_id, paragraph_id_value)
+    package_ref = ParagraphRef(ParagraphArtifactKind.ASSEMBLY_PACKAGE, doc_id, paragraph_id_value)
+    validation_ref = ParagraphRef(
+        ParagraphArtifactKind.ASSEMBLY_VALIDATION, doc_id, paragraph_id_value
+    )
     assert ctx.artifacts.exists(package_ref)
     assert ctx.artifacts.exists(validation_ref)
     package = ctx.artifacts.read(package_ref, ParagraphPackage)

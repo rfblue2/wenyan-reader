@@ -3,7 +3,7 @@ from pathlib import Path
 from wenyan.core.adapters.filesystem_artifact_store import FilesystemArtifactStore
 from wenyan.core.adapters.filesystem_normalized_text_store import FilesystemNormalizedTextStore
 from wenyan.core.adapters.paths import normalized_text_path
-from wenyan.core.ports.artifact_ref import normalized_document_ref
+from wenyan.core.ports.artifact_ref import DocumentArtifactKind, DocumentRef
 from wenyan_models.artifacts.normalized import NormalizedDocument
 from wenyan_models.domain.ids import document_id
 from wenyan_models.sources import DocumentYaml
@@ -26,5 +26,7 @@ def test_write_from_source_creates_sidecar_and_manifest(tmp_path: Path) -> None:
     assert normalized_text_path(tmp_path, doc).read_text(encoding="utf-8") == "hello\n"
     assert store.read_slice(doc, 0, 5) == "hello"
     assert store.verify_hash(doc, manifest.normalized_hash)
-    loaded = artifacts.read(normalized_document_ref(doc), NormalizedDocument)
+    loaded = artifacts.read(
+        DocumentRef(DocumentArtifactKind.NORMALIZED_DOCUMENT, doc), NormalizedDocument
+    )
     assert loaded.normalized_hash == manifest.normalized_hash

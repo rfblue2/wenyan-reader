@@ -1,5 +1,5 @@
 from wenyan.core.hashing import sha256_text
-from wenyan.core.ports.artifact_ref import segment_tokenization_ref, segment_tokenization_review_ref
+from wenyan.core.ports.artifact_ref import SegmentArtifactKind, SegmentRef
 from wenyan.jobs.context import JobContext, JobOptions
 from wenyan.jobs.segment_runner import SegmentReviewJobSpec, run_segment_review_job
 from wenyan_models.artifacts.segment import TokenizationArtifact, TokenizationReviewArtifact
@@ -14,7 +14,7 @@ def _prepare_tokenization_review(
     options: JobOptions,
 ) -> JobFailure | tuple[ContentHash, dict[str, str]]:
     del options
-    tokenization_ref = segment_tokenization_ref(document_id, segment_id_value)
+    tokenization_ref = SegmentRef(SegmentArtifactKind.TOKENIZATION, document_id, segment_id_value)
     if not ctx.artifacts.exists(tokenization_ref):
         return JobFailure(code="missing-input", message="tokenization artifact is missing")
     tokenization = ctx.artifacts.read(tokenization_ref, TokenizationArtifact)
@@ -30,7 +30,7 @@ def _prepare_tokenization_review(
 _TOKENIZATION_REVIEW_SPEC = SegmentReviewJobSpec(
     prompt_name="segment-tokenization-review",
     output_model=TokenizationReviewArtifact,
-    review_ref=segment_tokenization_review_ref,
+    review_kind=SegmentArtifactKind.TOKENIZATION_REVIEW,
     skip_reason="tokenization review is current",
     reject_message="tokenization review rejected",
     prepare=_prepare_tokenization_review,

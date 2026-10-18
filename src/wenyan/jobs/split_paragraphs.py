@@ -1,8 +1,9 @@
 from wenyan.core.hashing import sha256_text
 from wenyan.core.ports.artifact_ref import (
-    chapter_proposal_ref,
-    paragraph_proposal_ref,
-    paragraph_proposal_validation_ref,
+    ChapterArtifactKind,
+    ChapterRef,
+    DocumentArtifactKind,
+    DocumentRef,
 )
 from wenyan.core.ports.artifact_store import ArtifactWrite
 from wenyan.core.ports.prompt_context import PromptTextSlice
@@ -22,14 +23,14 @@ def run_split_paragraphs(
     options: JobOptions,
 ) -> JobOutcome[ParagraphProposal]:
     chapter_proposal = ctx.artifacts.read(
-        chapter_proposal_ref(document_id),
+        DocumentRef(DocumentArtifactKind.CHAPTER_PROPOSAL, document_id),
         ChapterProposal,
     )
     chapter = next((item for item in chapter_proposal.chapters if item.id == chapter_id), None)
     if chapter is None:
         return JobFailure(code="missing-chapter", message="chapter not found in proposal")
     chapter_length = chapter.end - chapter.start
-    proposal_ref = paragraph_proposal_ref(document_id, chapter_id)
+    proposal_ref = ChapterRef(ChapterArtifactKind.PARAGRAPH_PROPOSAL, document_id, chapter_id)
     chapter_text = ctx.normalized_text.read_slice(document_id, chapter.start, chapter.end)
     input_hash = sha256_text(chapter_text)
     if ctx.artifacts.exists(proposal_ref) and not options.force:
@@ -75,7 +76,9 @@ def run_split_paragraphs(
         [
             ArtifactWrite(ref=proposal_ref, payload=proposal),
             ArtifactWrite(
-                ref=paragraph_proposal_validation_ref(document_id, chapter_id),
+                ref=ChapterRef(
+                    ChapterArtifactKind.PARAGRAPH_PROPOSAL_VALIDATION, document_id, chapter_id
+                ),
                 payload=validation,
             ),
         ],

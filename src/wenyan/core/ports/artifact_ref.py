@@ -1,9 +1,7 @@
 from dataclasses import dataclass
+from enum import StrEnum
+from pathlib import PurePosixPath
 
-from pydantic import BaseModel
-
-from wenyan_models.base import DEFAULT_ARTIFACT_CONFIG
-from wenyan_models.domain.enums import ArtifactKind
 from wenyan_models.domain.ids import (
     ChapterId,
     DocumentId,
@@ -11,233 +9,119 @@ from wenyan_models.domain.ids import (
     SegmentId,
 )
 
-
-class ArtifactRef(BaseModel):
-    model_config = DEFAULT_ARTIFACT_CONFIG
-
-    kind: ArtifactKind
-    document_id: DocumentId
-    chapter_id: ChapterId | None = None
-    paragraph_id: ParagraphId | None = None
-    segment_id: SegmentId | None = None
+_DOCUMENTS = PurePosixPath("preprocess/documents")
 
 
-@dataclass(frozen=True)
-class _Scope:
-    chapter: bool = False
-    paragraph: bool = False
-    segment: bool = False
+class DocumentArtifactKind(StrEnum):
+    NORMALIZED_DOCUMENT = "normalized-document"
+    CHAPTER_PROPOSAL = "chapter-proposal"
+    CHAPTER_PROPOSAL_VALIDATION = "chapter-proposal-validation"
+    GLOSSARY_DRAFT = "glossary-draft"
+    PACKAGE_VALIDATION = "package-validation"
 
 
-_DOCUMENT_ONLY = _Scope()
-_CHAPTER_SCOPE = _Scope(chapter=True)
-_PARAGRAPH_SCOPE = _Scope(paragraph=True)
-_SEGMENT_SCOPE = _Scope(segment=True)
+class ChapterArtifactKind(StrEnum):
+    PARAGRAPH_PROPOSAL = "paragraph-proposal"
+    PARAGRAPH_PROPOSAL_VALIDATION = "paragraph-proposal-validation"
 
-_SCOPES: dict[ArtifactKind, _Scope] = {
-    ArtifactKind.NORMALIZED_DOCUMENT: _DOCUMENT_ONLY,
-    ArtifactKind.CHAPTER_PROPOSAL: _DOCUMENT_ONLY,
-    ArtifactKind.CHAPTER_PROPOSAL_VALIDATION: _DOCUMENT_ONLY,
-    ArtifactKind.GLOSSARY_DRAFT: _DOCUMENT_ONLY,
-    ArtifactKind.PACKAGE_VALIDATION: _DOCUMENT_ONLY,
-    ArtifactKind.PARAGRAPH_PROPOSAL: _CHAPTER_SCOPE,
-    ArtifactKind.PARAGRAPH_PROPOSAL_VALIDATION: _CHAPTER_SCOPE,
-    ArtifactKind.PARAGRAPH_DRAFT: _PARAGRAPH_SCOPE,
-    ArtifactKind.PARAGRAPH_DRAFT_VALIDATION: _PARAGRAPH_SCOPE,
-    ArtifactKind.PARAGRAPH_ASSEMBLY_PACKAGE: _PARAGRAPH_SCOPE,
-    ArtifactKind.PARAGRAPH_ASSEMBLY_VALIDATION: _PARAGRAPH_SCOPE,
-    ArtifactKind.SEGMENT_INPUT: _SEGMENT_SCOPE,
-    ArtifactKind.TOKENIZATION: _SEGMENT_SCOPE,
-    ArtifactKind.TOKENIZATION_REVIEW: _SEGMENT_SCOPE,
-    ArtifactKind.GLOSSES: _SEGMENT_SCOPE,
-    ArtifactKind.GLOSS_REVIEW: _SEGMENT_SCOPE,
-    ArtifactKind.GRAMMAR_NOTES: _SEGMENT_SCOPE,
-    ArtifactKind.GRAMMAR_REVIEW: _SEGMENT_SCOPE,
-    ArtifactKind.CONTEXT_NOTES: _SEGMENT_SCOPE,
-    ArtifactKind.CONTEXT_REVIEW: _SEGMENT_SCOPE,
+
+class ParagraphArtifactKind(StrEnum):
+    DRAFT = "paragraph-draft"
+    DRAFT_VALIDATION = "paragraph-draft-validation"
+    ASSEMBLY_PACKAGE = "paragraph-assembly-package"
+    ASSEMBLY_VALIDATION = "paragraph-assembly-validation"
+
+
+class SegmentArtifactKind(StrEnum):
+    INPUT = "segment-input"
+    TOKENIZATION = "tokenization"
+    TOKENIZATION_REVIEW = "tokenization-review"
+    GLOSSES = "glosses"
+    GLOSS_REVIEW = "gloss-review"
+    GRAMMAR_NOTES = "grammar-notes"
+    GRAMMAR_REVIEW = "grammar-review"
+    CONTEXT_NOTES = "context-notes"
+    CONTEXT_REVIEW = "context-review"
+
+
+_DOCUMENT_FILES: dict[DocumentArtifactKind, str] = {
+    DocumentArtifactKind.NORMALIZED_DOCUMENT: "normalized-document.json",
+    DocumentArtifactKind.CHAPTER_PROPOSAL: "structure/chapter-proposal.json",
+    DocumentArtifactKind.CHAPTER_PROPOSAL_VALIDATION: "structure/chapter-proposal.validation.json",
+    DocumentArtifactKind.GLOSSARY_DRAFT: "indexes/glossary-draft.json",
+    DocumentArtifactKind.PACKAGE_VALIDATION: "jobs/package/validation.json",
+}
+
+_CHAPTER_FILES: dict[ChapterArtifactKind, str] = {
+    ChapterArtifactKind.PARAGRAPH_PROPOSAL: "paragraph-proposal.json",
+    ChapterArtifactKind.PARAGRAPH_PROPOSAL_VALIDATION: "paragraph-proposal.validation.json",
+}
+
+# (directory under jobs/, filename): drafts and assembly outputs live in separate trees.
+_PARAGRAPH_FILES: dict[ParagraphArtifactKind, tuple[str, str]] = {
+    ParagraphArtifactKind.DRAFT: ("paragraphs", "draft.json"),
+    ParagraphArtifactKind.DRAFT_VALIDATION: ("paragraphs", "validation.json"),
+    ParagraphArtifactKind.ASSEMBLY_PACKAGE: ("assembly", "package.json"),
+    ParagraphArtifactKind.ASSEMBLY_VALIDATION: ("assembly", "validation.json"),
+}
+
+_SEGMENT_FILES: dict[SegmentArtifactKind, str] = {
+    SegmentArtifactKind.INPUT: "input.json",
+    SegmentArtifactKind.TOKENIZATION: "tokenization.json",
+    SegmentArtifactKind.TOKENIZATION_REVIEW: "tokenization-review.json",
+    SegmentArtifactKind.GLOSSES: "glosses.json",
+    SegmentArtifactKind.GLOSS_REVIEW: "gloss-review.json",
+    SegmentArtifactKind.GRAMMAR_NOTES: "grammar-notes.json",
+    SegmentArtifactKind.GRAMMAR_REVIEW: "grammar-review.json",
+    SegmentArtifactKind.CONTEXT_NOTES: "context-notes.json",
+    SegmentArtifactKind.CONTEXT_REVIEW: "context-review.json",
 }
 
 
-def _make_ref(
-    kind: ArtifactKind,
-    *,
-    document_id: DocumentId,
-    chapter_id: ChapterId | None = None,
-    paragraph_id: ParagraphId | None = None,
-    segment_id: SegmentId | None = None,
-) -> ArtifactRef:
-    scope = _SCOPES[kind]
-    if chapter_id is not None and not scope.chapter:
-        raise ValueError(f"{kind.value} does not accept chapter_id")
-    if paragraph_id is not None and not scope.paragraph:
-        raise ValueError(f"{kind.value} does not accept paragraph_id")
-    if segment_id is not None and not scope.segment:
-        raise ValueError(f"{kind.value} does not accept segment_id")
-    if scope.chapter and chapter_id is None:
-        raise ValueError(f"{kind.value} requires chapter_id")
-    if scope.paragraph and paragraph_id is None:
-        raise ValueError(f"{kind.value} requires paragraph_id")
-    if scope.segment and segment_id is None:
-        raise ValueError(f"{kind.value} requires segment_id")
-    return ArtifactRef(
-        kind=kind,
-        document_id=document_id,
-        chapter_id=chapter_id,
-        paragraph_id=paragraph_id,
-        segment_id=segment_id,
-    )
+@dataclass(frozen=True)
+class DocumentRef:
+    kind: DocumentArtifactKind
+    document_id: DocumentId
+
+    @property
+    def relative_path(self) -> PurePosixPath:
+        return _DOCUMENTS / self.document_id / _DOCUMENT_FILES[self.kind]
 
 
-def normalized_document_ref(document_id: DocumentId) -> ArtifactRef:
-    return _make_ref(ArtifactKind.NORMALIZED_DOCUMENT, document_id=document_id)
+@dataclass(frozen=True)
+class ChapterRef:
+    kind: ChapterArtifactKind
+    document_id: DocumentId
+    chapter_id: ChapterId
+
+    @property
+    def relative_path(self) -> PurePosixPath:
+        chapter_dir = _DOCUMENTS / self.document_id / "structure" / "chapters" / self.chapter_id
+        return chapter_dir / _CHAPTER_FILES[self.kind]
 
 
-def chapter_proposal_ref(document_id: DocumentId) -> ArtifactRef:
-    return _make_ref(ArtifactKind.CHAPTER_PROPOSAL, document_id=document_id)
+@dataclass(frozen=True)
+class ParagraphRef:
+    kind: ParagraphArtifactKind
+    document_id: DocumentId
+    paragraph_id: ParagraphId
+
+    @property
+    def relative_path(self) -> PurePosixPath:
+        directory, filename = _PARAGRAPH_FILES[self.kind]
+        return _DOCUMENTS / self.document_id / "jobs" / directory / self.paragraph_id / filename
 
 
-def chapter_proposal_validation_ref(document_id: DocumentId) -> ArtifactRef:
-    return _make_ref(ArtifactKind.CHAPTER_PROPOSAL_VALIDATION, document_id=document_id)
+@dataclass(frozen=True)
+class SegmentRef:
+    kind: SegmentArtifactKind
+    document_id: DocumentId
+    segment_id: SegmentId
+
+    @property
+    def relative_path(self) -> PurePosixPath:
+        segment_dir = _DOCUMENTS / self.document_id / "jobs" / "segments" / self.segment_id
+        return segment_dir / _SEGMENT_FILES[self.kind]
 
 
-def paragraph_proposal_ref(document_id: DocumentId, chapter_id: ChapterId) -> ArtifactRef:
-    return _make_ref(
-        ArtifactKind.PARAGRAPH_PROPOSAL,
-        document_id=document_id,
-        chapter_id=chapter_id,
-    )
-
-
-def paragraph_proposal_validation_ref(
-    document_id: DocumentId,
-    chapter_id: ChapterId,
-) -> ArtifactRef:
-    return _make_ref(
-        ArtifactKind.PARAGRAPH_PROPOSAL_VALIDATION,
-        document_id=document_id,
-        chapter_id=chapter_id,
-    )
-
-
-def paragraph_draft_ref(document_id: DocumentId, paragraph_id: ParagraphId) -> ArtifactRef:
-    return _make_ref(
-        ArtifactKind.PARAGRAPH_DRAFT,
-        document_id=document_id,
-        paragraph_id=paragraph_id,
-    )
-
-
-def paragraph_draft_validation_ref(
-    document_id: DocumentId,
-    paragraph_id: ParagraphId,
-) -> ArtifactRef:
-    return _make_ref(
-        ArtifactKind.PARAGRAPH_DRAFT_VALIDATION,
-        document_id=document_id,
-        paragraph_id=paragraph_id,
-    )
-
-
-def segment_input_ref(document_id: DocumentId, segment_id: SegmentId) -> ArtifactRef:
-    return _make_ref(
-        ArtifactKind.SEGMENT_INPUT,
-        document_id=document_id,
-        segment_id=segment_id,
-    )
-
-
-def segment_tokenization_ref(document_id: DocumentId, segment_id: SegmentId) -> ArtifactRef:
-    return _make_ref(
-        ArtifactKind.TOKENIZATION,
-        document_id=document_id,
-        segment_id=segment_id,
-    )
-
-
-def segment_tokenization_review_ref(
-    document_id: DocumentId,
-    segment_id: SegmentId,
-) -> ArtifactRef:
-    return _make_ref(
-        ArtifactKind.TOKENIZATION_REVIEW,
-        document_id=document_id,
-        segment_id=segment_id,
-    )
-
-
-def segment_glosses_ref(document_id: DocumentId, segment_id: SegmentId) -> ArtifactRef:
-    return _make_ref(
-        ArtifactKind.GLOSSES,
-        document_id=document_id,
-        segment_id=segment_id,
-    )
-
-
-def segment_gloss_review_ref(document_id: DocumentId, segment_id: SegmentId) -> ArtifactRef:
-    return _make_ref(
-        ArtifactKind.GLOSS_REVIEW,
-        document_id=document_id,
-        segment_id=segment_id,
-    )
-
-
-def segment_grammar_notes_ref(document_id: DocumentId, segment_id: SegmentId) -> ArtifactRef:
-    return _make_ref(
-        ArtifactKind.GRAMMAR_NOTES,
-        document_id=document_id,
-        segment_id=segment_id,
-    )
-
-
-def segment_grammar_review_ref(document_id: DocumentId, segment_id: SegmentId) -> ArtifactRef:
-    return _make_ref(
-        ArtifactKind.GRAMMAR_REVIEW,
-        document_id=document_id,
-        segment_id=segment_id,
-    )
-
-
-def segment_context_notes_ref(document_id: DocumentId, segment_id: SegmentId) -> ArtifactRef:
-    return _make_ref(
-        ArtifactKind.CONTEXT_NOTES,
-        document_id=document_id,
-        segment_id=segment_id,
-    )
-
-
-def segment_context_review_ref(document_id: DocumentId, segment_id: SegmentId) -> ArtifactRef:
-    return _make_ref(
-        ArtifactKind.CONTEXT_REVIEW,
-        document_id=document_id,
-        segment_id=segment_id,
-    )
-
-
-def glossary_draft_ref(document_id: DocumentId) -> ArtifactRef:
-    return _make_ref(ArtifactKind.GLOSSARY_DRAFT, document_id=document_id)
-
-
-def paragraph_assembly_package_ref(
-    document_id: DocumentId,
-    paragraph_id: ParagraphId,
-) -> ArtifactRef:
-    return _make_ref(
-        ArtifactKind.PARAGRAPH_ASSEMBLY_PACKAGE,
-        document_id=document_id,
-        paragraph_id=paragraph_id,
-    )
-
-
-def paragraph_assembly_validation_ref(
-    document_id: DocumentId,
-    paragraph_id: ParagraphId,
-) -> ArtifactRef:
-    return _make_ref(
-        ArtifactKind.PARAGRAPH_ASSEMBLY_VALIDATION,
-        document_id=document_id,
-        paragraph_id=paragraph_id,
-    )
-
-
-def package_validation_ref(document_id: DocumentId) -> ArtifactRef:
-    return _make_ref(ArtifactKind.PACKAGE_VALIDATION, document_id=document_id)
+type ArtifactRef = DocumentRef | ChapterRef | ParagraphRef | SegmentRef

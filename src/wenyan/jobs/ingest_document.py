@@ -1,7 +1,7 @@
 import uuid
 from pathlib import Path
 
-from wenyan.core.ports.artifact_ref import normalized_document_ref
+from wenyan.core.ports.artifact_ref import DocumentArtifactKind, DocumentRef
 from wenyan.jobs.context import JobContext, JobOptions
 from wenyan_models.domain.ids import DocumentId, document_id
 from wenyan_models.domain.results import JobOutcome, Promoted, Skipped
@@ -15,7 +15,7 @@ def run_ingest_document(
     slug = ctx.registry.source_slug_from_path(source_dir)
     entry = ctx.registry.resolve(str(slug))
     doc_id = entry.document_id or document_id(str(uuid.uuid4()))
-    ref = normalized_document_ref(doc_id)
+    ref = DocumentRef(DocumentArtifactKind.NORMALIZED_DOCUMENT, doc_id)
     if ctx.artifacts.exists(ref) and not options.force:
         return Skipped(reason="normalized document already exists")
     metadata = ctx.registry.load_document_yaml(slug)

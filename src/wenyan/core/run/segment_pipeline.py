@@ -1,16 +1,4 @@
-from collections.abc import Callable
-
-from wenyan.core.ports.artifact_ref import (
-    ArtifactRef,
-    segment_context_notes_ref,
-    segment_context_review_ref,
-    segment_gloss_review_ref,
-    segment_glosses_ref,
-    segment_grammar_notes_ref,
-    segment_grammar_review_ref,
-    segment_tokenization_ref,
-    segment_tokenization_review_ref,
-)
+from wenyan.core.ports.artifact_ref import SegmentArtifactKind, SegmentRef
 from wenyan.core.ports.artifact_store import ArtifactStore
 from wenyan_models.artifacts.segment import (
     ContextReviewArtifact,
@@ -39,18 +27,18 @@ SEGMENT_SUBJOBS: tuple[ComponentKind, ...] = (
     ComponentKind.REVIEW_SEGMENT_CONTEXT,
 )
 
-_DRAFT_REF: dict[ComponentKind, Callable[[DocumentId, SegmentId], ArtifactRef]] = {
-    ComponentKind.TOKENIZE_SEGMENT: segment_tokenization_ref,
-    ComponentKind.GLOSS_SEGMENT: segment_glosses_ref,
-    ComponentKind.ANNOTATE_SEGMENT_GRAMMAR: segment_grammar_notes_ref,
-    ComponentKind.ANNOTATE_SEGMENT_CONTEXT: segment_context_notes_ref,
+_DRAFT_KIND: dict[ComponentKind, SegmentArtifactKind] = {
+    ComponentKind.TOKENIZE_SEGMENT: SegmentArtifactKind.TOKENIZATION,
+    ComponentKind.GLOSS_SEGMENT: SegmentArtifactKind.GLOSSES,
+    ComponentKind.ANNOTATE_SEGMENT_GRAMMAR: SegmentArtifactKind.GRAMMAR_NOTES,
+    ComponentKind.ANNOTATE_SEGMENT_CONTEXT: SegmentArtifactKind.CONTEXT_NOTES,
 }
 
-_REVIEW_REF: dict[ComponentKind, Callable[[DocumentId, SegmentId], ArtifactRef]] = {
-    ComponentKind.REVIEW_SEGMENT_TOKENIZATION: segment_tokenization_review_ref,
-    ComponentKind.REVIEW_SEGMENT_GLOSS: segment_gloss_review_ref,
-    ComponentKind.REVIEW_SEGMENT_GRAMMAR: segment_grammar_review_ref,
-    ComponentKind.REVIEW_SEGMENT_CONTEXT: segment_context_review_ref,
+_REVIEW_KIND: dict[ComponentKind, SegmentArtifactKind] = {
+    ComponentKind.REVIEW_SEGMENT_TOKENIZATION: SegmentArtifactKind.TOKENIZATION_REVIEW,
+    ComponentKind.REVIEW_SEGMENT_GLOSS: SegmentArtifactKind.GLOSS_REVIEW,
+    ComponentKind.REVIEW_SEGMENT_GRAMMAR: SegmentArtifactKind.GRAMMAR_REVIEW,
+    ComponentKind.REVIEW_SEGMENT_CONTEXT: SegmentArtifactKind.CONTEXT_REVIEW,
 }
 
 _REVIEW_MODEL: dict[ComponentKind, type[SegmentReviewArtifact]] = {
@@ -85,11 +73,11 @@ def component_artifact_ref(
     document_id: DocumentId,
     segment_id: SegmentId,
     component: ComponentKind,
-) -> ArtifactRef | None:
-    if component in _DRAFT_REF:
-        return _DRAFT_REF[component](document_id, segment_id)
-    if component in _REVIEW_REF:
-        return _REVIEW_REF[component](document_id, segment_id)
+) -> SegmentRef | None:
+    if component in _DRAFT_KIND:
+        return SegmentRef(_DRAFT_KIND[component], document_id, segment_id)
+    if component in _REVIEW_KIND:
+        return SegmentRef(_REVIEW_KIND[component], document_id, segment_id)
     return None
 
 
@@ -99,14 +87,14 @@ def component_unit_status(
     segment_id: SegmentId,
     component: ComponentKind,
 ) -> UnitStatus:
-    if component in _DRAFT_REF:
-        ref = _DRAFT_REF[component](document_id, segment_id)
+    if component in _DRAFT_KIND:
+        ref = SegmentRef(_DRAFT_KIND[component], document_id, segment_id)
         return UnitStatus.COMPLETE if artifacts.exists(ref) else UnitStatus.PENDING
-    if component in _REVIEW_REF:
+    if component in _REVIEW_KIND:
         draft_component = _DRAFT_FOR_REVIEW[component]
-        if not artifacts.exists(_DRAFT_REF[draft_component](document_id, segment_id)):
+        if not artifacts.exists(SegmentRef(_DRAFT_KIND[draft_component], document_id, segment_id)):
             return UnitStatus.PENDING
-        review_ref = _REVIEW_REF[component](document_id, segment_id)
+        review_ref = SegmentRef(_REVIEW_KIND[component], document_id, segment_id)
         if not artifacts.exists(review_ref):
             return UnitStatus.PENDING
         review = artifacts.read(review_ref, _REVIEW_MODEL[component])
@@ -122,9 +110,9 @@ def read_review_component(
     segment_id: SegmentId,
     component: ComponentKind,
 ) -> SegmentReviewArtifact | None:
-    if component not in _REVIEW_REF:
+    if component not in _REVIEW_KIND:
         return None
-    review_ref = _REVIEW_REF[component](document_id, segment_id)
+    review_ref = SegmentRef(_REVIEW_KIND[component], document_id, segment_id)
     if not artifacts.exists(review_ref):
         return None
     return artifacts.read(review_ref, _REVIEW_MODEL[component])
@@ -153,7 +141,7 @@ def invalidate_segment_review(
     review_component = _REVIEW_FOR_DRAFT.get(draft_component)
     if review_component is None:
         return
-    review_ref = _REVIEW_REF[review_component](document_id, segment_id)
+    review_ref = SegmentRef(_REVIEW_KIND[review_component], document_id, segment_id)
     if dry_run or not artifacts.exists(review_ref):
         return
     artifacts.delete(review_ref)

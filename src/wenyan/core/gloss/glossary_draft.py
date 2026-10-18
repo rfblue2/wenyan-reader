@@ -1,7 +1,8 @@
 from wenyan.core.ports.artifact_ref import (
-    glossary_draft_ref,
-    segment_gloss_review_ref,
-    segment_glosses_ref,
+    DocumentArtifactKind,
+    DocumentRef,
+    SegmentArtifactKind,
+    SegmentRef,
 )
 from wenyan.core.ports.artifact_store import ArtifactStore
 from wenyan.core.run.work_queue import iter_segments_in_document_order
@@ -17,7 +18,7 @@ from wenyan_models.domain.ids import DocumentId, SegmentId
 
 
 def load_glossary_draft(artifacts: ArtifactStore, document_id: DocumentId) -> GlossaryDraft:
-    ref = glossary_draft_ref(document_id)
+    ref = DocumentRef(DocumentArtifactKind.GLOSSARY_DRAFT, document_id)
     if artifacts.exists(ref):
         return artifacts.read(ref, GlossaryDraft)
     return GlossaryDraft()
@@ -30,7 +31,11 @@ def save_glossary_draft(
     *,
     dry_run: bool,
 ) -> None:
-    artifacts.write(glossary_draft_ref(document_id), draft, dry_run=dry_run)
+    artifacts.write(
+        DocumentRef(DocumentArtifactKind.GLOSSARY_DRAFT, document_id),
+        draft,
+        dry_run=dry_run,
+    )
 
 
 def load_candidate_glosses(
@@ -47,7 +52,7 @@ def load_candidate_glosses(
         if not _gloss_review_is_approved(artifacts, document_id, prior_segment_id):
             continue
         glosses = artifacts.read(
-            segment_glosses_ref(document_id, prior_segment_id),
+            SegmentRef(SegmentArtifactKind.GLOSSES, document_id, prior_segment_id),
             GlossesArtifact,
         )
         for entry in glosses.new_glosses:
@@ -125,7 +130,7 @@ def _gloss_review_is_approved(
     document_id: DocumentId,
     segment_id_value: SegmentId,
 ) -> bool:
-    review_ref = segment_gloss_review_ref(document_id, segment_id_value)
+    review_ref = SegmentRef(SegmentArtifactKind.GLOSS_REVIEW, document_id, segment_id_value)
     if not artifacts.exists(review_ref):
         return False
     review = artifacts.read(review_ref, GlossReviewArtifact)

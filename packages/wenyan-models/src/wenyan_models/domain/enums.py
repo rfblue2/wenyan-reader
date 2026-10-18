@@ -1,29 +1,6 @@
 from enum import StrEnum
 
 
-class ArtifactKind(StrEnum):
-    NORMALIZED_DOCUMENT = "normalized-document"
-    CHAPTER_PROPOSAL = "chapter-proposal"
-    CHAPTER_PROPOSAL_VALIDATION = "chapter-proposal-validation"
-    PARAGRAPH_PROPOSAL = "paragraph-proposal"
-    PARAGRAPH_PROPOSAL_VALIDATION = "paragraph-proposal-validation"
-    PARAGRAPH_DRAFT = "paragraph-draft"
-    PARAGRAPH_DRAFT_VALIDATION = "paragraph-draft-validation"
-    SEGMENT_INPUT = "segment-input"
-    TOKENIZATION = "tokenization"
-    TOKENIZATION_REVIEW = "tokenization-review"
-    GLOSSES = "glosses"
-    GLOSS_REVIEW = "gloss-review"
-    GRAMMAR_NOTES = "grammar-notes"
-    GRAMMAR_REVIEW = "grammar-review"
-    CONTEXT_NOTES = "context-notes"
-    CONTEXT_REVIEW = "context-review"
-    GLOSSARY_DRAFT = "glossary-draft"
-    PARAGRAPH_ASSEMBLY_PACKAGE = "paragraph-assembly-package"
-    PARAGRAPH_ASSEMBLY_VALIDATION = "paragraph-assembly-validation"
-    PACKAGE_VALIDATION = "package-validation"
-
-
 class ComponentKind(StrEnum):
     TOKENIZE_SEGMENT = "tokenize-segment"
     REVIEW_SEGMENT_TOKENIZATION = "review-segment-tokenization"

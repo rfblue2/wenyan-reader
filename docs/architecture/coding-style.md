@@ -55,7 +55,7 @@ Do not pass raw `str` ids across modules. Branded `NewType`s live in `wenyan_mod
 
 ## Enums
 
-Use `StrEnum` for `ArtifactKind`, `ComponentKind`, `UnitStatus`, `ValidationStatus`, `ReviewStatus` (`wenyan_models/domain/enums.py`). No bare string literals for these.
+Use `StrEnum` for `ComponentKind`, `UnitStatus`, `ValidationStatus`, `ReviewStatus` (`wenyan_models/domain/enums.py`). No bare string literals for these.
 
 ## Results
 
@@ -78,8 +78,6 @@ Each variant has a `kind` literal. Branch with exhaustive `match`; map to exit c
 | `PromptLoader` | `build_prompt(template_name, context)` |
 | `StatusReader` | status payloads |
 | `GraphValidator` | validation report |
-
-Build `ArtifactRef`s only through the per-kind factories in `core/ports/artifact_ref.py`.
 
 ## Typing
 
@@ -106,7 +104,7 @@ Build `ArtifactRef`s only through the per-kind factories in `core/ports/artifact
 
 Tracked in the [backlog](../backlog.md) (H6, H8):
 
-- `core/status`, `core/run`, `core/assembly`, and `core/package` import `core.adapters.paths`; `core/run/stale_assembly.py`, `core/run/orphan_segments.py`, and `core/package/promote.py` touch the filesystem directly.
+- `core/run` imports `core.adapters.paths`; `core/run/stale_assembly.py`, `core/run/orphan_segments.py`, and `core/package/promote.py` touch the filesystem directly.
 - `cli/preprocess.py` constructs `FilesystemStatusReader` and `FilesystemGraphValidator` outside `bootstrap.py`.
 - `core/status/derivation.py` builds payloads from hand-written camelCase dicts.
 - Several internal frozen dataclasses (assembly inputs, package collection, status rows) and `json.loads` use in `MockLLMClient`.

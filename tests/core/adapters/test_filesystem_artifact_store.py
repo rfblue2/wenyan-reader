@@ -1,7 +1,7 @@
 from pydantic import BaseModel, ConfigDict
 
 from wenyan.core.adapters.filesystem_artifact_store import FilesystemArtifactStore
-from wenyan.core.ports.artifact_ref import normalized_document_ref
+from wenyan.core.ports.artifact_ref import DocumentArtifactKind, DocumentRef
 from wenyan_models.domain.ids import document_id
 
 
@@ -14,7 +14,7 @@ class StubArtifact(BaseModel):
 def test_round_trip_write_and_read(tmp_path) -> None:
     store = FilesystemArtifactStore(tmp_path)
     doc = document_id("9ad841a6-f20f-4f43-9805-166ab2d98e7f")
-    ref = normalized_document_ref(doc)
+    ref = DocumentRef(DocumentArtifactKind.NORMALIZED_DOCUMENT, doc)
     payload = StubArtifact(message="hello")
 
     assert not store.exists(ref)
@@ -28,7 +28,7 @@ def test_round_trip_write_and_read(tmp_path) -> None:
 def test_dry_run_does_not_write(tmp_path) -> None:
     store = FilesystemArtifactStore(tmp_path)
     doc = document_id("9ad841a6-f20f-4f43-9805-166ab2d98e7f")
-    ref = normalized_document_ref(doc)
+    ref = DocumentRef(DocumentArtifactKind.NORMALIZED_DOCUMENT, doc)
 
     store.write(ref, StubArtifact(message="hello"), dry_run=True)
     assert not store.exists(ref)

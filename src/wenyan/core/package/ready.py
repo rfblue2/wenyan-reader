@@ -1,8 +1,4 @@
-from wenyan.core.ports.artifact_ref import (
-    paragraph_assembly_package_ref,
-    paragraph_assembly_validation_ref,
-    paragraph_draft_ref,
-)
+from wenyan.core.ports.artifact_ref import ParagraphArtifactKind, ParagraphRef
 from wenyan.core.ports.artifact_store import ArtifactStore
 from wenyan.core.run.segment_pipeline import segment_is_complete
 from wenyan_models.artifacts.assembly import ParagraphAssemblyValidationArtifact
@@ -18,7 +14,7 @@ def paragraph_segments_complete(
     document_id: DocumentId,
     paragraph_id: ParagraphId,
 ) -> bool:
-    draft_ref = paragraph_draft_ref(document_id, paragraph_id)
+    draft_ref = ParagraphRef(ParagraphArtifactKind.DRAFT, document_id, paragraph_id)
     if not artifacts.exists(draft_ref):
         return False
     draft = artifacts.read(draft_ref, ParagraphDraft)
@@ -32,8 +28,12 @@ def paragraph_assembly_is_ready(
 ) -> bool:
     if not paragraph_segments_complete(artifacts, document_id, paragraph_id):
         return False
-    package_ref = paragraph_assembly_package_ref(document_id, paragraph_id)
-    validation_ref = paragraph_assembly_validation_ref(document_id, paragraph_id)
+    package_ref = ParagraphRef(ParagraphArtifactKind.ASSEMBLY_PACKAGE, document_id, paragraph_id)
+    validation_ref = ParagraphRef(
+        ParagraphArtifactKind.ASSEMBLY_VALIDATION,
+        document_id,
+        paragraph_id,
+    )
     if not artifacts.exists(package_ref) or not artifacts.exists(validation_ref):
         return False
     current_hash = compute_assembly_input_hash(artifacts, document_id, paragraph_id)

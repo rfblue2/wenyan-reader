@@ -1,14 +1,8 @@
 from __future__ import annotations
 
-from pathlib import Path
 
 from wenyan.core.gloss.glossary_draft import load_glossary_draft
-from wenyan.core.ports.artifact_ref import (
-    segment_context_notes_ref,
-    segment_glosses_ref,
-    segment_grammar_notes_ref,
-    segment_tokenization_ref,
-)
+from wenyan.core.ports.artifact_ref import SegmentArtifactKind, SegmentRef
 from wenyan.core.ports.artifact_store import ArtifactStore
 from wenyan.core.run.segment_pipeline import read_review_component
 from wenyan.core.status.derivation import derive_segment_status, find_segment_location
@@ -42,7 +36,6 @@ _REVIEW_COMPONENTS: tuple[ComponentKind, ...] = (
 
 def build_segment_show_view(
     artifacts: ArtifactStore,
-    repo_root: Path,
     *,
     document_id: DocumentId,
     document_ref: str,
@@ -59,7 +52,6 @@ def build_segment_show_view(
     tokenization = _load_tokenization(artifacts, document_id, segment_id)
     segment_status = derive_segment_status(
         artifacts,
-        repo_root,
         document_id=document_id,
         chapter_id=chapter_id_value,
         paragraph_id=paragraph_id_value,
@@ -109,12 +101,12 @@ def _build_token_rows(
     document_id: DocumentId,
     segment_id: SegmentId,
 ) -> tuple[TokenGlossRow, ...]:
-    tokenization_ref = segment_tokenization_ref(document_id, segment_id)
+    tokenization_ref = SegmentRef(SegmentArtifactKind.TOKENIZATION, document_id, segment_id)
     if not artifacts.exists(tokenization_ref):
         return ()
     tokenization = artifacts.read(tokenization_ref, TokenizationArtifact)
     glosses: GlossesArtifact | None = None
-    glosses_ref = segment_glosses_ref(document_id, segment_id)
+    glosses_ref = SegmentRef(SegmentArtifactKind.GLOSSES, document_id, segment_id)
     if artifacts.exists(glosses_ref):
         glosses = artifacts.read(glosses_ref, GlossesArtifact)
     candidate_glosses: tuple[dict[str, object], ...] = ()
@@ -159,7 +151,7 @@ def _load_tokenization(
     document_id: DocumentId,
     segment_id: SegmentId,
 ) -> TokenizationArtifact | None:
-    tokenization_ref = segment_tokenization_ref(document_id, segment_id)
+    tokenization_ref = SegmentRef(SegmentArtifactKind.TOKENIZATION, document_id, segment_id)
     if not artifacts.exists(tokenization_ref):
         return None
     return artifacts.read(tokenization_ref, TokenizationArtifact)
@@ -170,7 +162,7 @@ def _load_grammar_notes(
     document_id: DocumentId,
     segment_id: SegmentId,
 ) -> tuple[GrammarNoteItem, ...]:
-    grammar_ref = segment_grammar_notes_ref(document_id, segment_id)
+    grammar_ref = SegmentRef(SegmentArtifactKind.GRAMMAR_NOTES, document_id, segment_id)
     if not artifacts.exists(grammar_ref):
         return ()
     grammar = artifacts.read(grammar_ref, GrammarNotesArtifact)
@@ -182,7 +174,7 @@ def _load_context_notes(
     document_id: DocumentId,
     segment_id: SegmentId,
 ) -> tuple[ContextNoteItem, ...]:
-    context_ref = segment_context_notes_ref(document_id, segment_id)
+    context_ref = SegmentRef(SegmentArtifactKind.CONTEXT_NOTES, document_id, segment_id)
     if not artifacts.exists(context_ref):
         return ()
     context = artifacts.read(context_ref, ContextNotesArtifact)

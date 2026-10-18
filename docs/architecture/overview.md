@@ -50,7 +50,7 @@ src/wenyan/
   cli/          Typer app (preprocess.py), option/scope parsing, unit refs, Rich output
   jobs/         one module per command; segment_runner; JobContext/JobOptions
   core/
-    ports/      Protocol interfaces + ArtifactRef factories
+    ports/      Protocol interfaces + ArtifactRef
     adapters/   filesystem store/status/validator, YAML registry, LLM clients, paths
     config/     config loader
     assembly/   paragraph compile, validation, input hash

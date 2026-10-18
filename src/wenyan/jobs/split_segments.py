@@ -1,10 +1,13 @@
 from wenyan.core.hashing import sha256_text
 from wenyan.core.ports.artifact_ref import (
-    chapter_proposal_ref,
-    paragraph_draft_ref,
-    paragraph_draft_validation_ref,
-    paragraph_proposal_ref,
-    segment_input_ref,
+    ChapterArtifactKind,
+    ChapterRef,
+    DocumentArtifactKind,
+    DocumentRef,
+    ParagraphArtifactKind,
+    ParagraphRef,
+    SegmentArtifactKind,
+    SegmentRef,
 )
 from wenyan.core.ports.artifact_store import ArtifactWrite
 from wenyan.core.ports.prompt_context import PromptTextSlice
@@ -23,7 +26,10 @@ def run_split_segments(
     paragraph_id_value: ParagraphId,
     options: JobOptions,
 ) -> JobOutcome[ParagraphDraft]:
-    chapter_proposal = ctx.artifacts.read(chapter_proposal_ref(document_id), ChapterProposal)
+    chapter_proposal = ctx.artifacts.read(
+        DocumentRef(DocumentArtifactKind.CHAPTER_PROPOSAL, document_id),
+        ChapterProposal,
+    )
     paragraph_proposal = _find_paragraph_proposal(ctx, document_id, chapter_proposal, paragraph_id_value)
     if paragraph_proposal is None:
         return JobFailure(code="missing-paragraph", message="paragraph proposal not found")
@@ -41,7 +47,7 @@ def run_split_segments(
         return JobFailure(code="missing-paragraph", message="paragraph not in proposal")
     paragraph_start = chapter.start + paragraph_item.start
     paragraph_end = chapter.start + paragraph_item.end
-    draft_ref = paragraph_draft_ref(document_id, paragraph_id_value)
+    draft_ref = ParagraphRef(ParagraphArtifactKind.DRAFT, document_id, paragraph_id_value)
     paragraph_text = ctx.normalized_text.read_slice(document_id, paragraph_start, paragraph_end)
     input_hash = sha256_text(paragraph_text)
     if ctx.artifacts.exists(draft_ref) and not options.force:
@@ -74,14 +80,18 @@ def run_split_segments(
     writes: list[ArtifactWrite] = [
         ArtifactWrite(ref=draft_ref, payload=draft),
         ArtifactWrite(
-            ref=paragraph_draft_validation_ref(document_id, paragraph_id_value),
+            ref=ParagraphRef(
+                ParagraphArtifactKind.DRAFT_VALIDATION,
+                document_id,
+                paragraph_id_value,
+            ),
             payload=validation,
         ),
     ]
     for segment in draft.segments:
         writes.append(
             ArtifactWrite(
-                ref=segment_input_ref(document_id, segment_id(str(segment.id))),
+                ref=SegmentRef(SegmentArtifactKind.INPUT, document_id, segment_id(str(segment.id))),
                 payload=SegmentInput.model_validate(
                     {
                         "documentId": str(document_id),
@@ -106,7 +116,11 @@ def _find_paragraph_proposal(
     paragraph_id_value: ParagraphId,
 ) -> ParagraphProposal | None:
     for chapter in chapter_proposal.chapters:
-        ref = paragraph_proposal_ref(document_id, chapter_id(str(chapter.id)))
+        ref = ChapterRef(
+            ChapterArtifactKind.PARAGRAPH_PROPOSAL,
+            document_id,
+            chapter_id(str(chapter.id)),
+        )
         if not ctx.artifacts.exists(ref):
             continue
         proposal = ctx.artifacts.read(ref, ParagraphProposal)

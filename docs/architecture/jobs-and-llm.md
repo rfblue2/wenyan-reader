@@ -39,7 +39,7 @@ Runner steps:
 
 ## Writes
 
-`FilesystemArtifactStore` resolves an `ArtifactRef` to a path (`core/adapters/paths.py`), writes `<name>.tmp`, and `os.replace`s it. `write_batch` writes all temps before renaming. `ArtifactRef` factories in `core/ports/artifact_ref.py` enforce required scope ids per artifact kind.
+`FilesystemArtifactStore` resolves an `ArtifactRef` to a path, writes `<name>.tmp`, and `os.replace`s it. `write_batch` writes all temps before renaming.
 
 ## Prompts
 

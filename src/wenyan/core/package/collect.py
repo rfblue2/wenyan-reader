@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from wenyan.core.ports.artifact_ref import paragraph_assembly_package_ref
+from wenyan.core.ports.artifact_ref import ParagraphArtifactKind, ParagraphRef
 from wenyan.core.ports.artifact_store import ArtifactStore
 from wenyan.core.run.work_queue import iter_paragraphs
 from wenyan_models.domain.ids import ChapterId, DocumentId, ParagraphId
@@ -22,7 +22,6 @@ def collect_ready_paragraphs(
     artifacts: ArtifactStore,
     document_id: DocumentId,
 ) -> tuple[ReadyParagraph, ...]:
-    from wenyan.core.ports.artifact_ref import paragraph_assembly_validation_ref
     from wenyan_models.artifacts.assembly import ParagraphAssemblyValidationArtifact
 
     from wenyan.core.status.assembly import compute_assembly_input_hash
@@ -31,9 +30,13 @@ def collect_ready_paragraphs(
     for chapter, paragraph in iter_paragraphs(artifacts, document_id):
         if not paragraph_assembly_is_ready(artifacts, document_id, paragraph.id):
             continue
-        package_ref = paragraph_assembly_package_ref(document_id, paragraph.id)
+        package_ref = ParagraphRef(
+            ParagraphArtifactKind.ASSEMBLY_PACKAGE, document_id, paragraph.id
+        )
         package = artifacts.read(package_ref, ParagraphPackage)
-        validation_ref = paragraph_assembly_validation_ref(document_id, paragraph.id)
+        validation_ref = ParagraphRef(
+            ParagraphArtifactKind.ASSEMBLY_VALIDATION, document_id, paragraph.id
+        )
         validation = artifacts.read(validation_ref, ParagraphAssemblyValidationArtifact)
         assembly_hash = compute_assembly_input_hash(artifacts, document_id, paragraph.id)
         assert assembly_hash is not None
