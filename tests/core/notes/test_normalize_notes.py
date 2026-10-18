@@ -1,5 +1,5 @@
 from wenyan_models.artifacts.segment import (
-    GrammarNoteItem,
+    NoteItem,
     TokenItem,
     TokenizationArtifact,
 )
@@ -24,10 +24,10 @@ def _tokenization() -> TokenizationArtifact:
 def test_normalize_grammar_notes_drops_empty_body_and_invalid_anchors() -> None:
     tokenization = _tokenization()
     notes = (
-        GrammarNoteItem(id="n1", anchorTokenIds=("t2",), body=""),
-        GrammarNoteItem(id="n2", anchorTokenIds=(), body="Missing anchors."),
-        GrammarNoteItem(id="n3", anchorTokenIds=("missing",), body="Bad anchor."),
-        GrammarNoteItem(id="n4", anchorTokenIds=("t2",), body="之 links modifier to head."),
+        NoteItem(id="n1", anchorTokenIds=("t2",), body=""),
+        NoteItem(id="n2", anchorTokenIds=(), body="Missing anchors."),
+        NoteItem(id="n3", anchorTokenIds=("missing",), body="Bad anchor."),
+        NoteItem(id="n4", anchorTokenIds=("t2",), body="之 links modifier to head."),
     )
 
     normalized = normalize_grammar_notes(notes, tokenization)

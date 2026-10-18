@@ -59,7 +59,7 @@ When asked what to work on next, start here and cross-check against the tree (`s
 | H1 | **Audit and trim agent skills** | P2 | Skills moved from `.cursor/skills/` as-is. Remove duplication with the [CLI](spec/cli.md) and [Editor Guide](product/editor-guide.md); verify workflows. `preparing-source-structure` says to write `promptVersion`, which the schema rejects. |
 | H2 | **DRY and simplify** | P2 | Reduce duplication in code and workflow. |
 | H3 | Re-audit architecture and code | P3 | Redo the removed audits once the gaps above are triaged. |
-| H6 | Code quality | P3 | Shared base for review artifact models; typed construction in `core/status/derivation.py`; wire `StatusReader`/`GraphValidator` through `JobContext`. |
+| H6 | Code quality | P3 | Typed construction in `core/status/derivation.py`; wire `StatusReader`/`GraphValidator` through `JobContext`. |
 | H7 | Missing tests | P3 | `split-segments` reconstruction failure; stale approved review; golden-file status payload tests. |
 | H8 | Layering deviations | P3 | See [Coding Style — Known deviations](architecture/coding-style.md#known-deviations). |
 | H9 | JSON Schema export | P3 | Export schemas from `wenyan-models` for the web app and non-Python validation. |

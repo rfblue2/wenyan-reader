@@ -4,7 +4,7 @@ from __future__ import annotations
 from wenyan.core.gloss.glossary_draft import load_glossary_draft
 from wenyan.core.ports.artifact_ref import SegmentArtifactKind, SegmentRef
 from wenyan.core.ports.artifact_store import ArtifactStore
-from wenyan.core.run.segment_pipeline import read_review_component
+from wenyan.core.run.segment_pipeline import SEGMENT_STAGES, read_review_component
 from wenyan.core.status.derivation import derive_segment_status, find_segment_location
 from wenyan_models.artifacts.segment import (
     ContextNoteItem,
@@ -12,25 +12,17 @@ from wenyan_models.artifacts.segment import (
     ContextReviewArtifact,
     GlossEntry,
     GlossesArtifact,
-    GrammarNoteItem,
     GrammarNotesArtifact,
+    NoteItem,
     TokenizationArtifact,
 )
-from wenyan_models.domain.enums import ComponentKind
 from wenyan_models.domain.ids import DocumentId, SegmentId
 from wenyan_models.show.segment import (
     ContextNoteShowItem,
-    GrammarNoteShowItem,
+    NoteShowItem,
     ReviewShowItem,
     SegmentShowView,
     TokenGlossRow,
-)
-
-_REVIEW_COMPONENTS: tuple[ComponentKind, ...] = (
-    ComponentKind.REVIEW_SEGMENT_TOKENIZATION,
-    ComponentKind.REVIEW_SEGMENT_GLOSS,
-    ComponentKind.REVIEW_SEGMENT_GRAMMAR,
-    ComponentKind.REVIEW_SEGMENT_CONTEXT,
 )
 
 
@@ -161,7 +153,7 @@ def _load_grammar_notes(
     artifacts: ArtifactStore,
     document_id: DocumentId,
     segment_id: SegmentId,
-) -> tuple[GrammarNoteItem, ...]:
+) -> tuple[NoteItem, ...]:
     grammar_ref = SegmentRef(SegmentArtifactKind.GRAMMAR_NOTES, document_id, segment_id)
     if not artifacts.exists(grammar_ref):
         return ()
@@ -182,7 +174,7 @@ def _load_context_notes(
 
 
 def _anchor_surfaces(
-    note: GrammarNoteItem | ContextNoteItem,
+    note: NoteItem,
     tokenization: TokenizationArtifact | None,
 ) -> tuple[str, ...]:
     surfaces_by_id = (
@@ -192,11 +184,11 @@ def _anchor_surfaces(
 
 
 def _build_grammar_note_show_items(
-    notes: tuple[GrammarNoteItem, ...],
+    notes: tuple[NoteItem, ...],
     tokenization: TokenizationArtifact | None,
-) -> tuple[GrammarNoteShowItem, ...]:
+) -> tuple[NoteShowItem, ...]:
     return tuple(
-        GrammarNoteShowItem.model_validate(
+        NoteShowItem.model_validate(
             {
                 "id": note.id,
                 "anchorTokenIds": note.anchor_token_ids,
@@ -219,7 +211,7 @@ def _build_context_note_show_items(
                 "anchorTokenIds": note.anchor_token_ids,
                 "anchorSurfaces": _anchor_surfaces(note, tokenization),
                 "body": note.body,
-                "sources": [source.model_dump(by_alias=True) for source in note.sources],
+                "sources": note.sources,
             },
         )
         for note in notes
@@ -253,12 +245,12 @@ def _build_review_items(
     segment_id: SegmentId,
 ) -> tuple[ReviewShowItem, ...]:
     items: list[ReviewShowItem] = []
-    for component in _REVIEW_COMPONENTS:
-        review = read_review_component(artifacts, document_id, segment_id, component)
+    for stage in SEGMENT_STAGES:
+        review = read_review_component(artifacts, document_id, segment_id, stage.review)
         if review is None:
             continue
         review_payload: dict[str, object] = {
-            "kind": component,
+            "kind": stage.review,
             "status": review.status,
             "findings": list(review.findings),
             "findingLines": list(
@@ -266,8 +258,6 @@ def _build_review_items(
             ),
         }
         if isinstance(review, ContextReviewArtifact):
-            review_payload["sourceGrounding"] = [
-                item.model_dump(by_alias=True) for item in review.source_grounding
-            ]
+            review_payload["sourceGrounding"] = review.source_grounding
         items.append(ReviewShowItem.model_validate(review_payload))
     return tuple(items)

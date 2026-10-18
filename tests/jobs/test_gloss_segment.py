@@ -17,8 +17,8 @@ from wenyan.jobs.split_segments import run_split_segments
 from wenyan.jobs.tokenize_segment import run_tokenize_segment
 from wenyan_models.artifacts.glossary import GlossaryDraft
 from wenyan_models.artifacts.segment import (
-    GlossReviewArtifact,
     GlossesArtifact,
+    SegmentReview,
     TokenizationArtifact,
 )
 from wenyan_models.domain.enums import ReviewStatus
@@ -107,7 +107,7 @@ def test_review_segment_gloss_approves(tmp_workspace: Path) -> None:
     assert outcome_exit_code(outcome) == 0
     assert isinstance(outcome, Promoted)
     review_ref = SegmentRef(SegmentArtifactKind.GLOSS_REVIEW, doc_id, segment_id_value)
-    review = ctx.artifacts.read(review_ref, GlossReviewArtifact)
+    review = ctx.artifacts.read(review_ref, SegmentReview)
     assert review.status == ReviewStatus.APPROVED
 
 
@@ -130,7 +130,7 @@ def test_review_segment_gloss_rejects(tmp_workspace: Path, monkeypatch) -> None:
     assert outcome.code == "review-rejected"
     review = ctx.artifacts.read(
         SegmentRef(SegmentArtifactKind.GLOSS_REVIEW, doc_id, segment_id_value),
-        GlossReviewArtifact,
+        SegmentReview,
     )
     assert review.status == ReviewStatus.REJECTED
 

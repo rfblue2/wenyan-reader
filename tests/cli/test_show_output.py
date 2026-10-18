@@ -17,7 +17,7 @@ from wenyan_models.domain.enums import ReviewStatus, UnitStatus
 from wenyan_models.domain.targets import single_segment_target
 from wenyan_models.artifacts.segment import (
     ContextNotesArtifact,
-    GrammarNoteItem,
+    NoteItem,
     GrammarNotesArtifact,
     NoteCitation,
     ContextNoteItem,
@@ -238,7 +238,7 @@ def test_build_segment_show_view_includes_notes(tmp_workspace: Path) -> None:
         inputHash="sha256:test",
         attempts=1,
         grammarNotes=(
-            GrammarNoteItem(
+            NoteItem(
                 id="note-1",
                 anchorTokenIds=(token_id,),
                 body="Title segment heading.",
@@ -304,7 +304,7 @@ def test_render_segment_show_displays_notes(tmp_workspace: Path) -> None:
             inputHash="sha256:test",
             attempts=1,
             grammarNotes=(
-                GrammarNoteItem(
+                NoteItem(
                     id="note-1",
                     anchorTokenIds=(token_id,),
                     body="Title segment heading.",

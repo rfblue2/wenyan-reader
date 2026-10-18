@@ -11,7 +11,7 @@ from wenyan.core.hashing import sha256_text
 from wenyan.core.ports.artifact_ref import SegmentArtifactKind, SegmentRef
 from wenyan.jobs.context import JobContext, JobOptions
 from wenyan.jobs.segment_runner import SegmentReviewJobSpec, run_segment_review_job
-from wenyan_models.artifacts.segment import GlossReviewArtifact, GlossesArtifact, SegmentInput, TokenizationArtifact
+from wenyan_models.artifacts.segment import GlossesArtifact, SegmentInput, SegmentReview, TokenizationArtifact
 from wenyan_models.domain.ids import ContentHash, DocumentId, SegmentId
 from wenyan_models.domain.results import JobFailure, JobOutcome
 
@@ -57,7 +57,7 @@ def _merge_glossary_after_gloss_review(
     ctx: JobContext,
     document_id: DocumentId,
     segment_id_value: SegmentId,
-    review: GlossReviewArtifact,
+    review: SegmentReview,
     options: JobOptions,
 ) -> None:
     del review, options
@@ -71,7 +71,7 @@ def _merge_glossary_after_gloss_review(
 
 _GLOSS_REVIEW_SPEC = SegmentReviewJobSpec(
     prompt_name="segment-gloss-review",
-    output_model=GlossReviewArtifact,
+    output_model=SegmentReview,
     review_kind=SegmentArtifactKind.GLOSS_REVIEW,
     skip_reason="gloss review is current",
     reject_message="gloss review rejected",
@@ -85,7 +85,7 @@ def run_review_segment_gloss(
     document_id: DocumentId,
     segment_id_value: SegmentId,
     options: JobOptions,
-) -> JobOutcome[GlossReviewArtifact]:
+) -> JobOutcome[SegmentReview]:
     return run_segment_review_job(
         ctx,
         document_id,

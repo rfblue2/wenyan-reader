@@ -1,11 +1,7 @@
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Protocol, cast
-
-from pydantic import BaseModel
 
 from wenyan.core.ports.artifact_ref import (
-    ArtifactRef,
     ParagraphArtifactKind,
     ParagraphRef,
     SegmentArtifactKind,
@@ -14,7 +10,7 @@ from wenyan.core.ports.artifact_ref import (
 from wenyan.core.run.segment_pipeline import invalidate_segment_review
 from wenyan.jobs.context import JobContext, JobOptions
 from wenyan_models.artifacts.paragraph import ParagraphDraft
-from wenyan_models.artifacts.segment import TokenizationArtifact, TokenizationReviewArtifact
+from wenyan_models.artifacts.segment import SegmentArtifact, SegmentReview, TokenizationArtifact
 from wenyan_models.domain.enums import ComponentKind, ReviewStatus
 from wenyan_models.domain.ids import ContentHash, DocumentId, SegmentId, segment_id
 from wenyan_models.domain.results import JobFailure, JobOutcome, Promoted, Skipped
@@ -30,22 +26,14 @@ type SegmentJobPrepare = Callable[
     [JobContext, DocumentId, SegmentId, JobOptions],
     SegmentJobPrepareResult,
 ]
-type SegmentAnnotatePostProcess[T: BaseModel] = Callable[
+type SegmentAnnotatePostProcess[T: SegmentArtifact] = Callable[
     [T, JobContext, DocumentId, SegmentId, ContentHash],
     T,
 ]
-type SegmentReviewPostWrite[T: BaseModel] = Callable[
+type SegmentReviewPostWrite[T: SegmentReview] = Callable[
     [JobContext, DocumentId, SegmentId, T, JobOptions],
     None,
 ]
-
-
-class HasInputHash(Protocol):
-    input_hash: ContentHash
-
-
-class HasReviewStatus(Protocol):
-    status: ReviewStatus
 
 
 def resolve_segment_ids(
@@ -72,7 +60,7 @@ def load_approved_tokenization_review(
     *,
     missing_review_message: str,
     blocked_message: str,
-) -> JobFailure | tuple[TokenizationArtifact, TokenizationReviewArtifact]:
+) -> JobFailure | tuple[TokenizationArtifact, SegmentReview]:
     tokenization_ref = SegmentRef(SegmentArtifactKind.TOKENIZATION, document_id, segment_id_value)
     if not ctx.artifacts.exists(tokenization_ref):
         return JobFailure(code="missing-input", message="tokenization artifact is missing")
@@ -80,13 +68,13 @@ def load_approved_tokenization_review(
     review_ref = SegmentRef(SegmentArtifactKind.TOKENIZATION_REVIEW, document_id, segment_id_value)
     if not ctx.artifacts.exists(review_ref):
         return JobFailure(code="missing-input", message=missing_review_message)
-    review = ctx.artifacts.read(review_ref, TokenizationReviewArtifact)
+    review = ctx.artifacts.read(review_ref, SegmentReview)
     if review.status != ReviewStatus.APPROVED:
         return JobFailure(code="blocked-upstream", message=blocked_message)
     return tokenization, review
 
 
-def stamp_segment_metadata[T: BaseModel](
+def stamp_segment_metadata[T: SegmentArtifact](
     artifact: T,
     *,
     segment_id_value: SegmentId,
@@ -103,9 +91,9 @@ def stamp_segment_metadata[T: BaseModel](
     )
 
 
-def skip_if_current[T: BaseModel](
+def skip_if_current[T: SegmentArtifact](
     ctx: JobContext,
-    ref: ArtifactRef,
+    ref: SegmentRef,
     input_hash: ContentHash,
     model: type[T],
     options: JobOptions,
@@ -113,8 +101,7 @@ def skip_if_current[T: BaseModel](
     reason: str,
 ) -> Skipped | None:
     if ctx.artifacts.exists(ref) and not options.force:
-        existing = cast(HasInputHash, ctx.artifacts.read(ref, model))
-        if existing.input_hash == input_hash:
+        if ctx.artifacts.read(ref, model).input_hash == input_hash:
             return Skipped(reason=reason)
     return None
 
@@ -148,7 +135,7 @@ def run_segment_batch[T](
 
 
 @dataclass(frozen=True)
-class SegmentAnnotateJobSpec[T: BaseModel]:
+class SegmentAnnotateJobSpec[T: SegmentArtifact]:
     prompt_name: str
     output_model: type[T]
     artifact_kind: SegmentArtifactKind
@@ -159,7 +146,7 @@ class SegmentAnnotateJobSpec[T: BaseModel]:
 
 
 @dataclass(frozen=True)
-class SegmentReviewJobSpec[T: BaseModel]:
+class SegmentReviewJobSpec[T: SegmentReview]:
     prompt_name: str
     output_model: type[T]
     review_kind: SegmentArtifactKind
@@ -169,7 +156,7 @@ class SegmentReviewJobSpec[T: BaseModel]:
     post_write: SegmentReviewPostWrite[T] | None = None
 
 
-def run_segment_annotate_job[T: BaseModel](
+def run_segment_annotate_job[T: SegmentArtifact](
     ctx: JobContext,
     document_id: DocumentId,
     segment_id_value: SegmentId,
@@ -213,7 +200,7 @@ def run_segment_annotate_job[T: BaseModel](
     return Promoted(artifact=artifact)
 
 
-def run_segment_review_job[T: BaseModel](
+def run_segment_review_job[T: SegmentReview](
     ctx: JobContext,
     document_id: DocumentId,
     segment_id_value: SegmentId,
@@ -245,7 +232,7 @@ def run_segment_review_job[T: BaseModel](
     if options.dry_run:
         return Promoted(artifact=review)
     ctx.artifacts.write(review_ref, review, dry_run=False)
-    if cast(HasReviewStatus, review).status == ReviewStatus.REJECTED:
+    if review.status == ReviewStatus.REJECTED:
         return JobFailure(code="review-rejected", message=spec.reject_message)
     if spec.post_write is not None:
         spec.post_write(ctx, document_id, segment_id_value, review, options)

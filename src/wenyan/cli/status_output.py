@@ -7,13 +7,9 @@ from rich.console import Console
 from rich.table import Table
 from rich.text import Text
 
+from wenyan_models.artifacts.segment import NoteCitation
 from wenyan_models.domain.enums import ReviewStatus, UnitStatus
-from wenyan_models.show.segment import (
-    ContextNoteShowItem,
-    GrammarNoteShowItem,
-    NoteCitationShowItem,
-    SegmentShowView,
-)
+from wenyan_models.show.segment import ContextNoteShowItem, NoteShowItem, SegmentShowView
 from wenyan_models.status.chapter import ChapterStatus
 from wenyan_models.status.common import StatusCounts
 from wenyan_models.status.document import DocumentStatus
@@ -222,7 +218,7 @@ def _render_notes(console: Console, payload: SegmentShowView) -> None:
             _render_context_note(console, context_note)
 
 
-def _render_grammar_note(console: Console, note: GrammarNoteShowItem) -> None:
+def _render_grammar_note(console: Console, note: NoteShowItem) -> None:
     anchors = ", ".join(note.anchor_surfaces) if note.anchor_surfaces else "—"
     console.print(f"  [{anchors}]  {note.body}")
 
@@ -234,7 +230,7 @@ def _render_context_note(console: Console, note: ContextNoteShowItem) -> None:
         _render_citation(console, source)
 
 
-def _render_citation(console: Console, source: NoteCitationShowItem) -> None:
+def _render_citation(console: Console, source: NoteCitation) -> None:
     parts = [source.label]
     if source.url:
         parts.append(source.url)
@@ -255,14 +251,11 @@ def _render_reviews(console: Console, payload: SegmentShowView) -> None:
         for finding_line in review.finding_lines:
             console.print(f"  • {finding_line}", style=style)
         for item in review.source_grounding:
-            note_id = item.get("noteId")
-            supported = item.get("supported")
-            source_indexes = item.get("sourceIndexes")
-            if note_id is not None:
-                console.print(
-                    "    [dim]Grounding note "
-                    f"{note_id}: supported={supported}, sourceIndexes={source_indexes}[/dim]",
-                )
+            console.print(
+                "    [dim]Grounding note "
+                f"{item.note_id}: supported={item.supported}, "
+                f"sourceIndexes={item.source_indexes}[/dim]",
+            )
 
 
 def _render_components(console: Console, payload: SegmentShowView) -> None:

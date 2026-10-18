@@ -2,6 +2,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from wenyan_models.artifacts.segment import NoteCitation, SourceGroundingItem
 from wenyan_models.base import DEFAULT_ARTIFACT_CONFIG
 from wenyan_models.domain.enums import ComponentKind, ReviewStatus, UnitStatus
 from wenyan_models.domain.ids import (
@@ -24,16 +25,7 @@ class TokenGlossRow(BaseModel):
     decision: Literal["reuse-existing", "create-new"] | None = None
 
 
-class NoteCitationShowItem(BaseModel):
-    model_config = DEFAULT_ARTIFACT_CONFIG
-
-    label: str
-    excerpt: str
-    url: str = ""
-    accessed_at: str = Field(default="", alias="accessedAt")
-
-
-class GrammarNoteShowItem(BaseModel):
+class NoteShowItem(BaseModel):
     model_config = DEFAULT_ARTIFACT_CONFIG
 
     id: str
@@ -42,14 +34,8 @@ class GrammarNoteShowItem(BaseModel):
     body: str
 
 
-class ContextNoteShowItem(BaseModel):
-    model_config = DEFAULT_ARTIFACT_CONFIG
-
-    id: str
-    anchor_token_ids: tuple[str, ...] = Field(alias="anchorTokenIds")
-    anchor_surfaces: tuple[str, ...] = Field(alias="anchorSurfaces")
-    body: str
-    sources: tuple[NoteCitationShowItem, ...] = ()
+class ContextNoteShowItem(NoteShowItem):
+    sources: tuple[NoteCitation, ...] = ()
 
 
 class ReviewShowItem(BaseModel):
@@ -59,7 +45,7 @@ class ReviewShowItem(BaseModel):
     status: ReviewStatus
     findings: tuple[ReviewFinding, ...] = ()
     finding_lines: tuple[str, ...] = Field(default=(), alias="findingLines")
-    source_grounding: tuple[dict[str, object], ...] = Field(default=(), alias="sourceGrounding")
+    source_grounding: tuple[SourceGroundingItem, ...] = Field(default=(), alias="sourceGrounding")
 
 
 class SegmentShowView(BaseModel):
@@ -76,7 +62,7 @@ class SegmentShowView(BaseModel):
     text: str
     status: UnitStatus
     tokens: tuple[TokenGlossRow, ...] = ()
-    grammar_notes: tuple[GrammarNoteShowItem, ...] = Field(default=(), alias="grammarNotes")
+    grammar_notes: tuple[NoteShowItem, ...] = Field(default=(), alias="grammarNotes")
     context_notes: tuple[ContextNoteShowItem, ...] = Field(default=(), alias="contextNotes")
     reviews: tuple[ReviewShowItem, ...] = ()
     components: tuple[ComponentStatusItem, ...] = ()

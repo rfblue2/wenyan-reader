@@ -22,7 +22,7 @@ class SegmentLocalContext(BaseModel):
     next_segment: str | None = Field(default=None, alias="nextSegment")
 
 
-class GrammarNoteItem(BaseModel):
+class NoteItem(BaseModel):
     model_config = DEFAULT_ARTIFACT_CONFIG
 
     id: str
@@ -39,12 +39,7 @@ class NoteCitation(BaseModel):
     accessed_at: str = Field(default="", alias="accessedAt")
 
 
-class ContextNoteItem(BaseModel):
-    model_config = DEFAULT_ARTIFACT_CONFIG
-
-    id: str
-    anchor_token_ids: tuple[str, ...] = Field(alias="anchorTokenIds")
-    body: str
+class ContextNoteItem(NoteItem):
     sources: tuple[NoteCitation, ...] = ()
 
 
@@ -54,6 +49,20 @@ class SourceGroundingItem(BaseModel):
     note_id: str = Field(alias="noteId")
     supported: bool
     source_indexes: tuple[int, ...] = Field(default=(), alias="sourceIndexes")
+
+
+class SegmentArtifact(BaseModel):
+    model_config = DEFAULT_ARTIFACT_CONFIG
+
+    segment_id: SegmentIdField = Field(alias="segmentId")
+    model: str
+    input_hash: ContentHashField = Field(alias="inputHash")
+    attempts: int
+
+
+class SegmentReview(SegmentArtifact):
+    status: ReviewStatus
+    findings: tuple[ReviewFinding, ...] = ()
 
 
 class SegmentInput(BaseModel):
@@ -79,26 +88,9 @@ class TokenItem(BaseModel):
     end: int
 
 
-class TokenizationArtifact(BaseModel):
-    model_config = DEFAULT_ARTIFACT_CONFIG
-
-    segment_id: SegmentIdField = Field(alias="segmentId")
-    model: str
-    input_hash: ContentHashField = Field(alias="inputHash")
-    attempts: int
+class TokenizationArtifact(SegmentArtifact):
     text: str
     tokens: tuple[TokenItem, ...]
-
-
-class TokenizationReviewArtifact(BaseModel):
-    model_config = DEFAULT_ARTIFACT_CONFIG
-
-    segment_id: SegmentIdField = Field(alias="segmentId")
-    model: str
-    input_hash: ContentHashField = Field(alias="inputHash")
-    attempts: int
-    status: ReviewStatus
-    findings: tuple[ReviewFinding, ...] = ()
 
 
 class GlossEntry(BaseModel):
@@ -118,67 +110,19 @@ class GlossDecision(BaseModel):
     decision: Literal["reuse-existing", "create-new"]
 
 
-class GlossesArtifact(BaseModel):
-    model_config = DEFAULT_ARTIFACT_CONFIG
-
-    segment_id: SegmentIdField = Field(alias="segmentId")
-    model: str
-    input_hash: ContentHashField = Field(alias="inputHash")
-    attempts: int
+class GlossesArtifact(SegmentArtifact):
     gloss_decisions: tuple[GlossDecision, ...] = Field(default=(), alias="glossDecisions")
     new_gloss_ids: tuple[str, ...] = Field(default=(), alias="newGlossIds")
     new_glosses: tuple[GlossEntry, ...] = Field(default=(), alias="newGlosses")
 
 
-class GlossReviewArtifact(BaseModel):
-    model_config = DEFAULT_ARTIFACT_CONFIG
-
-    segment_id: SegmentIdField = Field(alias="segmentId")
-    model: str
-    input_hash: ContentHashField = Field(alias="inputHash")
-    attempts: int
-    status: ReviewStatus
-    findings: tuple[ReviewFinding, ...] = ()
+class GrammarNotesArtifact(SegmentArtifact):
+    grammar_notes: tuple[NoteItem, ...] = Field(default=(), alias="grammarNotes")
 
 
-class GrammarNotesArtifact(BaseModel):
-    model_config = DEFAULT_ARTIFACT_CONFIG
-
-    segment_id: SegmentIdField = Field(alias="segmentId")
-    model: str
-    input_hash: ContentHashField = Field(alias="inputHash")
-    attempts: int
-    grammar_notes: tuple[GrammarNoteItem, ...] = Field(default=(), alias="grammarNotes")
-
-
-class GrammarReviewArtifact(BaseModel):
-    model_config = DEFAULT_ARTIFACT_CONFIG
-
-    segment_id: SegmentIdField = Field(alias="segmentId")
-    model: str
-    input_hash: ContentHashField = Field(alias="inputHash")
-    attempts: int
-    status: ReviewStatus
-    findings: tuple[ReviewFinding, ...] = ()
-
-
-class ContextNotesArtifact(BaseModel):
-    model_config = DEFAULT_ARTIFACT_CONFIG
-
-    segment_id: SegmentIdField = Field(alias="segmentId")
-    model: str
-    input_hash: ContentHashField = Field(alias="inputHash")
-    attempts: int
+class ContextNotesArtifact(SegmentArtifact):
     context_notes: tuple[ContextNoteItem, ...] = Field(default=(), alias="contextNotes")
 
 
-class ContextReviewArtifact(BaseModel):
-    model_config = DEFAULT_ARTIFACT_CONFIG
-
-    segment_id: SegmentIdField = Field(alias="segmentId")
-    model: str
-    input_hash: ContentHashField = Field(alias="inputHash")
-    attempts: int
-    status: ReviewStatus
-    findings: tuple[ReviewFinding, ...] = ()
+class ContextReviewArtifact(SegmentReview):
     source_grounding: tuple[SourceGroundingItem, ...] = Field(default=(), alias="sourceGrounding")
