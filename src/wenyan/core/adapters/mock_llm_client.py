@@ -8,9 +8,8 @@ from pydantic import BaseModel, TypeAdapter
 from wenyan.core.ports.llm_client import LLMClient, LLMParseError, StructuredPrompt
 from wenyan_models.artifacts.paragraph import ParagraphDraft, ParagraphDraftSegment
 from wenyan_models.artifacts.segment import TokenizationArtifact
-from wenyan_models.artifacts.structure import ChapterProposal, ChapterProposalItem, ParagraphProposal, ParagraphProposalItem
+from wenyan_models.artifacts.structure import ParagraphProposal, ParagraphProposalItem
 from wenyan_models.domain.ids import (
-    chapter_id,
     paragraph_id,
     segment_id,
 )
@@ -27,8 +26,6 @@ class MockLLMClient(LLMClient):
         model: type[T],
     ) -> T:
         name = prompt.template_name
-        if name == "chapter-structure":
-            return self._chapter_proposal(prompt, model)
         if name == "paragraph-structure":
             return self._paragraph_proposal(prompt, model)
         if name == "paragraph-segmentation":
@@ -45,45 +42,11 @@ class MockLLMClient(LLMClient):
             return self._grammar_notes(prompt, model)
         if name == "segment-grammar-review":
             return self._grammar_review(prompt, model)
-        if name == "segment-context":
-            return self._context_notes(prompt, model)
-        if name == "segment-context-review":
-            return self._context_review(prompt, model)
         fixture_path = self._fixture_dir / f"{name}.json"
         if not fixture_path.is_file():
             raise LLMParseError(f"no fixture for prompt template: {name}")
         payload = json.loads(fixture_path.read_text(encoding="utf-8"))
         return TypeAdapter(model).validate_python(payload)
-
-    def _chapter_proposal[T: BaseModel](self, prompt: StructuredPrompt, model: type[T]) -> T:
-        text = prompt.context_value("document_text")
-        chapters: list[ChapterProposalItem] = []
-        for match in re.finditer(r"(?m)^(.+第[一二三四五六七八九十百千]+)$", text):
-            start = match.start()
-            title = match.group(1)
-            chapters.append(
-                ChapterProposalItem(
-                    id=chapter_id(str(uuid.uuid4())),
-                    title=title,
-                    start=start,
-                    end=start,
-                    rationale="source heading",
-                ),
-            )
-        for index, chapter in enumerate(chapters):
-            end = chapters[index + 1].start if index + 1 < len(chapters) else len(text)
-            chapters[index] = chapter.model_copy(update={"end": end})
-        proposal = ChapterProposal.model_validate(
-            {
-                "documentId": prompt.context_value("document_id"),
-                "model": "mock",
-                "inputHash": prompt.context_value("input_hash"),
-                "attempts": 1,
-                "sourceHash": prompt.context_value("source_hash"),
-                "chapters": [chapter.model_dump(by_alias=True) for chapter in chapters],
-            },
-        )
-        return proposal  # type: ignore[return-value]
 
     def _paragraph_proposal[T: BaseModel](self, prompt: StructuredPrompt, model: type[T]) -> T:
         text = prompt.context_value("chapter_text")
@@ -237,23 +200,6 @@ class MockLLMClient(LLMClient):
 
     def _grammar_review[T: BaseModel](self, prompt: StructuredPrompt, model: type[T]) -> T:
         fixture_path = self._fixture_dir / "segment-grammar-review.json"
-        payload = json.loads(fixture_path.read_text(encoding="utf-8"))
-        payload["segmentId"] = prompt.context_value("segment_id")
-        payload["inputHash"] = prompt.context_value("review_input_hash")
-        return TypeAdapter(model).validate_python(payload)
-
-    def _context_notes[T: BaseModel](self, prompt: StructuredPrompt, model: type[T]) -> T:
-        payload = {
-            "segmentId": prompt.context_value("segment_id"),
-            "model": "mock",
-            "inputHash": prompt.context_value("input_hash"),
-            "attempts": 1,
-            "contextNotes": [],
-        }
-        return TypeAdapter(model).validate_python(payload)
-
-    def _context_review[T: BaseModel](self, prompt: StructuredPrompt, model: type[T]) -> T:
-        fixture_path = self._fixture_dir / "segment-context-review.json"
         payload = json.loads(fixture_path.read_text(encoding="utf-8"))
         payload["segmentId"] = prompt.context_value("segment_id")
         payload["inputHash"] = prompt.context_value("review_input_hash")

@@ -70,9 +70,6 @@ class YamlSourceRegistry(SourceRegistry):
             raise ValueError(f"invalid document.yaml for slug: {slug_value}")
         return DocumentYaml.model_validate(loaded)
 
-    def read_source_text(self, slug_value: Slug) -> str:
-        return self.source_text_path(slug_value).read_text(encoding="utf-8")
-
     def source_text_path(self, slug_value: Slug) -> Path:
         path = self._repo_root / "sources" / "documents" / str(slug_value) / "source.txt"
         if not path.is_file():

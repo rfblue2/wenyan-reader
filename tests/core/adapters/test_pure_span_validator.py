@@ -1,17 +1,17 @@
 
 from wenyan.core.adapters.pure_span_validator import PureSpanValidator
 from wenyan_models.domain.enums import ValidationStatus
-from wenyan_models.domain.ids import chapter_id, paragraph_id, segment_id
-from wenyan_models.domain.spans import ChapterSpan, ParagraphSpan, SegmentShell
+from wenyan_models.domain.ids import paragraph_id
+from wenyan_models.domain.spans import ParagraphSpan
 
 
 def test_ordered_spans_pass() -> None:
     validator = PureSpanValidator()
-    result = validator.validate_chapters(
+    result = validator.validate_paragraphs(
         6,
         [
-            ChapterSpan(id=chapter_id("c1"), title="one", start=0, end=3),
-            ChapterSpan(id=chapter_id("c2"), title="two", start=3, end=6),
+            ParagraphSpan(id=paragraph_id("p1"), start=0, end=3),
+            ParagraphSpan(id=paragraph_id("p2"), start=3, end=6),
         ],
     )
     assert result.status == ValidationStatus.PASSED
@@ -29,11 +29,11 @@ def test_gap_fails() -> None:
 
 def test_overlap_fails() -> None:
     validator = PureSpanValidator()
-    result = validator.validate_segments(
+    result = validator.validate_paragraphs(
         6,
         [
-            SegmentShell(id=segment_id("s1"), start=0, end=4),
-            SegmentShell(id=segment_id("s2"), start=3, end=6),
+            ParagraphSpan(id=paragraph_id("p1"), start=0, end=4),
+            ParagraphSpan(id=paragraph_id("p2"), start=3, end=6),
         ],
     )
     assert result.status == ValidationStatus.FAILED

@@ -22,9 +22,6 @@ def artifact_path(repo_root: Path, ref: ArtifactRef) -> Path:
             return root / "structure" / "chapter-proposal.json"
         case ArtifactKind.CHAPTER_PROPOSAL_VALIDATION:
             return root / "structure" / "chapter-proposal.validation.json"
-        case ArtifactKind.CHAPTER_SUMMARY:
-            chapter_id = _require(ref.chapter_id, ref.kind, "chapter_id")
-            return root / "structure" / "chapters" / str(chapter_id) / "summary.json"
         case ArtifactKind.PARAGRAPH_PROPOSAL:
             chapter_id = _require(ref.chapter_id, ref.kind, "chapter_id")
             return root / "structure" / "chapters" / str(chapter_id) / "paragraph-proposal.json"
@@ -43,9 +40,6 @@ def artifact_path(repo_root: Path, ref: ArtifactRef) -> Path:
         case ArtifactKind.PARAGRAPH_DRAFT_VALIDATION:
             paragraph_id = _require(ref.paragraph_id, ref.kind, "paragraph_id")
             return root / "jobs" / "paragraphs" / str(paragraph_id) / "validation.json"
-        case ArtifactKind.PARAGRAPH_DRAFT_REVIEW:
-            paragraph_id = _require(ref.paragraph_id, ref.kind, "paragraph_id")
-            return root / "jobs" / "paragraphs" / str(paragraph_id) / "review.json"
         case ArtifactKind.SEGMENT_INPUT:
             segment_id = _require(ref.segment_id, ref.kind, "segment_id")
             return root / "jobs" / "segments" / str(segment_id) / "input.json"
@@ -73,10 +67,6 @@ def artifact_path(repo_root: Path, ref: ArtifactRef) -> Path:
         case ArtifactKind.CONTEXT_REVIEW:
             segment_id = _require(ref.segment_id, ref.kind, "segment_id")
             return root / "jobs" / "segments" / str(segment_id) / "context-review.json"
-        case ArtifactKind.ENTITY_INDEX:
-            return root / "indexes" / "entity-index.json"
-        case ArtifactKind.TERM_INDEX:
-            return root / "indexes" / "term-index.json"
         case ArtifactKind.GLOSSARY_DRAFT:
             return root / "indexes" / "glossary-draft.json"
         case ArtifactKind.PARAGRAPH_ASSEMBLY_PACKAGE:
