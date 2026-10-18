@@ -12,7 +12,7 @@ from wenyan.jobs.review_segment_tokenization import run_review_segment_tokenizat
 from wenyan.jobs.split_paragraphs import run_split_paragraphs
 from wenyan.jobs.split_segments import run_split_segments
 from wenyan.jobs.tokenize_segment import run_tokenize_segment
-from wenyan_models.artifacts.segment import GrammarNotesArtifact, GrammarReviewArtifact
+from wenyan_models.artifacts.segment import GrammarNotesArtifact, SegmentReview
 from wenyan_models.domain.enums import ReviewStatus
 from wenyan_models.domain.results import JobFailure, Promoted, Skipped, outcome_exit_code
 from wenyan_models.domain.targets import single_segment_target
@@ -95,7 +95,7 @@ def test_review_segment_grammar_approves(tmp_workspace: Path) -> None:
     assert isinstance(outcome, Promoted)
     review = ctx.artifacts.read(
         SegmentRef(SegmentArtifactKind.GRAMMAR_REVIEW, doc_id, segment_id_value),
-        GrammarReviewArtifact,
+        SegmentReview,
     )
     assert review.status == ReviewStatus.APPROVED
 

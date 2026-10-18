@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 from wenyan.core.ports.artifact_ref import SegmentArtifactKind, SegmentRef
 from wenyan.core.ports.artifact_store import ArtifactStore
+from wenyan.core.run.segment_pipeline import SEGMENT_STAGES
 from wenyan_models.artifacts.paragraph import ParagraphDraft
 from wenyan_models.artifacts.segment import (
     ContextNotesArtifact,
@@ -35,14 +36,11 @@ def load_segment_outputs(
     glosses_ref = SegmentRef(SegmentArtifactKind.GLOSSES, document_id, segment_id)
     grammar_notes_ref = SegmentRef(SegmentArtifactKind.GRAMMAR_NOTES, document_id, segment_id)
     context_notes_ref = SegmentRef(SegmentArtifactKind.CONTEXT_NOTES, document_id, segment_id)
-    for ref, label in (
-        (tokenization_ref, "tokenization"),
-        (glosses_ref, "glosses"),
-        (grammar_notes_ref, "grammar-notes"),
-        (context_notes_ref, "context-notes"),
-    ):
-        if not artifacts.exists(ref):
-            raise MissingSegmentOutputError(f"{label} artifact is missing for segment {segment_id}")
+    for stage in SEGMENT_STAGES:
+        if not artifacts.exists(SegmentRef(stage.draft_kind, document_id, segment_id)):
+            raise MissingSegmentOutputError(
+                f"{stage.draft_kind} artifact is missing for segment {segment_id}",
+            )
     tokenization = artifacts.read(tokenization_ref, TokenizationArtifact)
     glosses = artifacts.read(glosses_ref, GlossesArtifact)
     grammar_notes = artifacts.read(grammar_notes_ref, GrammarNotesArtifact)

@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from wenyan_models.artifacts.paragraph import ParagraphDraft
-from wenyan_models.artifacts.segment import ContextNoteItem, GrammarNoteItem, NoteCitation
+from wenyan_models.artifacts.segment import ContextNoteItem, NoteCitation, NoteItem
 from wenyan_models.domain.ids import SegmentId, segment_id
 from wenyan_models.reader.paragraph import (
     ParagraphPackage,
@@ -54,7 +54,7 @@ def _compile_segment(output: CompiledSegmentInputs) -> ReaderSegment:
     )
 
 
-def _grammar_notes_to_reader(notes: tuple[GrammarNoteItem, ...]) -> tuple[ReaderNote, ...]:
+def _grammar_notes_to_reader(notes: tuple[NoteItem, ...]) -> tuple[ReaderNote, ...]:
     return tuple(
         ReaderNote(
             id=note.id,

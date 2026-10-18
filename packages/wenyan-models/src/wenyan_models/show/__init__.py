@@ -1,7 +1,6 @@
 from wenyan_models.show.segment import (
     ContextNoteShowItem,
-    GrammarNoteShowItem,
-    NoteCitationShowItem,
+    NoteShowItem,
     ReviewShowItem,
     SegmentShowView,
     TokenGlossRow,
@@ -9,8 +8,7 @@ from wenyan_models.show.segment import (
 
 __all__ = [
     "ContextNoteShowItem",
-    "GrammarNoteShowItem",
-    "NoteCitationShowItem",
+    "NoteShowItem",
     "ReviewShowItem",
     "SegmentShowView",
     "TokenGlossRow",

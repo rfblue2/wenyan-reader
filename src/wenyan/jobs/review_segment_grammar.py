@@ -5,8 +5,8 @@ from wenyan.jobs.segment_runner import SegmentReviewJobSpec, run_segment_review_
 from wenyan_models.artifacts.segment import (
     GlossesArtifact,
     GrammarNotesArtifact,
-    GrammarReviewArtifact,
     SegmentInput,
+    SegmentReview,
     TokenizationArtifact,
 )
 from wenyan_models.domain.ids import ContentHash, DocumentId, SegmentId
@@ -53,7 +53,7 @@ def _prepare_grammar_review(
 
 _GRAMMAR_REVIEW_SPEC = SegmentReviewJobSpec(
     prompt_name="segment-grammar-review",
-    output_model=GrammarReviewArtifact,
+    output_model=SegmentReview,
     review_kind=SegmentArtifactKind.GRAMMAR_REVIEW,
     skip_reason="grammar review is current",
     reject_message="grammar review rejected",
@@ -66,7 +66,7 @@ def run_review_segment_grammar(
     document_id: DocumentId,
     segment_id_value: SegmentId,
     options: JobOptions,
-) -> JobOutcome[GrammarReviewArtifact]:
+) -> JobOutcome[SegmentReview]:
     return run_segment_review_job(
         ctx,
         document_id,

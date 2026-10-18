@@ -10,7 +10,7 @@ from wenyan_models.artifacts.glossary import GlossaryDraft
 from wenyan_models.artifacts.segment import (
     GlossEntry,
     GlossesArtifact,
-    GlossReviewArtifact,
+    SegmentReview,
     TokenizationArtifact,
 )
 from wenyan_models.domain.enums import ReviewStatus
@@ -133,7 +133,7 @@ def _gloss_review_is_approved(
     review_ref = SegmentRef(SegmentArtifactKind.GLOSS_REVIEW, document_id, segment_id_value)
     if not artifacts.exists(review_ref):
         return False
-    review = artifacts.read(review_ref, GlossReviewArtifact)
+    review = artifacts.read(review_ref, SegmentReview)
     return review.status == ReviewStatus.APPROVED
 
 

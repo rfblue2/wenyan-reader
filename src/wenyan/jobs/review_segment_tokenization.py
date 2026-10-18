@@ -2,7 +2,7 @@ from wenyan.core.hashing import sha256_text
 from wenyan.core.ports.artifact_ref import SegmentArtifactKind, SegmentRef
 from wenyan.jobs.context import JobContext, JobOptions
 from wenyan.jobs.segment_runner import SegmentReviewJobSpec, run_segment_review_job
-from wenyan_models.artifacts.segment import TokenizationArtifact, TokenizationReviewArtifact
+from wenyan_models.artifacts.segment import SegmentReview, TokenizationArtifact
 from wenyan_models.domain.ids import ContentHash, DocumentId, SegmentId
 from wenyan_models.domain.results import JobFailure, JobOutcome
 
@@ -29,7 +29,7 @@ def _prepare_tokenization_review(
 
 _TOKENIZATION_REVIEW_SPEC = SegmentReviewJobSpec(
     prompt_name="segment-tokenization-review",
-    output_model=TokenizationReviewArtifact,
+    output_model=SegmentReview,
     review_kind=SegmentArtifactKind.TOKENIZATION_REVIEW,
     skip_reason="tokenization review is current",
     reject_message="tokenization review rejected",
@@ -42,7 +42,7 @@ def run_review_segment_tokenization(
     document_id: DocumentId,
     segment_id_value: SegmentId,
     options: JobOptions,
-) -> JobOutcome[TokenizationReviewArtifact]:
+) -> JobOutcome[SegmentReview]:
     return run_segment_review_job(
         ctx,
         document_id,

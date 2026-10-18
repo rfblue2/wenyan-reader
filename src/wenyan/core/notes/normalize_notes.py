@@ -1,13 +1,13 @@
-from wenyan_models.artifacts.segment import GrammarNoteItem, TokenizationArtifact
+from wenyan_models.artifacts.segment import NoteItem, TokenizationArtifact
 
 
 def normalize_grammar_notes(
-    notes: tuple[GrammarNoteItem, ...],
+    notes: tuple[NoteItem, ...],
     tokenization: TokenizationArtifact,
-) -> tuple[GrammarNoteItem, ...]:
+) -> tuple[NoteItem, ...]:
     token_ids = {token.id for token in tokenization.tokens}
     seen_note_ids: set[str] = set()
-    normalized: list[GrammarNoteItem] = []
+    normalized: list[NoteItem] = []
     for note in notes:
         if not note.body.strip() or not note.anchor_token_ids:
             continue
