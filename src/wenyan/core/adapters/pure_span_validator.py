@@ -2,31 +2,17 @@ from collections.abc import Sequence
 
 from wenyan.core.ports.span_validator import SpanValidator
 from wenyan_models.domain.enums import ValidationStatus
-from wenyan_models.domain.spans import ChapterSpan, ParagraphSpan, SegmentShell, TextSpan
+from wenyan_models.domain.spans import ParagraphSpan, TextSpan
 from wenyan_models.domain.validation import CheckResult, SpanValidationResult
 
 
 class PureSpanValidator(SpanValidator):
-    def validate_chapters(
-        self,
-        text_length: int,
-        chapters: Sequence[ChapterSpan],
-    ) -> SpanValidationResult:
-        return _validate_spans(text_length, chapters)
-
     def validate_paragraphs(
         self,
         text_length: int,
         paragraphs: Sequence[ParagraphSpan],
     ) -> SpanValidationResult:
         return _validate_spans(text_length, paragraphs)
-
-    def validate_segments(
-        self,
-        text_length: int,
-        segments: Sequence[SegmentShell],
-    ) -> SpanValidationResult:
-        return _validate_spans(text_length, segments)
 
 
 def _validate_spans(text_length: int, spans: Sequence[TextSpan]) -> SpanValidationResult:

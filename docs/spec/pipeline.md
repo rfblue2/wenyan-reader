@@ -32,7 +32,7 @@ flowchart LR
 | Assembly | paragraph | code | `assemble-paragraph` | — |
 | Packaging | document | code | `package-document` | — |
 
-Prompts live in `prompts/`. `segment-context*.md` prompts exist but are unused while context jobs are stubs.
+Prompts live in `prompts/`. Context jobs are stubs and have no prompts.
 
 Deterministic code owns: normalization, document ids, hashes, span checks, punctuation filtering, gloss dedup, note normalization, assembly, packaging, and status. The LLM mints chapter-internal ids (paragraphs, segments, tokens, notes, glosses).
 

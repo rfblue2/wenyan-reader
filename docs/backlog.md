@@ -24,7 +24,7 @@ When asked what to work on next, start here and cross-check against the tree (`s
 
 | # | Gap | P | Notes |
 |---|---|---|---|
-| G-C1 | Segment reconstruction not checked at split | P1 | `split-segments` writes `passed` with no checks; `PureSpanValidator.validate_segments` is unused. |
+| G-C1 | Segment reconstruction not checked at split | P1 | `split-segments` writes `passed` with no checks; segment spans are never validated for contiguity or coverage. |
 | G-C2 | Token offsets never checked | P1 | Verify `surface == text[start:end]`, order, non-overlap, and coverage of non-punctuation characters at promote time. |
 | G-C3 | No staleness for segment drafts and reviews | P1 | Status ignores `inputHash` except for assembly. Hand-edited drafts leave approved reviews "complete". Rejected review with unchanged input skips with exit 0. [Proposal](proposals/artifact-graph-integrity.md). |
 | G-C4 | No downstream invalidation | P2 | Re-tokenizing leaves glosses and grammar complete; deleting a draft shows its review `pending`, not stale. [Proposal](proposals/artifact-graph-integrity.md). |
@@ -32,7 +32,7 @@ When asked what to work on next, start here and cross-check against the tree (`s
 | G-C6 | LLM-minted ids | P2 | Segment ids collide across paragraphs (on disk: `a1b2c3d4-…` in two drafts; `a8c3d5e7-…4d5e6` is not a UUID). Mint ids in code; keep ids stable for unchanged spans. |
 | G-C7 | Glossary draft accumulates orphans | P2 | Gloss review merges on approval and never removes. Build at assembly/package time from approved artifacts; filter `glosses/index.json` to reachable entries. |
 | G-C8 | Paragraph context notes unvalidated | P2 | Raw dicts with mixed `sources`; bad anchors raise at assembly. Type them and validate at split. |
-| G-C9 | Chapter proposal not validated by code | P2 | `validate_chapters` unused; validation file is hand-written; `split-paragraphs` does not gate on it. Paragraph span order is not enforced (sorted first). |
+| G-C9 | Chapter proposal not validated by code | P2 | No code checks chapter span coverage or contiguity; validation file is hand-written; `split-paragraphs` does not gate on it. Paragraph span order is not enforced (sorted first). |
 | G-C10 | Reader package checks are shallow | P3 | No on-disk path/reachability checks, no document-wide id uniqueness; old `content/` files never removed. |
 | G-C11 | Citation fields dropped | P3 | `url`/`accessedAt` lost at assembly. |
 | G-C12 | Normalization policies not applied | P3 | `punctuationPolicy`, `encoding`, and `sourceHeadings` in `document.yaml` are recorded only. |
@@ -59,11 +59,9 @@ When asked what to work on next, start here and cross-check against the tree (`s
 | H1 | **Audit and trim agent skills** | P2 | Skills moved from `.cursor/skills/` as-is. Remove duplication with the [CLI](spec/cli.md) and [Editor Guide](product/editor-guide.md); verify workflows. `preparing-source-structure` says to write `promptVersion`, which the schema rejects. |
 | H2 | **DRY and simplify** | P2 | Reduce duplication in code and workflow. |
 | H3 | Re-audit architecture and code | P3 | Redo the removed audits once the gaps above are triaged. |
-| H4 | Stale data on disk | P3 | Two `jobs/assembly/*/review.json` files from the removed assembly review. |
-| H5 | Dead code | P3 | Unused `prompts/segment-context*.md`, mock `chapter-structure` branch, `normalize_context_notes`, unused `chapter_summary`/index/paragraph-review refs. |
 | H6 | Code quality | P3 | Shared base for review artifact models; typed construction in `core/status/derivation.py`; wire `StatusReader`/`GraphValidator` through `JobContext`. |
 | H7 | Missing tests | P3 | `split-segments` reconstruction failure; stale approved review; golden-file status payload tests. |
 | H8 | Layering deviations | P3 | See [Coding Style — Known deviations](architecture/coding-style.md#known-deviations). |
 | H9 | JSON Schema export | P3 | Export schemas from `wenyan-models` for the web app and non-Python validation. |
-| H10 | CLI output consolidation | P3 | One mechanism for shared flags; route all rendering through `cli/output.py` (Rich vs JSON; currently unused); map exit codes in one place instead of ad-hoc `typer.Exit`. |
+| H10 | CLI output consolidation | P3 | One mechanism for shared flags; route all rendering through one output module (Rich vs JSON); map exit codes in one place instead of ad-hoc `typer.Exit`. |
 | H11 | Format check in CI | P3 | CI runs `ruff check` only; add `ruff format --check`. |

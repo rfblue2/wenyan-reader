@@ -5,11 +5,10 @@ from wenyan.core.adapters.hashing import sha256_file
 from wenyan.core.adapters.paths import artifact_path, document_root, normalized_text_path
 from wenyan.core.adapters.streaming_normalizer import normalize_source_to_file
 from wenyan.core.adapters.text_slice import read_text_slice
-from wenyan.core.ports.artifact_ref import ArtifactRef, normalized_document_ref
+from wenyan.core.ports.artifact_ref import normalized_document_ref
 from wenyan.core.ports.artifact_store import ArtifactStore
 from wenyan.core.ports.normalized_text_store import NormalizedTextStore
 from wenyan_models.artifacts.normalized import NormalizedDocument
-from wenyan_models.domain.enums import ArtifactKind
 from wenyan_models.domain.ids import ContentHash, DocumentId
 from wenyan_models.sources import DocumentYaml
 
@@ -18,12 +17,6 @@ class FilesystemNormalizedTextStore(NormalizedTextStore):
     def __init__(self, repo_root: Path, artifacts: ArtifactStore) -> None:
         self._repo_root = repo_root
         self._artifacts = artifacts
-
-    def text_path(self, document_id: DocumentId) -> Path:
-        return normalized_text_path(self._repo_root, document_id)
-
-    def character_count(self, document_id: DocumentId) -> int:
-        return self._manifest(document_id).character_count
 
     def read_slice(self, document_id: DocumentId, start: int, end: int) -> str:
         manifest = self._manifest(document_id)
@@ -86,11 +79,4 @@ class FilesystemNormalizedTextStore(NormalizedTextStore):
         os.replace(temp_path, final_path)
 
     def sidecar_exists(self, document_id: DocumentId) -> bool:
-        return self.text_path(document_id).is_file()
-
-    def manifest_ref(self, document_id: DocumentId) -> ArtifactRef:
-        return normalized_document_ref(document_id)
-
-    @staticmethod
-    def artifact_kind() -> ArtifactKind:
-        return ArtifactKind.NORMALIZED_DOCUMENT
+        return normalized_text_path(self._repo_root, document_id).is_file()
