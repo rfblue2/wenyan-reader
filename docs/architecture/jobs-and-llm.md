@@ -22,18 +22,18 @@ The six LLM segment jobs share `jobs/segment_runner.py`. A job is a spec plus a 
 
 | Spec | Fields |
 |---|---|
-| `SegmentAnnotateJobSpec` | prompt name, output model, artifact ref, component kind, optional `post_process` (punctuation drop, gloss dedup, note normalization) |
-| `SegmentReviewJobSpec` | prompt name, output model, review ref, reject message, optional `post_write` (glossary merge) |
+| `SegmentAnnotateJobSpec` | prompt name, output model, optional `post_process` (punctuation drop, gloss dedup, note normalization) |
+| `SegmentReviewJobSpec` | prompt name, reject message, optional `post_write` (glossary merge) |
 
 Runner steps:
 
-1. `prepare` loads upstream artifacts, checks prerequisites (`blocked-upstream`), and returns `(input_hash, prompt_context)`.
-2. `skip_if_current`: return `Skipped` if the existing artifact has the same `inputHash` and not `--force`.
+1. `prepare` loads upstream artifacts, checks prerequisites (`blocked-upstream`), and returns the input hash and prompt context.
+2. Return `Skipped` if the existing artifact has the same `inputHash` and not `--force`.
 3. Render the prompt and call `ctx.llm.complete_model(prompt, OutputModel)`.
-4. Post-process; stamp `segmentId`, `inputHash`, `model`, `attempts=1` (overwriting model-echoed values).
+4. Stamp `segmentId`, `inputHash`, `model`, `attempts=1` (overwriting model-echoed values); post-process.
 5. Unless `--dry-run`: annotate jobs delete the paired review, then write. Review jobs write, then return `JobFailure("review-rejected")` if rejected, else run `post_write`.
 
-`run_segment_batch` resolves `--paragraph` to the draft's segment ids and runs them in order, stopping at the first failure.
+The runner resolves `--paragraph` to the draft's segment ids and runs them in order, stopping at the first failure.
 
 `jobs/run_preprocess.py` chains components using the fixed order in `core/run/segment_pipeline.py` and the work queue in `core/run/work_queue.py`.
 

@@ -13,7 +13,7 @@ from wenyan.jobs.split_paragraphs import run_split_paragraphs
 from wenyan.jobs.split_segments import run_split_segments
 from wenyan.jobs.tokenize_segment import run_tokenize_segment
 from wenyan_models.domain.results import Promoted
-from wenyan_models.domain.targets import single_segment_target
+from wenyan_models.domain.targets import SingleSegment
 from conftest import install_sunzi_chapter_proposal
 
 
@@ -32,9 +32,9 @@ def _prepare_segment(tmp_workspace: Path) -> tuple[object, object, object]:
 
 def test_tokenize_segment_deletes_tokenization_review_on_rerun(tmp_workspace: Path) -> None:
     ctx, doc_id, segment_id_value = _prepare_segment(tmp_workspace)
-    target = single_segment_target(segment_id_value)
+    target = SingleSegment(segment_id=segment_id_value)
     run_tokenize_segment(ctx, doc_id, target, JobOptions())
-    run_review_segment_tokenization(ctx, doc_id, segment_id_value, JobOptions())
+    run_review_segment_tokenization(ctx, doc_id, SingleSegment(segment_id=segment_id_value), JobOptions())
     review_ref = SegmentRef(SegmentArtifactKind.TOKENIZATION_REVIEW, doc_id, segment_id_value)
     assert ctx.artifacts.exists(review_ref)
 
@@ -45,11 +45,11 @@ def test_tokenize_segment_deletes_tokenization_review_on_rerun(tmp_workspace: Pa
 
 def test_gloss_segment_deletes_gloss_review_on_rerun(tmp_workspace: Path) -> None:
     ctx, doc_id, segment_id_value = _prepare_segment(tmp_workspace)
-    target = single_segment_target(segment_id_value)
+    target = SingleSegment(segment_id=segment_id_value)
     run_tokenize_segment(ctx, doc_id, target, JobOptions())
-    run_review_segment_tokenization(ctx, doc_id, segment_id_value, JobOptions())
+    run_review_segment_tokenization(ctx, doc_id, SingleSegment(segment_id=segment_id_value), JobOptions())
     run_gloss_segment(ctx, doc_id, target, JobOptions())
-    run_review_segment_gloss(ctx, doc_id, segment_id_value, JobOptions())
+    run_review_segment_gloss(ctx, doc_id, SingleSegment(segment_id=segment_id_value), JobOptions())
     review_ref = SegmentRef(SegmentArtifactKind.GLOSS_REVIEW, doc_id, segment_id_value)
     assert ctx.artifacts.exists(review_ref)
 
@@ -60,11 +60,11 @@ def test_gloss_segment_deletes_gloss_review_on_rerun(tmp_workspace: Path) -> Non
 
 def test_annotate_segment_grammar_deletes_grammar_review_on_rerun(tmp_workspace: Path) -> None:
     ctx, doc_id, segment_id_value = _prepare_segment(tmp_workspace)
-    target = single_segment_target(segment_id_value)
+    target = SingleSegment(segment_id=segment_id_value)
     run_tokenize_segment(ctx, doc_id, target, JobOptions())
-    run_review_segment_tokenization(ctx, doc_id, segment_id_value, JobOptions())
+    run_review_segment_tokenization(ctx, doc_id, SingleSegment(segment_id=segment_id_value), JobOptions())
     run_annotate_segment_grammar(ctx, doc_id, target, JobOptions())
-    run_review_segment_grammar(ctx, doc_id, segment_id_value, JobOptions())
+    run_review_segment_grammar(ctx, doc_id, SingleSegment(segment_id=segment_id_value), JobOptions())
     review_ref = SegmentRef(SegmentArtifactKind.GRAMMAR_REVIEW, doc_id, segment_id_value)
     assert ctx.artifacts.exists(review_ref)
 

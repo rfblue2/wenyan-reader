@@ -7,16 +7,16 @@ from wenyan.core.gloss.glossary_draft import (
 )
 from wenyan.core.hashing import sha256_text
 from wenyan.core.ports.artifact_ref import SegmentArtifactKind, SegmentRef
+from wenyan.core.run.segment_pipeline import GLOSS_STAGE
 from wenyan.jobs.context import JobContext, JobOptions
 from wenyan.jobs.segment_runner import (
+    Prepared,
     SegmentAnnotateJobSpec,
     load_approved_tokenization_review,
-    run_segment_annotate_job,
-    run_segment_batch,
+    run_segment_job,
 )
 from wenyan_models.artifacts.segment import GlossesArtifact, TokenizationArtifact
-from wenyan_models.domain.enums import ComponentKind
-from wenyan_models.domain.ids import ContentHash, DocumentId, SegmentId
+from wenyan_models.domain.ids import DocumentId, SegmentId
 from wenyan_models.domain.results import JobFailure, JobOutcome
 from wenyan_models.domain.targets import SegmentTarget
 
@@ -25,9 +25,7 @@ def _prepare_gloss(
     ctx: JobContext,
     document_id: DocumentId,
     segment_id_value: SegmentId,
-    options: JobOptions,
-) -> JobFailure | tuple[ContentHash, dict[str, str]]:
-    del options
+) -> JobFailure | Prepared:
     upstream = load_approved_tokenization_review(
         ctx,
         document_id,
@@ -54,7 +52,7 @@ def _prepare_gloss(
             ensure_ascii=False,
         ),
     }
-    return input_hash, context
+    return Prepared(input_hash, context)
 
 
 def _post_process_gloss(
@@ -62,9 +60,7 @@ def _post_process_gloss(
     ctx: JobContext,
     document_id: DocumentId,
     segment_id_value: SegmentId,
-    input_hash: ContentHash,
 ) -> GlossesArtifact:
-    del input_hash
     tokenization = ctx.artifacts.read(
         SegmentRef(SegmentArtifactKind.TOKENIZATION, document_id, segment_id_value),
         TokenizationArtifact,
@@ -74,13 +70,13 @@ def _post_process_gloss(
 
 
 _GLOSS_SPEC = SegmentAnnotateJobSpec(
+    stage=GLOSS_STAGE,
     prompt_name="segment-gloss",
     output_model=GlossesArtifact,
-    artifact_kind=SegmentArtifactKind.GLOSSES,
-    component_kind=ComponentKind.GLOSS_SEGMENT,
-    skip_reason="glosses are current",
     prepare=_prepare_gloss,
     post_process=_post_process_gloss,
+    empty_message="no segments to gloss",
+    skip_reason="all segments already glossed",
 )
 
 
@@ -90,21 +86,4 @@ def run_gloss_segment(
     target: SegmentTarget,
     options: JobOptions,
 ) -> JobOutcome[GlossesArtifact]:
-    return run_segment_batch(
-        ctx,
-        document_id,
-        target,
-        options,
-        empty_message="no segments to gloss",
-        all_skipped_reason="all segments already glossed",
-        run_one=_gloss_one,
-    )
-
-
-def _gloss_one(
-    ctx: JobContext,
-    document_id: DocumentId,
-    segment_id_value: SegmentId,
-    options: JobOptions,
-) -> JobOutcome[GlossesArtifact]:
-    return run_segment_annotate_job(ctx, document_id, segment_id_value, options, _GLOSS_SPEC)
+    return run_segment_job(ctx, document_id, target, options, _GLOSS_SPEC)

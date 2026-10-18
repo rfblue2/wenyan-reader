@@ -34,7 +34,7 @@ def test_find_next_segment_stays_on_incomplete_segment(tmp_workspace: Path) -> N
     from wenyan.jobs.split_paragraphs import run_split_paragraphs
     from wenyan.jobs.split_segments import run_split_segments
     from wenyan.jobs.tokenize_segment import run_tokenize_segment
-    from wenyan_models.domain.targets import single_segment_target
+    from wenyan_models.domain.targets import SingleSegment
 
     source_dir = tmp_workspace / "sources" / "documents" / "sunzi-bingfa"
     doc_id = run_ingest_document(ctx, source_dir, JobOptions()).artifact  # type: ignore[union-attr]
@@ -44,8 +44,8 @@ def test_find_next_segment_stays_on_incomplete_segment(tmp_workspace: Path) -> N
     first_paragraph_id = paragraphs.paragraphs[0].id
     draft = run_split_segments(ctx, doc_id, first_paragraph_id, JobOptions()).artifact  # type: ignore[union-attr]
     first_segment_id = draft.segments[0].id
-    run_tokenize_segment(ctx, doc_id, single_segment_target(first_segment_id), JobOptions())
-    run_review_segment_tokenization(ctx, doc_id, first_segment_id, JobOptions())
+    run_tokenize_segment(ctx, doc_id, SingleSegment(segment_id=first_segment_id), JobOptions())
+    run_review_segment_tokenization(ctx, doc_id, SingleSegment(segment_id=first_segment_id), JobOptions())
 
     work = find_next_segment_work(ctx.artifacts, doc_id)
     assert work is not None

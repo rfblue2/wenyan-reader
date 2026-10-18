@@ -11,7 +11,7 @@ from wenyan.jobs.split_paragraphs import run_split_paragraphs
 from wenyan.jobs.split_segments import run_split_segments
 from wenyan.jobs.tokenize_segment import run_tokenize_segment
 from wenyan_models.domain.results import Promoted, outcome_exit_code
-from wenyan_models.domain.targets import single_segment_target
+from wenyan_models.domain.targets import SingleSegment
 from conftest import install_sunzi_chapter_proposal
 
 
@@ -44,7 +44,7 @@ def test_sunzi_pipeline(tmp_workspace: Path) -> None:
     tokenize_outcome = run_tokenize_segment(
         ctx,
         doc_id,
-        single_segment_target(segment_id_value),
+        SingleSegment(segment_id=segment_id_value),
         JobOptions(),
     )
     assert outcome_exit_code(tokenize_outcome) == 0
@@ -52,7 +52,7 @@ def test_sunzi_pipeline(tmp_workspace: Path) -> None:
     review_outcome = run_review_segment_tokenization(
         ctx,
         doc_id,
-        segment_id_value,
+        SingleSegment(segment_id=segment_id_value),
         JobOptions(),
     )
     assert outcome_exit_code(review_outcome) == 0
@@ -60,7 +60,7 @@ def test_sunzi_pipeline(tmp_workspace: Path) -> None:
     gloss_outcome = run_gloss_segment(
         ctx,
         doc_id,
-        single_segment_target(segment_id_value),
+        SingleSegment(segment_id=segment_id_value),
         JobOptions(),
     )
     assert outcome_exit_code(gloss_outcome) == 0
@@ -68,7 +68,7 @@ def test_sunzi_pipeline(tmp_workspace: Path) -> None:
     gloss_review_outcome = run_review_segment_gloss(
         ctx,
         doc_id,
-        segment_id_value,
+        SingleSegment(segment_id=segment_id_value),
         JobOptions(),
     )
     assert outcome_exit_code(gloss_review_outcome) == 0

@@ -14,7 +14,7 @@ from wenyan.jobs.split_paragraphs import run_split_paragraphs
 from wenyan.jobs.split_segments import run_split_segments
 from wenyan.jobs.tokenize_segment import run_tokenize_segment
 from wenyan_models.domain.enums import UnitStatus
-from wenyan_models.domain.targets import single_segment_target
+from wenyan_models.domain.targets import SingleSegment
 from conftest import install_sunzi_chapter_proposal
 
 
@@ -28,10 +28,10 @@ def _prepare_sunzi_first_segment(tmp_workspace: Path):
     paragraph_id_value = paragraphs.paragraphs[0].id
     draft = run_split_segments(ctx, doc_id, paragraph_id_value, JobOptions()).artifact  # type: ignore[union-attr]
     segment_id_value = draft.segments[0].id
-    run_tokenize_segment(ctx, doc_id, single_segment_target(segment_id_value), JobOptions())
-    run_review_segment_tokenization(ctx, doc_id, segment_id_value, JobOptions())
-    run_gloss_segment(ctx, doc_id, single_segment_target(segment_id_value), JobOptions())
-    run_review_segment_gloss(ctx, doc_id, segment_id_value, JobOptions())
+    run_tokenize_segment(ctx, doc_id, SingleSegment(segment_id=segment_id_value), JobOptions())
+    run_review_segment_tokenization(ctx, doc_id, SingleSegment(segment_id=segment_id_value), JobOptions())
+    run_gloss_segment(ctx, doc_id, SingleSegment(segment_id=segment_id_value), JobOptions())
+    run_review_segment_gloss(ctx, doc_id, SingleSegment(segment_id=segment_id_value), JobOptions())
     return ctx, doc_id, chapter_id_value, paragraph_id_value, segment_id_value
 
 

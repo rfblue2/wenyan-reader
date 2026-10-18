@@ -16,36 +16,35 @@ class SegmentStage:
     review_model: type[SegmentReview]
 
 
-SEGMENT_STAGES: tuple[SegmentStage, ...] = (
-    SegmentStage(
-        ComponentKind.TOKENIZE_SEGMENT,
-        ComponentKind.REVIEW_SEGMENT_TOKENIZATION,
-        SegmentArtifactKind.TOKENIZATION,
-        SegmentArtifactKind.TOKENIZATION_REVIEW,
-        SegmentReview,
-    ),
-    SegmentStage(
-        ComponentKind.GLOSS_SEGMENT,
-        ComponentKind.REVIEW_SEGMENT_GLOSS,
-        SegmentArtifactKind.GLOSSES,
-        SegmentArtifactKind.GLOSS_REVIEW,
-        SegmentReview,
-    ),
-    SegmentStage(
-        ComponentKind.ANNOTATE_SEGMENT_GRAMMAR,
-        ComponentKind.REVIEW_SEGMENT_GRAMMAR,
-        SegmentArtifactKind.GRAMMAR_NOTES,
-        SegmentArtifactKind.GRAMMAR_REVIEW,
-        SegmentReview,
-    ),
-    SegmentStage(
-        ComponentKind.ANNOTATE_SEGMENT_CONTEXT,
-        ComponentKind.REVIEW_SEGMENT_CONTEXT,
-        SegmentArtifactKind.CONTEXT_NOTES,
-        SegmentArtifactKind.CONTEXT_REVIEW,
-        ContextReviewArtifact,
-    ),
+TOKENIZATION_STAGE = SegmentStage(
+    ComponentKind.TOKENIZE_SEGMENT,
+    ComponentKind.REVIEW_SEGMENT_TOKENIZATION,
+    SegmentArtifactKind.TOKENIZATION,
+    SegmentArtifactKind.TOKENIZATION_REVIEW,
+    SegmentReview,
 )
+GLOSS_STAGE = SegmentStage(
+    ComponentKind.GLOSS_SEGMENT,
+    ComponentKind.REVIEW_SEGMENT_GLOSS,
+    SegmentArtifactKind.GLOSSES,
+    SegmentArtifactKind.GLOSS_REVIEW,
+    SegmentReview,
+)
+GRAMMAR_STAGE = SegmentStage(
+    ComponentKind.ANNOTATE_SEGMENT_GRAMMAR,
+    ComponentKind.REVIEW_SEGMENT_GRAMMAR,
+    SegmentArtifactKind.GRAMMAR_NOTES,
+    SegmentArtifactKind.GRAMMAR_REVIEW,
+    SegmentReview,
+)
+CONTEXT_STAGE = SegmentStage(
+    ComponentKind.ANNOTATE_SEGMENT_CONTEXT,
+    ComponentKind.REVIEW_SEGMENT_CONTEXT,
+    SegmentArtifactKind.CONTEXT_NOTES,
+    SegmentArtifactKind.CONTEXT_REVIEW,
+    ContextReviewArtifact,
+)
+SEGMENT_STAGES = (TOKENIZATION_STAGE, GLOSS_STAGE, GRAMMAR_STAGE, CONTEXT_STAGE)
 
 SEGMENT_SUBJOBS: tuple[ComponentKind, ...] = tuple(
     component for stage in SEGMENT_STAGES for component in (stage.draft, stage.review)
@@ -123,19 +122,3 @@ def read_review_component(
         return None
     return artifacts.read(review_ref, stage.review_model)
 
-
-def invalidate_segment_review(
-    artifacts: ArtifactStore,
-    document_id: DocumentId,
-    segment_id: SegmentId,
-    draft_component: ComponentKind,
-    *,
-    dry_run: bool,
-) -> None:
-    stage = _BY_DRAFT.get(draft_component)
-    if stage is None:
-        return
-    review_ref = SegmentRef(stage.review_kind, document_id, segment_id)
-    if dry_run or not artifacts.exists(review_ref):
-        return
-    artifacts.delete(review_ref)

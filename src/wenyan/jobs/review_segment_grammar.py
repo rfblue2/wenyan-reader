@@ -1,7 +1,8 @@
 from wenyan.core.hashing import sha256_text
 from wenyan.core.ports.artifact_ref import SegmentArtifactKind, SegmentRef
+from wenyan.core.run.segment_pipeline import GRAMMAR_STAGE
 from wenyan.jobs.context import JobContext, JobOptions
-from wenyan.jobs.segment_runner import SegmentReviewJobSpec, run_segment_review_job
+from wenyan.jobs.segment_runner import Prepared, SegmentReviewJobSpec, run_segment_job
 from wenyan_models.artifacts.segment import (
     GlossesArtifact,
     GrammarNotesArtifact,
@@ -9,17 +10,16 @@ from wenyan_models.artifacts.segment import (
     SegmentReview,
     TokenizationArtifact,
 )
-from wenyan_models.domain.ids import ContentHash, DocumentId, SegmentId
+from wenyan_models.domain.ids import DocumentId, SegmentId
 from wenyan_models.domain.results import JobFailure, JobOutcome
+from wenyan_models.domain.targets import SegmentTarget
 
 
 def _prepare_grammar_review(
     ctx: JobContext,
     document_id: DocumentId,
     segment_id_value: SegmentId,
-    options: JobOptions,
-) -> JobFailure | tuple[ContentHash, dict[str, str]]:
-    del options
+) -> JobFailure | Prepared:
     grammar_ref = SegmentRef(SegmentArtifactKind.GRAMMAR_NOTES, document_id, segment_id_value)
     if not ctx.artifacts.exists(grammar_ref):
         return JobFailure(code="missing-input", message="grammar notes artifact is missing")
@@ -48,29 +48,23 @@ def _prepare_grammar_review(
         "glosses_json": glosses_json,
         "local_context_json": segment_input.local_context.model_dump_json(by_alias=True),
     }
-    return input_hash, context
+    return Prepared(input_hash, context)
 
 
 _GRAMMAR_REVIEW_SPEC = SegmentReviewJobSpec(
+    stage=GRAMMAR_STAGE,
     prompt_name="segment-grammar-review",
-    output_model=SegmentReview,
-    review_kind=SegmentArtifactKind.GRAMMAR_REVIEW,
+    prepare=_prepare_grammar_review,
+    empty_message="no segments to review",
     skip_reason="grammar review is current",
     reject_message="grammar review rejected",
-    prepare=_prepare_grammar_review,
 )
 
 
 def run_review_segment_grammar(
     ctx: JobContext,
     document_id: DocumentId,
-    segment_id_value: SegmentId,
+    target: SegmentTarget,
     options: JobOptions,
 ) -> JobOutcome[SegmentReview]:
-    return run_segment_review_job(
-        ctx,
-        document_id,
-        segment_id_value,
-        options,
-        _GRAMMAR_REVIEW_SPEC,
-    )
+    return run_segment_job(ctx, document_id, target, options, _GRAMMAR_REVIEW_SPEC)

@@ -23,7 +23,7 @@ from wenyan_models.artifacts.segment import (
 )
 from wenyan_models.domain.enums import ReviewStatus
 from wenyan_models.domain.results import JobFailure, Promoted, Skipped, outcome_exit_code
-from wenyan_models.domain.targets import single_segment_target
+from wenyan_models.domain.targets import SingleSegment
 from conftest import install_sunzi_chapter_proposal
 
 
@@ -37,8 +37,8 @@ def _prepare_segment_with_approved_tokenization(tmp_workspace: Path) -> tuple[ob
     first_paragraph_id = paragraphs.paragraphs[0].id
     draft = run_split_segments(ctx, doc_id, first_paragraph_id, JobOptions()).artifact  # type: ignore[union-attr]
     first_segment_id = draft.segments[0].id
-    run_tokenize_segment(ctx, doc_id, single_segment_target(first_segment_id), JobOptions())
-    run_review_segment_tokenization(ctx, doc_id, first_segment_id, JobOptions())
+    run_tokenize_segment(ctx, doc_id, SingleSegment(segment_id=first_segment_id), JobOptions())
+    run_review_segment_tokenization(ctx, doc_id, SingleSegment(segment_id=first_segment_id), JobOptions())
     return ctx, (doc_id, first_segment_id)
 
 
@@ -52,12 +52,12 @@ def test_gloss_segment_requires_approved_tokenization_review(tmp_workspace: Path
     first_paragraph_id = paragraphs.paragraphs[0].id
     draft = run_split_segments(ctx, doc_id, first_paragraph_id, JobOptions()).artifact  # type: ignore[union-attr]
     first_segment_id = draft.segments[0].id
-    run_tokenize_segment(ctx, doc_id, single_segment_target(first_segment_id), JobOptions())
+    run_tokenize_segment(ctx, doc_id, SingleSegment(segment_id=first_segment_id), JobOptions())
 
     outcome = run_gloss_segment(
         ctx,
         doc_id,
-        single_segment_target(first_segment_id),
+        SingleSegment(segment_id=first_segment_id),
         JobOptions(),
     )
     assert isinstance(outcome, JobFailure)
@@ -70,7 +70,7 @@ def test_gloss_segment_writes_artifact(tmp_workspace: Path) -> None:
     outcome = run_gloss_segment(
         ctx,
         doc_id,
-        single_segment_target(segment_id_value),
+        SingleSegment(segment_id=segment_id_value),
         JobOptions(),
     )
     assert outcome_exit_code(outcome) == 0
@@ -88,12 +88,12 @@ def test_gloss_segment_writes_artifact(tmp_workspace: Path) -> None:
 
 def test_gloss_segment_skips_current_artifact(tmp_workspace: Path) -> None:
     ctx, (doc_id, segment_id_value) = _prepare_segment_with_approved_tokenization(tmp_workspace)
-    run_gloss_segment(ctx, doc_id, single_segment_target(segment_id_value), JobOptions())
+    run_gloss_segment(ctx, doc_id, SingleSegment(segment_id=segment_id_value), JobOptions())
 
     outcome = run_gloss_segment(
         ctx,
         doc_id,
-        single_segment_target(segment_id_value),
+        SingleSegment(segment_id=segment_id_value),
         JobOptions(),
     )
     assert isinstance(outcome, Skipped)
@@ -101,9 +101,9 @@ def test_gloss_segment_skips_current_artifact(tmp_workspace: Path) -> None:
 
 def test_review_segment_gloss_approves(tmp_workspace: Path) -> None:
     ctx, (doc_id, segment_id_value) = _prepare_segment_with_approved_tokenization(tmp_workspace)
-    run_gloss_segment(ctx, doc_id, single_segment_target(segment_id_value), JobOptions())
+    run_gloss_segment(ctx, doc_id, SingleSegment(segment_id=segment_id_value), JobOptions())
 
-    outcome = run_review_segment_gloss(ctx, doc_id, segment_id_value, JobOptions())
+    outcome = run_review_segment_gloss(ctx, doc_id, SingleSegment(segment_id=segment_id_value), JobOptions())
     assert outcome_exit_code(outcome) == 0
     assert isinstance(outcome, Promoted)
     review_ref = SegmentRef(SegmentArtifactKind.GLOSS_REVIEW, doc_id, segment_id_value)
@@ -123,9 +123,9 @@ def test_review_segment_gloss_rejects(tmp_workspace: Path, monkeypatch) -> None:
     monkeypatch.setattr(mock_llm_client.MockLLMClient, "_gloss_review", reject_review)
 
     ctx, (doc_id, segment_id_value) = _prepare_segment_with_approved_tokenization(tmp_workspace)
-    run_gloss_segment(ctx, doc_id, single_segment_target(segment_id_value), JobOptions())
+    run_gloss_segment(ctx, doc_id, SingleSegment(segment_id=segment_id_value), JobOptions())
 
-    outcome = run_review_segment_gloss(ctx, doc_id, segment_id_value, JobOptions())
+    outcome = run_review_segment_gloss(ctx, doc_id, SingleSegment(segment_id=segment_id_value), JobOptions())
     assert isinstance(outcome, JobFailure)
     assert outcome.code == "review-rejected"
     review = ctx.artifacts.read(
@@ -137,9 +137,9 @@ def test_review_segment_gloss_rejects(tmp_workspace: Path, monkeypatch) -> None:
 
 def test_review_segment_gloss_updates_glossary_draft(tmp_workspace: Path) -> None:
     ctx, (doc_id, segment_id_value) = _prepare_segment_with_approved_tokenization(tmp_workspace)
-    run_gloss_segment(ctx, doc_id, single_segment_target(segment_id_value), JobOptions())
+    run_gloss_segment(ctx, doc_id, SingleSegment(segment_id=segment_id_value), JobOptions())
 
-    outcome = run_review_segment_gloss(ctx, doc_id, segment_id_value, JobOptions())
+    outcome = run_review_segment_gloss(ctx, doc_id, SingleSegment(segment_id=segment_id_value), JobOptions())
     assert outcome_exit_code(outcome) == 0
 
     draft = ctx.artifacts.read(

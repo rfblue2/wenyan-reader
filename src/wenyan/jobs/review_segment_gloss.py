@@ -9,20 +9,20 @@ from wenyan.core.gloss.glossary_draft import (
 )
 from wenyan.core.hashing import sha256_text
 from wenyan.core.ports.artifact_ref import SegmentArtifactKind, SegmentRef
+from wenyan.core.run.segment_pipeline import GLOSS_STAGE
 from wenyan.jobs.context import JobContext, JobOptions
-from wenyan.jobs.segment_runner import SegmentReviewJobSpec, run_segment_review_job
+from wenyan.jobs.segment_runner import Prepared, SegmentReviewJobSpec, run_segment_job
 from wenyan_models.artifacts.segment import GlossesArtifact, SegmentInput, SegmentReview, TokenizationArtifact
-from wenyan_models.domain.ids import ContentHash, DocumentId, SegmentId
+from wenyan_models.domain.ids import DocumentId, SegmentId
 from wenyan_models.domain.results import JobFailure, JobOutcome
+from wenyan_models.domain.targets import SegmentTarget
 
 
 def _prepare_gloss_review(
     ctx: JobContext,
     document_id: DocumentId,
     segment_id_value: SegmentId,
-    options: JobOptions,
-) -> JobFailure | tuple[ContentHash, dict[str, str]]:
-    del options
+) -> JobFailure | Prepared:
     glosses_ref = SegmentRef(SegmentArtifactKind.GLOSSES, document_id, segment_id_value)
     if not ctx.artifacts.exists(glosses_ref):
         return JobFailure(code="missing-input", message="glosses artifact is missing")
@@ -50,17 +50,14 @@ def _prepare_gloss_review(
             ensure_ascii=False,
         ),
     }
-    return input_hash, context
+    return Prepared(input_hash, context)
 
 
 def _merge_glossary_after_gloss_review(
     ctx: JobContext,
     document_id: DocumentId,
     segment_id_value: SegmentId,
-    review: SegmentReview,
-    options: JobOptions,
 ) -> None:
-    del review, options
     glosses = ctx.artifacts.read(
         SegmentRef(SegmentArtifactKind.GLOSSES, document_id, segment_id_value),
         GlossesArtifact,
@@ -70,26 +67,20 @@ def _merge_glossary_after_gloss_review(
 
 
 _GLOSS_REVIEW_SPEC = SegmentReviewJobSpec(
+    stage=GLOSS_STAGE,
     prompt_name="segment-gloss-review",
-    output_model=SegmentReview,
-    review_kind=SegmentArtifactKind.GLOSS_REVIEW,
-    skip_reason="gloss review is current",
-    reject_message="gloss review rejected",
     prepare=_prepare_gloss_review,
     post_write=_merge_glossary_after_gloss_review,
+    empty_message="no segments to review",
+    skip_reason="gloss review is current",
+    reject_message="gloss review rejected",
 )
 
 
 def run_review_segment_gloss(
     ctx: JobContext,
     document_id: DocumentId,
-    segment_id_value: SegmentId,
+    target: SegmentTarget,
     options: JobOptions,
 ) -> JobOutcome[SegmentReview]:
-    return run_segment_review_job(
-        ctx,
-        document_id,
-        segment_id_value,
-        options,
-        _GLOSS_REVIEW_SPEC,
-    )
+    return run_segment_job(ctx, document_id, target, options, _GLOSS_REVIEW_SPEC)

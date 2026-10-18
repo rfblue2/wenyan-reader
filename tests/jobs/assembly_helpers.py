@@ -17,7 +17,7 @@ from wenyan_models.artifacts.segment import ContextNotesArtifact, ContextReviewA
 from wenyan_models.domain.enums import ReviewStatus
 from wenyan_models.domain.ids import DocumentId, ParagraphId, SegmentId
 from wenyan_models.domain.results import outcome_exit_code
-from wenyan_models.domain.targets import single_segment_target
+from wenyan_models.domain.targets import SingleSegment
 from conftest import install_sunzi_chapter_proposal
 
 
@@ -44,12 +44,12 @@ def _complete_segment_subjobs(
 ) -> None:
     options = JobOptions()
     runners = (
-        lambda: run_tokenize_segment(ctx, document_id, single_segment_target(segment_id_value), options),
-        lambda: run_review_segment_tokenization(ctx, document_id, segment_id_value, options),
-        lambda: run_gloss_segment(ctx, document_id, single_segment_target(segment_id_value), options),
-        lambda: run_review_segment_gloss(ctx, document_id, segment_id_value, options),
-        lambda: run_annotate_segment_grammar(ctx, document_id, single_segment_target(segment_id_value), options),
-        lambda: run_review_segment_grammar(ctx, document_id, segment_id_value, options),
+        lambda: run_tokenize_segment(ctx, document_id, SingleSegment(segment_id=segment_id_value), options),
+        lambda: run_review_segment_tokenization(ctx, document_id, SingleSegment(segment_id=segment_id_value), options),
+        lambda: run_gloss_segment(ctx, document_id, SingleSegment(segment_id=segment_id_value), options),
+        lambda: run_review_segment_gloss(ctx, document_id, SingleSegment(segment_id=segment_id_value), options),
+        lambda: run_annotate_segment_grammar(ctx, document_id, SingleSegment(segment_id=segment_id_value), options),
+        lambda: run_review_segment_grammar(ctx, document_id, SingleSegment(segment_id=segment_id_value), options),
     )
     for runner in runners:
         outcome = runner()
