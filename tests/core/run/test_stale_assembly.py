@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from wenyan.core.adapters.paths import document_root
-from wenyan.core.ports.artifact_ref import paragraph_draft_ref
+from wenyan.core.ports.artifact_ref import ParagraphArtifactKind, ParagraphRef
 from wenyan.core.run.stale_assembly import (
     find_stale_assembly_paragraphs,
     prune_stale_assembly,
@@ -23,7 +23,10 @@ def test_find_stale_assembly_after_segment_artifact_deleted(tmp_workspace: Path)
     assert assembly_dir.is_dir()
     assert find_stale_assembly_paragraphs(ctx.artifacts, tmp_workspace, doc_id) == ()
 
-    draft = ctx.artifacts.read(paragraph_draft_ref(doc_id, paragraph_id_value), ParagraphDraft)
+    draft = ctx.artifacts.read(
+        ParagraphRef(ParagraphArtifactKind.DRAFT, doc_id, paragraph_id_value),
+        ParagraphDraft,
+    )
     glosses_path = document_root(tmp_workspace, doc_id) / "jobs" / "segments" / str(
         draft.segments[0].id
     ) / "glosses.json"
@@ -38,7 +41,10 @@ def test_prune_stale_assembly_removes_assembly_dir(tmp_workspace: Path) -> None:
     run_assemble_paragraph(ctx, doc_id, paragraph_id_value, JobOptions())
 
     assembly_dir = document_root(tmp_workspace, doc_id) / "jobs" / "assembly" / str(paragraph_id_value)
-    draft = ctx.artifacts.read(paragraph_draft_ref(doc_id, paragraph_id_value), ParagraphDraft)
+    draft = ctx.artifacts.read(
+        ParagraphRef(ParagraphArtifactKind.DRAFT, doc_id, paragraph_id_value),
+        ParagraphDraft,
+    )
     glosses_path = document_root(tmp_workspace, doc_id) / "jobs" / "segments" / str(
         draft.segments[0].id
     ) / "glosses.json"
@@ -55,7 +61,10 @@ def test_prune_stale_assembly_dry_run_leaves_files(tmp_workspace: Path) -> None:
     run_assemble_paragraph(ctx, doc_id, paragraph_id_value, JobOptions())
 
     assembly_dir = document_root(tmp_workspace, doc_id) / "jobs" / "assembly" / str(paragraph_id_value)
-    draft = ctx.artifacts.read(paragraph_draft_ref(doc_id, paragraph_id_value), ParagraphDraft)
+    draft = ctx.artifacts.read(
+        ParagraphRef(ParagraphArtifactKind.DRAFT, doc_id, paragraph_id_value),
+        ParagraphDraft,
+    )
     glosses_path = document_root(tmp_workspace, doc_id) / "jobs" / "segments" / str(
         draft.segments[0].id
     ) / "glosses.json"

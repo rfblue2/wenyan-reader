@@ -4,7 +4,7 @@ from wenyan.core.package.collect import collect_ready_paragraphs
 from wenyan.core.package.input_hash import package_input_hash
 from wenyan.core.package.promote import plan_content_writes, promote_content_writes
 from wenyan.core.package.validate import validate_document_package
-from wenyan.core.ports.artifact_ref import normalized_document_ref, package_validation_ref
+from wenyan.core.ports.artifact_ref import DocumentArtifactKind, DocumentRef
 from wenyan.jobs.context import JobContext, JobOptions
 from wenyan_models.artifacts.normalized import NormalizedDocument
 from wenyan_models.artifacts.package import PackageValidationArtifact
@@ -19,7 +19,7 @@ def run_package_document(
     document_id: DocumentId,
     options: JobOptions,
 ) -> JobOutcome[PackageValidationArtifact]:
-    normalized_ref = normalized_document_ref(document_id)
+    normalized_ref = DocumentRef(DocumentArtifactKind.NORMALIZED_DOCUMENT, document_id)
     if not ctx.artifacts.exists(normalized_ref):
         return JobFailure(code="missing-input", message="normalized document is missing")
     normalized = ctx.artifacts.read(normalized_ref, NormalizedDocument)
@@ -41,7 +41,7 @@ def run_package_document(
         paragraph_assembly_hashes=assembly_hashes,
     )
 
-    validation_ref = package_validation_ref(document_id)
+    validation_ref = DocumentRef(DocumentArtifactKind.PACKAGE_VALIDATION, document_id)
     if ctx.artifacts.exists(validation_ref) and not options.force:
         existing = ctx.artifacts.read(validation_ref, PackageValidationArtifact)
         if existing.input_hash == input_hash and existing.status == ValidationStatus.PASSED:

@@ -2,10 +2,7 @@ from pathlib import Path
 
 from wenyan.bootstrap import build_job_context
 from wenyan.core.hashing import sha256_text
-from wenyan.core.ports.artifact_ref import (
-    segment_context_notes_ref,
-    segment_context_review_ref,
-)
+from wenyan.core.ports.artifact_ref import SegmentArtifactKind, SegmentRef
 from wenyan.jobs.annotate_segment_grammar import run_annotate_segment_grammar
 from wenyan.jobs.context import JobContext, JobOptions
 from wenyan.jobs.gloss_segment import run_gloss_segment
@@ -74,7 +71,7 @@ def _write_approved_context_artifacts(
         context_notes=(),
     )
     ctx.artifacts.write(
-        segment_context_notes_ref(document_id, segment_id_value),
+        SegmentRef(SegmentArtifactKind.CONTEXT_NOTES, document_id, segment_id_value),
         context_notes,
         dry_run=False,
     )
@@ -86,7 +83,7 @@ def _write_approved_context_artifacts(
         status=ReviewStatus.APPROVED,
     )
     ctx.artifacts.write(
-        segment_context_review_ref(document_id, segment_id_value),
+        SegmentRef(SegmentArtifactKind.CONTEXT_REVIEW, document_id, segment_id_value),
         context_review,
         dry_run=False,
     )

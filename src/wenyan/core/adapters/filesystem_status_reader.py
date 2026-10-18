@@ -1,7 +1,4 @@
-from pathlib import Path
-
-from wenyan.core.adapters.paths import artifact_path
-from wenyan.core.ports.artifact_ref import chapter_proposal_ref, normalized_document_ref
+from wenyan.core.ports.artifact_ref import DocumentArtifactKind, DocumentRef
 from wenyan.core.ports.artifact_store import ArtifactStore
 from wenyan.core.ports.status_reader import StatusReader
 from wenyan.core.status.derivation import (
@@ -22,12 +19,11 @@ from wenyan_models.status.segment import SegmentStatus
 
 
 class FilesystemStatusReader(StatusReader):
-    def __init__(self, artifacts: ArtifactStore, repo_root: Path) -> None:
+    def __init__(self, artifacts: ArtifactStore) -> None:
         self._artifacts = artifacts
-        self._repo_root = repo_root
 
     def document_status(self, document_id_value: DocumentId) -> DocumentStatus:
-        normalized_ref = normalized_document_ref(document_id_value)
+        normalized_ref = DocumentRef(DocumentArtifactKind.NORMALIZED_DOCUMENT, document_id_value)
         if not self._artifacts.exists(normalized_ref):
             return DocumentStatus.model_validate(
                 {
@@ -47,20 +43,18 @@ class FilesystemStatusReader(StatusReader):
         source = DocumentSourceStatus.model_validate(
             {
                 "status": "normalized",
-                "normalizedDocumentPath": str(
-                    artifact_path(self._repo_root, normalized_ref).relative_to(self._repo_root),
-                ),
+                "normalizedDocumentPath": str(normalized_ref.relative_path),
                 "sourceHash": str(normalized.source_hash),
                 "normalizedHash": str(normalized.normalized_hash),
             },
         )
         chapter_items: list[tuple[str, ChapterId]] = []
-        if self._artifacts.exists(chapter_proposal_ref(document_id_value)):
-            proposal = self._artifacts.read(chapter_proposal_ref(document_id_value), ChapterProposal)
+        proposal_ref = DocumentRef(DocumentArtifactKind.CHAPTER_PROPOSAL, document_id_value)
+        if self._artifacts.exists(proposal_ref):
+            proposal = self._artifacts.read(proposal_ref, ChapterProposal)
             chapter_items = [(chapter.title, chapter.id) for chapter in proposal.chapters]
         return derive_document_status(
             self._artifacts,
-            self._repo_root,
             document_id=document_id_value,
             title=normalized.title,
             source=source,
@@ -70,7 +64,6 @@ class FilesystemStatusReader(StatusReader):
     def chapter_status(self, document_id_value: DocumentId, chapter_id: ChapterId) -> ChapterStatus:
         return derive_chapter_status(
             self._artifacts,
-            self._repo_root,
             document_id=document_id_value,
             chapter_id=chapter_id,
         )
@@ -85,7 +78,6 @@ class FilesystemStatusReader(StatusReader):
             raise ValueError(f"paragraph {paragraph_id_value} was not found in document {document_id_value}")
         return derive_paragraph_status(
             self._artifacts,
-            self._repo_root,
             document_id=document_id_value,
             chapter_id=chapter_id_value,
             paragraph_id=paragraph_id_value,
@@ -102,7 +94,6 @@ class FilesystemStatusReader(StatusReader):
         chapter_id_value, paragraph_id_value, text = location
         return derive_segment_status(
             self._artifacts,
-            self._repo_root,
             document_id=document_id_value,
             chapter_id=chapter_id_value,
             paragraph_id=paragraph_id_value,

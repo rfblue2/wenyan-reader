@@ -1,12 +1,7 @@
 from pathlib import Path
 
 from wenyan.bootstrap import build_job_context
-from wenyan.core.ports.artifact_ref import (
-    segment_gloss_review_ref,
-    segment_grammar_notes_ref,
-    segment_grammar_review_ref,
-    segment_tokenization_review_ref,
-)
+from wenyan.core.ports.artifact_ref import SegmentArtifactKind, SegmentRef
 from wenyan.jobs.annotate_segment_grammar import run_annotate_segment_grammar
 from wenyan.jobs.context import JobOptions
 from wenyan.jobs.gloss_segment import run_gloss_segment
@@ -40,7 +35,7 @@ def test_tokenize_segment_deletes_tokenization_review_on_rerun(tmp_workspace: Pa
     target = single_segment_target(segment_id_value)
     run_tokenize_segment(ctx, doc_id, target, JobOptions())
     run_review_segment_tokenization(ctx, doc_id, segment_id_value, JobOptions())
-    review_ref = segment_tokenization_review_ref(doc_id, segment_id_value)
+    review_ref = SegmentRef(SegmentArtifactKind.TOKENIZATION_REVIEW, doc_id, segment_id_value)
     assert ctx.artifacts.exists(review_ref)
 
     outcome = run_tokenize_segment(ctx, doc_id, target, JobOptions(force=True))
@@ -55,7 +50,7 @@ def test_gloss_segment_deletes_gloss_review_on_rerun(tmp_workspace: Path) -> Non
     run_review_segment_tokenization(ctx, doc_id, segment_id_value, JobOptions())
     run_gloss_segment(ctx, doc_id, target, JobOptions())
     run_review_segment_gloss(ctx, doc_id, segment_id_value, JobOptions())
-    review_ref = segment_gloss_review_ref(doc_id, segment_id_value)
+    review_ref = SegmentRef(SegmentArtifactKind.GLOSS_REVIEW, doc_id, segment_id_value)
     assert ctx.artifacts.exists(review_ref)
 
     outcome = run_gloss_segment(ctx, doc_id, target, JobOptions(force=True))
@@ -70,10 +65,12 @@ def test_annotate_segment_grammar_deletes_grammar_review_on_rerun(tmp_workspace:
     run_review_segment_tokenization(ctx, doc_id, segment_id_value, JobOptions())
     run_annotate_segment_grammar(ctx, doc_id, target, JobOptions())
     run_review_segment_grammar(ctx, doc_id, segment_id_value, JobOptions())
-    review_ref = segment_grammar_review_ref(doc_id, segment_id_value)
+    review_ref = SegmentRef(SegmentArtifactKind.GRAMMAR_REVIEW, doc_id, segment_id_value)
     assert ctx.artifacts.exists(review_ref)
 
     outcome = run_annotate_segment_grammar(ctx, doc_id, target, JobOptions(force=True))
     assert isinstance(outcome, Promoted)
     assert not ctx.artifacts.exists(review_ref)
-    assert ctx.artifacts.exists(segment_grammar_notes_ref(doc_id, segment_id_value))
+    assert ctx.artifacts.exists(
+        SegmentRef(SegmentArtifactKind.GRAMMAR_NOTES, doc_id, segment_id_value)
+    )

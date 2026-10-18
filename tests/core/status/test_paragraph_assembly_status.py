@@ -11,7 +11,7 @@ from tests.jobs.assembly_helpers import prepare_paragraph_with_complete_segments
 
 def test_paragraph_not_complete_when_segments_done_but_assembly_pending(tmp_workspace: Path) -> None:
     ctx, doc_id, paragraph_id_value = prepare_paragraph_with_complete_segments(tmp_workspace)
-    reader = FilesystemStatusReader(ctx.artifacts, tmp_workspace)
+    reader = FilesystemStatusReader(ctx.artifacts)
     payload = reader.paragraph_status(doc_id, paragraph_id_value)
 
     assert payload.assembly is not None
@@ -22,7 +22,7 @@ def test_paragraph_not_complete_when_segments_done_but_assembly_pending(tmp_work
 def test_paragraph_complete_after_assemble(tmp_workspace: Path) -> None:
     ctx, doc_id, paragraph_id_value = prepare_paragraph_with_complete_segments(tmp_workspace)
     run_assemble_paragraph(ctx, doc_id, paragraph_id_value, JobOptions())
-    reader = FilesystemStatusReader(ctx.artifacts, tmp_workspace)
+    reader = FilesystemStatusReader(ctx.artifacts)
     payload = reader.paragraph_status(doc_id, paragraph_id_value)
 
     assert payload.assembly is not None

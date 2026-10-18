@@ -4,7 +4,14 @@ import uuid
 from dataclasses import dataclass
 from typing import Literal
 
-from wenyan.core.ports.artifact_ref import chapter_proposal_ref, paragraph_draft_ref, paragraph_proposal_ref
+from wenyan.core.ports.artifact_ref import (
+    ChapterArtifactKind,
+    ChapterRef,
+    DocumentArtifactKind,
+    DocumentRef,
+    ParagraphArtifactKind,
+    ParagraphRef,
+)
 from wenyan.core.ports.artifact_store import ArtifactStore
 from wenyan.core.status.derivation import find_paragraph_chapter, find_segment_location
 from wenyan_models.artifacts.paragraph import ParagraphDraft
@@ -129,7 +136,7 @@ def segment_handle_for_id(
     paragraph_id: ParagraphId,
     segment_id_value: SegmentId,
 ) -> str:
-    draft_ref = paragraph_draft_ref(document_id, paragraph_id)
+    draft_ref = ParagraphRef(ParagraphArtifactKind.DRAFT, document_id, paragraph_id)
     if not artifacts.exists(draft_ref):
         return str(segment_id_value)
     draft = artifacts.read(draft_ref, ParagraphDraft)
@@ -239,7 +246,7 @@ def _resolve_segment_ref(
         raise ValueError(f"segment {ref!r} must be a UUID or a number when --paragraph is set")
     if paragraph_id is None:
         raise ValueError("segment number requires --paragraph; use a segment UUID or add --paragraph")
-    draft_ref = paragraph_draft_ref(document_id, paragraph_id)
+    draft_ref = ParagraphRef(ParagraphArtifactKind.DRAFT, document_id, paragraph_id)
     if not artifacts.exists(draft_ref):
         raise ValueError(f"paragraph {paragraph_id} has no segment draft yet")
     draft = artifacts.read(draft_ref, ParagraphDraft)
@@ -250,7 +257,7 @@ def _resolve_segment_ref(
 
 
 def _load_chapter_proposal(artifacts: ArtifactStore, document_id: DocumentId) -> ChapterProposal:
-    ref = chapter_proposal_ref(document_id)
+    ref = DocumentRef(DocumentArtifactKind.CHAPTER_PROPOSAL, document_id)
     if not artifacts.exists(ref):
         raise ValueError("document has no chapter structure yet")
     return artifacts.read(ref, ChapterProposal)
@@ -261,7 +268,7 @@ def _load_paragraph_proposal(
     document_id: DocumentId,
     chapter_id_value: ChapterId,
 ) -> ParagraphProposal:
-    ref = paragraph_proposal_ref(document_id, chapter_id_value)
+    ref = ChapterRef(ChapterArtifactKind.PARAGRAPH_PROPOSAL, document_id, chapter_id_value)
     if not artifacts.exists(ref):
         raise ValueError(f"chapter {chapter_id_value} has no paragraph structure yet")
     return artifacts.read(ref, ParagraphProposal)

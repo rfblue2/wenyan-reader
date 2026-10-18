@@ -385,7 +385,7 @@ def status_cmd(
 ) -> None:
     """Report preprocessing progress; segment scope includes source text and artifacts."""
     ctx, doc_id, document_ref = resolve_document_context_with_ref(document)
-    reader = FilesystemStatusReader(ctx.artifacts, _repo_root())
+    reader = FilesystemStatusReader(ctx.artifacts)
     payload: StatusDisplayPayload
     try:
         scope = resolve_status_scope(
@@ -406,7 +406,6 @@ def status_cmd(
                 assert scope.segment_id is not None
                 payload = build_segment_show_view(
                     ctx.artifacts,
-                    _repo_root(),
                     document_id=doc_id,
                     document_ref=document_ref,
                     segment_id=scope.segment_id,

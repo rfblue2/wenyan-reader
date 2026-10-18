@@ -6,7 +6,7 @@ from wenyan.core.package.paths import (
     content_gloss_index_path,
     content_paragraph_path,
 )
-from wenyan.core.ports.artifact_ref import chapter_proposal_ref, package_validation_ref
+from wenyan.core.ports.artifact_ref import DocumentArtifactKind, DocumentRef
 from wenyan.jobs.assemble_paragraph import run_assemble_paragraph
 from wenyan.jobs.context import JobOptions
 from wenyan.jobs.package_document import run_package_document
@@ -20,7 +20,11 @@ from tests.jobs.assembly_helpers import prepare_paragraph_with_complete_segments
 def test_package_document_writes_content_files(tmp_workspace: Path) -> None:
     ctx, doc_id, paragraph_id_value = prepare_paragraph_with_complete_segments(tmp_workspace)
     run_assemble_paragraph(ctx, doc_id, paragraph_id_value, JobOptions())
-    chapter_id_value = ctx.artifacts.read(chapter_proposal_ref(doc_id), ChapterProposal).chapters[0].id
+    chapter_proposal = ctx.artifacts.read(
+        DocumentRef(DocumentArtifactKind.CHAPTER_PROPOSAL, doc_id),
+        ChapterProposal,
+    )
+    chapter_id_value = chapter_proposal.chapters[0].id
 
     outcome = run_package_document(ctx, doc_id, JobOptions())
     assert isinstance(outcome, Promoted)
@@ -38,7 +42,10 @@ def test_package_document_writes_content_files(tmp_workspace: Path) -> None:
         chapter_id_value,
         paragraph_id_value,
     ).is_file()
-    validation = ctx.artifacts.read(package_validation_ref(doc_id), PackageValidationArtifact)
+    validation = ctx.artifacts.read(
+        DocumentRef(DocumentArtifactKind.PACKAGE_VALIDATION, doc_id),
+        PackageValidationArtifact,
+    )
     assert validation.status.value == "passed"
 
 

@@ -2,7 +2,7 @@ from pathlib import Path
 
 from wenyan.bootstrap import build_job_context
 from wenyan.core.adapters.paths import document_root
-from wenyan.core.ports.artifact_ref import paragraph_draft_ref
+from wenyan.core.ports.artifact_ref import ParagraphArtifactKind, ParagraphRef
 from wenyan.core.run.orphan_segments import find_orphan_segments, prune_orphan_segments
 from wenyan.jobs.context import JobOptions
 from wenyan.jobs.ingest_document import run_ingest_document
@@ -36,7 +36,10 @@ def test_find_orphan_segments_after_resplit(tmp_workspace: Path) -> None:
     orphan_ids = {item.segment_id for item in orphans}
     assert orphan_ids == first_segment_ids
 
-    current_draft = ctx.artifacts.read(paragraph_draft_ref(doc_id, paragraph_id_value), ParagraphDraft)
+    current_draft = ctx.artifacts.read(
+        ParagraphRef(ParagraphArtifactKind.DRAFT, doc_id, paragraph_id_value),
+        ParagraphDraft,
+    )
     current_segment_ids = {segment.id for segment in current_draft.segments}
     assert orphan_ids.isdisjoint(current_segment_ids)
 

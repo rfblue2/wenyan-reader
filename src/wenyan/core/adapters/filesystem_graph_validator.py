@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from wenyan.core.adapters.filesystem_normalized_text_store import FilesystemNormalizedTextStore
-from wenyan.core.ports.artifact_ref import normalized_document_ref
+from wenyan.core.ports.artifact_ref import DocumentArtifactKind, DocumentRef
 from wenyan.core.ports.artifact_store import ArtifactStore
 from wenyan.core.ports.graph_validator import GraphValidationReport, GraphValidator, ValidationIssue
 from wenyan_models.artifacts.normalized import NormalizedDocument
@@ -15,7 +15,7 @@ class FilesystemGraphValidator(GraphValidator):
 
     def validate_document(self, document_id: DocumentId) -> GraphValidationReport:
         issues: list[ValidationIssue] = []
-        ref = normalized_document_ref(document_id)
+        ref = DocumentRef(DocumentArtifactKind.NORMALIZED_DOCUMENT, document_id)
         if not self._artifacts.exists(ref):
             issues.append(
                 ValidationIssue(

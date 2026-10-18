@@ -8,12 +8,7 @@ from wenyan.core.gloss.glossary_draft import (
     save_glossary_draft,
 )
 from wenyan.core.hashing import sha256_text
-from wenyan.core.ports.artifact_ref import (
-    segment_gloss_review_ref,
-    segment_glosses_ref,
-    segment_input_ref,
-    segment_tokenization_ref,
-)
+from wenyan.core.ports.artifact_ref import SegmentArtifactKind, SegmentRef
 from wenyan.jobs.context import JobContext, JobOptions
 from wenyan.jobs.segment_runner import SegmentReviewJobSpec, run_segment_review_job
 from wenyan_models.artifacts.segment import GlossReviewArtifact, GlossesArtifact, SegmentInput, TokenizationArtifact
@@ -28,12 +23,12 @@ def _prepare_gloss_review(
     options: JobOptions,
 ) -> JobFailure | tuple[ContentHash, dict[str, str]]:
     del options
-    glosses_ref = segment_glosses_ref(document_id, segment_id_value)
+    glosses_ref = SegmentRef(SegmentArtifactKind.GLOSSES, document_id, segment_id_value)
     if not ctx.artifacts.exists(glosses_ref):
         return JobFailure(code="missing-input", message="glosses artifact is missing")
     glosses = ctx.artifacts.read(glosses_ref, GlossesArtifact)
-    input_ref = segment_input_ref(document_id, segment_id_value)
-    tokenization_ref = segment_tokenization_ref(document_id, segment_id_value)
+    input_ref = SegmentRef(SegmentArtifactKind.INPUT, document_id, segment_id_value)
+    tokenization_ref = SegmentRef(SegmentArtifactKind.TOKENIZATION, document_id, segment_id_value)
     if not ctx.artifacts.exists(input_ref) or not ctx.artifacts.exists(tokenization_ref):
         return JobFailure(
             code="missing-input",
@@ -67,7 +62,7 @@ def _merge_glossary_after_gloss_review(
 ) -> None:
     del review, options
     glosses = ctx.artifacts.read(
-        segment_glosses_ref(document_id, segment_id_value),
+        SegmentRef(SegmentArtifactKind.GLOSSES, document_id, segment_id_value),
         GlossesArtifact,
     )
     draft = merge_approved_glosses(load_glossary_draft(ctx.artifacts, document_id), glosses)
@@ -77,7 +72,7 @@ def _merge_glossary_after_gloss_review(
 _GLOSS_REVIEW_SPEC = SegmentReviewJobSpec(
     prompt_name="segment-gloss-review",
     output_model=GlossReviewArtifact,
-    review_ref=segment_gloss_review_ref,
+    review_kind=SegmentArtifactKind.GLOSS_REVIEW,
     skip_reason="gloss review is current",
     reject_message="gloss review rejected",
     prepare=_prepare_gloss_review,

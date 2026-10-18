@@ -2,10 +2,10 @@ import os
 from pathlib import Path
 
 from wenyan.core.adapters.hashing import sha256_file
-from wenyan.core.adapters.paths import artifact_path, document_root, normalized_text_path
+from wenyan.core.adapters.paths import document_root, normalized_text_path
 from wenyan.core.adapters.streaming_normalizer import normalize_source_to_file
 from wenyan.core.adapters.text_slice import read_text_slice
-from wenyan.core.ports.artifact_ref import normalized_document_ref
+from wenyan.core.ports.artifact_ref import DocumentArtifactKind, DocumentRef
 from wenyan.core.ports.artifact_store import ArtifactStore
 from wenyan.core.ports.normalized_text_store import NormalizedTextStore
 from wenyan_models.artifacts.normalized import NormalizedDocument
@@ -64,15 +64,17 @@ class FilesystemNormalizedTextStore(NormalizedTextStore):
         return manifest
 
     def _manifest(self, document_id: DocumentId) -> NormalizedDocument:
-        return self._artifacts.read(normalized_document_ref(document_id), NormalizedDocument)
+        return self._artifacts.read(
+            DocumentRef(DocumentArtifactKind.NORMALIZED_DOCUMENT, document_id), NormalizedDocument
+        )
 
     def _resolve_text_path(self, document_id: DocumentId, relative_path: str) -> Path:
         root = document_root(self._repo_root, document_id)
         return root / relative_path
 
     def _promote_manifest(self, document_id: DocumentId, manifest: NormalizedDocument) -> None:
-        ref = normalized_document_ref(document_id)
-        final_path = artifact_path(self._repo_root, ref)
+        ref = DocumentRef(DocumentArtifactKind.NORMALIZED_DOCUMENT, document_id)
+        final_path = self._repo_root / ref.relative_path
         temp_path = final_path.with_name(f"{final_path.name}.tmp")
         final_path.parent.mkdir(parents=True, exist_ok=True)
         temp_path.write_text(manifest.model_dump_json(by_alias=True), encoding="utf-8")

@@ -37,7 +37,7 @@ def _prepare_sunzi_first_segment(tmp_workspace: Path):
 
 def test_document_status_lists_chapters(tmp_workspace: Path) -> None:
     ctx, doc_id, chapter_id_value, _, _ = _prepare_sunzi_first_segment(tmp_workspace)
-    reader = FilesystemStatusReader(ctx.artifacts, tmp_workspace)
+    reader = FilesystemStatusReader(ctx.artifacts)
     payload = reader.document_status(doc_id)
     assert payload.scope.type == "document"
     assert payload.counts.chapters == len(payload.chapters)
@@ -49,7 +49,7 @@ def test_document_status_lists_chapters(tmp_workspace: Path) -> None:
 
 def test_chapter_status_lists_paragraphs(tmp_workspace: Path) -> None:
     ctx, doc_id, chapter_id_value, paragraph_id_value, _ = _prepare_sunzi_first_segment(tmp_workspace)
-    reader = FilesystemStatusReader(ctx.artifacts, tmp_workspace)
+    reader = FilesystemStatusReader(ctx.artifacts)
     payload = reader.chapter_status(doc_id, chapter_id_value)
     assert payload.scope.type == "chapter"
     assert payload.chapter_id == chapter_id_value
@@ -65,7 +65,7 @@ def test_paragraph_status_lists_segments(tmp_workspace: Path) -> None:
     ctx, doc_id, chapter_id_value, paragraph_id_value, segment_id_value = _prepare_sunzi_first_segment(
         tmp_workspace,
     )
-    reader = FilesystemStatusReader(ctx.artifacts, tmp_workspace)
+    reader = FilesystemStatusReader(ctx.artifacts)
     payload = reader.paragraph_status(doc_id, paragraph_id_value)
     assert payload.scope.type == "paragraph"
     assert payload.chapter_id == chapter_id_value
@@ -86,7 +86,7 @@ def test_paragraph_status_in_progress_when_all_segments_complete(tmp_workspace: 
     from tests.jobs.assembly_helpers import prepare_paragraph_with_complete_segments
 
     ctx, doc_id, paragraph_id_value = prepare_paragraph_with_complete_segments(tmp_workspace)
-    reader = FilesystemStatusReader(ctx.artifacts, tmp_workspace)
+    reader = FilesystemStatusReader(ctx.artifacts)
     payload = reader.paragraph_status(doc_id, paragraph_id_value)
     chapter_payload = reader.chapter_status(doc_id, payload.chapter_id)
     paragraph_item = next(item for item in chapter_payload.paragraphs if item.paragraph_id == str(paragraph_id_value))
@@ -101,7 +101,7 @@ def test_segment_status_lists_components(tmp_workspace: Path) -> None:
     ctx, doc_id, chapter_id_value, paragraph_id_value, segment_id_value = _prepare_sunzi_first_segment(
         tmp_workspace,
     )
-    reader = FilesystemStatusReader(ctx.artifacts, tmp_workspace)
+    reader = FilesystemStatusReader(ctx.artifacts)
     payload = reader.segment_status(doc_id, segment_id_value)
     assert payload.scope.type == "segment"
     assert payload.chapter_id == chapter_id_value
@@ -118,7 +118,7 @@ def test_segment_status_lists_components(tmp_workspace: Path) -> None:
 
 def test_status_json_matches_schema(tmp_workspace: Path) -> None:
     ctx, doc_id, _, _, segment_id_value = _prepare_sunzi_first_segment(tmp_workspace)
-    reader = FilesystemStatusReader(ctx.artifacts, tmp_workspace)
+    reader = FilesystemStatusReader(ctx.artifacts)
     payload = reader.segment_status(doc_id, segment_id_value)
     data = json.loads(payload.model_dump_json(by_alias=True))
     assert data["scope"]["type"] == "segment"
@@ -127,7 +127,7 @@ def test_status_json_matches_schema(tmp_workspace: Path) -> None:
 
 def test_paragraph_status_missing_raises(tmp_workspace: Path) -> None:
     ctx, doc_id, _, _, _ = _prepare_sunzi_first_segment(tmp_workspace)
-    reader = FilesystemStatusReader(ctx.artifacts, tmp_workspace)
+    reader = FilesystemStatusReader(ctx.artifacts)
     from wenyan_models.domain.ids import paragraph_id
 
     with pytest.raises(ValueError, match="paragraph"):

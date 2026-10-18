@@ -1,11 +1,5 @@
 from wenyan.core.hashing import sha256_text
-from wenyan.core.ports.artifact_ref import (
-    segment_grammar_notes_ref,
-    segment_grammar_review_ref,
-    segment_glosses_ref,
-    segment_input_ref,
-    segment_tokenization_ref,
-)
+from wenyan.core.ports.artifact_ref import SegmentArtifactKind, SegmentRef
 from wenyan.jobs.context import JobContext, JobOptions
 from wenyan.jobs.segment_runner import SegmentReviewJobSpec, run_segment_review_job
 from wenyan_models.artifacts.segment import (
@@ -26,12 +20,12 @@ def _prepare_grammar_review(
     options: JobOptions,
 ) -> JobFailure | tuple[ContentHash, dict[str, str]]:
     del options
-    grammar_ref = segment_grammar_notes_ref(document_id, segment_id_value)
+    grammar_ref = SegmentRef(SegmentArtifactKind.GRAMMAR_NOTES, document_id, segment_id_value)
     if not ctx.artifacts.exists(grammar_ref):
         return JobFailure(code="missing-input", message="grammar notes artifact is missing")
     grammar_notes = ctx.artifacts.read(grammar_ref, GrammarNotesArtifact)
-    input_ref = segment_input_ref(document_id, segment_id_value)
-    tokenization_ref = segment_tokenization_ref(document_id, segment_id_value)
+    input_ref = SegmentRef(SegmentArtifactKind.INPUT, document_id, segment_id_value)
+    tokenization_ref = SegmentRef(SegmentArtifactKind.TOKENIZATION, document_id, segment_id_value)
     if not ctx.artifacts.exists(input_ref) or not ctx.artifacts.exists(tokenization_ref):
         return JobFailure(
             code="missing-input",
@@ -41,7 +35,7 @@ def _prepare_grammar_review(
     tokenization = ctx.artifacts.read(tokenization_ref, TokenizationArtifact)
     input_hash = sha256_text(grammar_notes.model_dump_json(by_alias=True))
     glosses_json = "null"
-    glosses_ref = segment_glosses_ref(document_id, segment_id_value)
+    glosses_ref = SegmentRef(SegmentArtifactKind.GLOSSES, document_id, segment_id_value)
     if ctx.artifacts.exists(glosses_ref):
         glosses = ctx.artifacts.read(glosses_ref, GlossesArtifact)
         glosses_json = glosses.model_dump_json(by_alias=True)
@@ -60,7 +54,7 @@ def _prepare_grammar_review(
 _GRAMMAR_REVIEW_SPEC = SegmentReviewJobSpec(
     prompt_name="segment-grammar-review",
     output_model=GrammarReviewArtifact,
-    review_ref=segment_grammar_review_ref,
+    review_kind=SegmentArtifactKind.GRAMMAR_REVIEW,
     skip_reason="grammar review is current",
     reject_message="grammar review rejected",
     prepare=_prepare_grammar_review,

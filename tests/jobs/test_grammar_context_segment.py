@@ -1,10 +1,7 @@
 from pathlib import Path
 
 from wenyan.bootstrap import build_job_context
-from wenyan.core.ports.artifact_ref import (
-    segment_grammar_notes_ref,
-    segment_grammar_review_ref,
-)
+from wenyan.core.ports.artifact_ref import SegmentArtifactKind, SegmentRef
 from wenyan.jobs.annotate_segment_context import run_annotate_segment_context
 from wenyan.jobs.annotate_segment_grammar import run_annotate_segment_grammar
 from wenyan.jobs.context import JobOptions
@@ -70,7 +67,7 @@ def test_annotate_segment_grammar_writes_artifact(tmp_workspace: Path) -> None:
     )
     assert outcome_exit_code(outcome) == 0
     assert isinstance(outcome, Promoted)
-    grammar_ref = segment_grammar_notes_ref(doc_id, segment_id_value)
+    grammar_ref = SegmentRef(SegmentArtifactKind.GRAMMAR_NOTES, doc_id, segment_id_value)
     assert ctx.artifacts.exists(grammar_ref)
     grammar = ctx.artifacts.read(grammar_ref, GrammarNotesArtifact)
     assert all(note.anchor_token_ids for note in grammar.grammar_notes)
@@ -97,7 +94,7 @@ def test_review_segment_grammar_approves(tmp_workspace: Path) -> None:
     assert outcome_exit_code(outcome) == 0
     assert isinstance(outcome, Promoted)
     review = ctx.artifacts.read(
-        segment_grammar_review_ref(doc_id, segment_id_value),
+        SegmentRef(SegmentArtifactKind.GRAMMAR_REVIEW, doc_id, segment_id_value),
         GrammarReviewArtifact,
     )
     assert review.status == ReviewStatus.APPROVED

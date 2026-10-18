@@ -2,10 +2,7 @@ import shutil
 from pathlib import Path
 
 from wenyan.core.adapters.paths import document_root
-from wenyan.core.ports.artifact_ref import (
-    paragraph_assembly_validation_ref,
-    paragraph_draft_ref,
-)
+from wenyan.core.ports.artifact_ref import ParagraphArtifactKind, ParagraphRef
 from wenyan.core.ports.artifact_store import ArtifactStore
 from wenyan.core.run.segment_pipeline import pending_segment_subjobs
 from wenyan.core.run.work_queue import iter_paragraphs
@@ -33,7 +30,7 @@ def _paragraph_assembly_is_stale(
     if not assembly_dir.is_dir():
         return False
 
-    draft_ref = paragraph_draft_ref(document_id, paragraph_id)
+    draft_ref = ParagraphRef(ParagraphArtifactKind.DRAFT, document_id, paragraph_id)
     if not artifacts.exists(draft_ref):
         return True
 
@@ -42,7 +39,9 @@ def _paragraph_assembly_is_stale(
         if pending_segment_subjobs(artifacts, document_id, segment.id):
             return True
 
-    validation_ref = paragraph_assembly_validation_ref(document_id, paragraph_id)
+    validation_ref = ParagraphRef(
+        ParagraphArtifactKind.ASSEMBLY_VALIDATION, document_id, paragraph_id
+    )
     if not artifacts.exists(validation_ref):
         return True
 
@@ -61,7 +60,7 @@ def find_stale_assembly_paragraphs(
 ) -> tuple[ParagraphId, ...]:
     stale: list[ParagraphId] = []
     for _chapter, paragraph in iter_paragraphs(artifacts, document_id):
-        draft_ref = paragraph_draft_ref(document_id, paragraph.id)
+        draft_ref = ParagraphRef(ParagraphArtifactKind.DRAFT, document_id, paragraph.id)
         if not artifacts.exists(draft_ref):
             continue
         if _paragraph_assembly_is_stale(artifacts, repo_root, document_id, paragraph.id):

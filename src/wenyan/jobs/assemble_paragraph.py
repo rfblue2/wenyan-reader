@@ -5,11 +5,7 @@ from wenyan.core.assembly.load_segment_outputs import (
     load_all_segment_outputs,
 )
 from wenyan.core.assembly.validate_package import validate_paragraph_package
-from wenyan.core.ports.artifact_ref import (
-    paragraph_assembly_package_ref,
-    paragraph_assembly_validation_ref,
-    paragraph_draft_ref,
-)
+from wenyan.core.ports.artifact_ref import ParagraphArtifactKind, ParagraphRef
 from wenyan.core.ports.artifact_store import ArtifactWrite
 from wenyan.core.run.segment_pipeline import pending_segment_subjobs
 from wenyan.jobs.context import JobContext, JobOptions
@@ -27,7 +23,7 @@ def run_assemble_paragraph(
     paragraph_id_value: ParagraphId,
     options: JobOptions,
 ) -> JobOutcome[ParagraphPackage]:
-    draft_ref = paragraph_draft_ref(document_id, paragraph_id_value)
+    draft_ref = ParagraphRef(ParagraphArtifactKind.DRAFT, document_id, paragraph_id_value)
     if not ctx.artifacts.exists(draft_ref):
         return JobFailure(code="missing-input", message="paragraph draft is missing")
     draft = ctx.artifacts.read(draft_ref, ParagraphDraft)
@@ -43,8 +39,12 @@ def run_assemble_paragraph(
         return JobFailure(code="missing-input", message=str(exc))
     segment_hashes = {str(output.segment_id): segment_output_hash(output) for output in outputs}
     input_hash = assembly_input_hash(draft, segment_hashes)
-    package_ref = paragraph_assembly_package_ref(document_id, paragraph_id_value)
-    validation_ref = paragraph_assembly_validation_ref(document_id, paragraph_id_value)
+    package_ref = ParagraphRef(
+        ParagraphArtifactKind.ASSEMBLY_PACKAGE, document_id, paragraph_id_value
+    )
+    validation_ref = ParagraphRef(
+        ParagraphArtifactKind.ASSEMBLY_VALIDATION, document_id, paragraph_id_value
+    )
     if (
         ctx.artifacts.exists(package_ref)
         and ctx.artifacts.exists(validation_ref)

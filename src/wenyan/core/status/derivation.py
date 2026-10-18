@@ -2,10 +2,15 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from dataclasses import dataclass
-from pathlib import Path
 
-from wenyan.core.adapters.paths import artifact_path
-from wenyan.core.ports.artifact_ref import paragraph_draft_ref, paragraph_proposal_ref, segment_input_ref
+from wenyan.core.ports.artifact_ref import (
+    ChapterArtifactKind,
+    ChapterRef,
+    ParagraphArtifactKind,
+    ParagraphRef,
+    SegmentArtifactKind,
+    SegmentRef,
+)
 from wenyan.core.ports.artifact_store import ArtifactStore
 from wenyan_models.domain.review import ReviewFinding
 from wenyan.core.run.segment_pipeline import (
@@ -44,7 +49,6 @@ class _SegmentRollup:
 
 def derive_document_status(
     artifacts: ArtifactStore,
-    repo_root: Path,
     *,
     document_id: DocumentId,
     title: str,
@@ -56,7 +60,6 @@ def derive_document_status(
     for chapter_title, chapter_id_value in chapter_items:
         chapter_payload = derive_chapter_status(
             artifacts,
-            repo_root,
             document_id=document_id,
             chapter_id=chapter_id_value,
         )
@@ -89,22 +92,20 @@ def derive_document_status(
 
 def derive_chapter_status(
     artifacts: ArtifactStore,
-    repo_root: Path,
     *,
     document_id: DocumentId,
     chapter_id: ChapterId,
 ) -> ChapterStatus:
     paragraphs: list[ParagraphStatusItem] = []
     statuses: list[UnitStatus] = []
-    proposal_ref = paragraph_proposal_ref(document_id, chapter_id)
+    proposal_ref = ChapterRef(ChapterArtifactKind.PARAGRAPH_PROPOSAL, document_id, chapter_id)
     has_proposal = artifacts.exists(proposal_ref)
     if has_proposal:
         proposal = artifacts.read(proposal_ref, ParagraphProposal)
         for ordinal, paragraph in enumerate(proposal.paragraphs, start=1):
             paragraph_payload = derive_paragraph_status(
                 artifacts,
-                repo_root,
-                document_id=document_id,
+                    document_id=document_id,
                 chapter_id=chapter_id,
                 paragraph_id=paragraph.id,
             )
@@ -138,13 +139,12 @@ def derive_chapter_status(
 
 def derive_paragraph_status(
     artifacts: ArtifactStore,
-    repo_root: Path,
     *,
     document_id: DocumentId,
     chapter_id: ChapterId,
     paragraph_id: ParagraphId,
 ) -> ParagraphStatus:
-    draft_ref = paragraph_draft_ref(document_id, paragraph_id)
+    draft_ref = ParagraphRef(ParagraphArtifactKind.DRAFT, document_id, paragraph_id)
     has_draft = artifacts.exists(draft_ref)
     structure = ParagraphStructureStatus(
         status=UnitStatus.COMPLETE if has_draft else UnitStatus.PENDING,
@@ -156,7 +156,7 @@ def derive_paragraph_status(
         draft = artifacts.read(draft_ref, ParagraphDraft)
         structure = structure.model_copy(update={"segment_count": len(draft.segments)})
         for ordinal, segment in enumerate(draft.segments, start=1):
-            rollup = _derive_segment_rollup(artifacts, repo_root, document_id, segment.id)
+            rollup = _derive_segment_rollup(artifacts, document_id, segment.id)
             segments.append(
                 SegmentStatusItem.model_validate(
                     {
@@ -183,7 +183,6 @@ def derive_paragraph_status(
     if has_draft:
         assembly = derive_paragraph_assembly_status(
             artifacts,
-            repo_root,
             document_id,
             paragraph_id,
             segments_complete=segments_complete,
@@ -207,7 +206,6 @@ def derive_paragraph_status(
 
 def derive_segment_status(
     artifacts: ArtifactStore,
-    repo_root: Path,
     *,
     document_id: DocumentId,
     chapter_id: ChapterId,
@@ -215,7 +213,7 @@ def derive_segment_status(
     segment_id: SegmentId,
     text: str,
 ) -> SegmentStatus:
-    rollup = _derive_segment_rollup(artifacts, repo_root, document_id, segment_id)
+    rollup = _derive_segment_rollup(artifacts, document_id, segment_id)
     return SegmentStatus.model_validate(
         {
             "documentId": str(document_id),
@@ -246,12 +244,12 @@ def find_segment_location(
     document_id: DocumentId,
     segment_id: SegmentId,
 ) -> tuple[ChapterId, ParagraphId, str] | None:
-    input_ref = segment_input_ref(document_id, segment_id)
+    input_ref = SegmentRef(SegmentArtifactKind.INPUT, document_id, segment_id)
     if artifacts.exists(input_ref):
         segment_input = artifacts.read(input_ref, SegmentInput)
         return segment_input.chapter_id, segment_input.paragraph_id, segment_input.segment_text
     for chapter, paragraph in iter_paragraphs(artifacts, document_id):
-        draft_ref = paragraph_draft_ref(document_id, paragraph.id)
+        draft_ref = ParagraphRef(ParagraphArtifactKind.DRAFT, document_id, paragraph.id)
         if not artifacts.exists(draft_ref):
             continue
         draft = artifacts.read(draft_ref, ParagraphDraft)
@@ -263,7 +261,6 @@ def find_segment_location(
 
 def _derive_segment_rollup(
     artifacts: ArtifactStore,
-    repo_root: Path,
     document_id: DocumentId,
     segment_id: SegmentId,
 ) -> _SegmentRollup:
@@ -272,7 +269,7 @@ def _derive_segment_rollup(
     blocked_component: ComponentKind | None = None
     for component in SEGMENT_SUBJOBS:
         status = component_unit_status(artifacts, document_id, segment_id, component)
-        components.append(_component_status_item(artifacts, repo_root, document_id, segment_id, component, status))
+        components.append(_component_status_item(artifacts, document_id, segment_id, component, status))
         if status == UnitStatus.COMPLETE:
             components_complete += 1
         elif status == UnitStatus.BLOCKED and blocked_component is None:
@@ -296,7 +293,6 @@ def _derive_segment_rollup(
 
 def _component_status_item(
     artifacts: ArtifactStore,
-    repo_root: Path,
     document_id: DocumentId,
     segment_id: SegmentId,
     component: ComponentKind,
@@ -304,7 +300,7 @@ def _component_status_item(
 ) -> ComponentStatusItem:
     ref = component_artifact_ref(document_id, segment_id, component)
     artifact_path_value = (
-        artifact_path(repo_root, ref).relative_to(repo_root).as_posix() if ref and artifacts.exists(ref) else None
+        ref.relative_path.as_posix() if ref and artifacts.exists(ref) else None
     )
     if status != UnitStatus.BLOCKED:
         review = read_review_component(artifacts, document_id, segment_id, component)

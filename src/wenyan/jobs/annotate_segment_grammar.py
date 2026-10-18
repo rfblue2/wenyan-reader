@@ -1,10 +1,6 @@
 from wenyan.core.hashing import sha256_text
 from wenyan.core.notes.normalize_notes import normalize_grammar_notes
-from wenyan.core.ports.artifact_ref import (
-    segment_grammar_notes_ref,
-    segment_input_ref,
-    segment_tokenization_ref,
-)
+from wenyan.core.ports.artifact_ref import SegmentArtifactKind, SegmentRef
 from wenyan.jobs.context import JobContext, JobOptions
 from wenyan.jobs.segment_runner import (
     SegmentAnnotateJobSpec,
@@ -36,7 +32,7 @@ def _prepare_grammar(
     if isinstance(upstream, JobFailure):
         return upstream
     tokenization, tokenization_review = upstream
-    input_ref = segment_input_ref(document_id, segment_id_value)
+    input_ref = SegmentRef(SegmentArtifactKind.INPUT, document_id, segment_id_value)
     if not ctx.artifacts.exists(input_ref):
         return JobFailure(code="missing-input", message="segment input is missing")
     segment_input = ctx.artifacts.read(input_ref, SegmentInput)
@@ -60,7 +56,7 @@ def _post_process_grammar(
 ) -> GrammarNotesArtifact:
     del input_hash
     tokenization = ctx.artifacts.read(
-        segment_tokenization_ref(document_id, segment_id_value),
+        SegmentRef(SegmentArtifactKind.TOKENIZATION, document_id, segment_id_value),
         TokenizationArtifact,
     )
     return grammar_notes.model_copy(
@@ -76,7 +72,7 @@ def _post_process_grammar(
 _GRAMMAR_SPEC = SegmentAnnotateJobSpec(
     prompt_name="segment-grammar",
     output_model=GrammarNotesArtifact,
-    artifact_ref=segment_grammar_notes_ref,
+    artifact_kind=SegmentArtifactKind.GRAMMAR_NOTES,
     component_kind=ComponentKind.ANNOTATE_SEGMENT_GRAMMAR,
     skip_reason="grammar notes are current",
     prepare=_prepare_grammar,

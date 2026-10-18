@@ -5,11 +5,7 @@ import shutil
 import pytest
 
 from wenyan.core.hashing import sha256_text
-from wenyan.core.ports.artifact_ref import (
-    chapter_proposal_ref,
-    chapter_proposal_validation_ref,
-    normalized_document_ref,
-)
+from wenyan.core.ports.artifact_ref import DocumentArtifactKind, DocumentRef
 from wenyan.core.ports.artifact_store import ArtifactWrite
 from wenyan.jobs.context import JobContext
 from wenyan_models.artifacts.normalized import NormalizedDocument
@@ -22,7 +18,10 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 
 def install_sunzi_chapter_proposal(ctx: JobContext, document_id: DocumentId) -> ChapterProposal:
     """Install editor-prepared chapter structure for the sunzi-bingfa integration fixture."""
-    normalized = ctx.artifacts.read(normalized_document_ref(document_id), NormalizedDocument)
+    normalized = ctx.artifacts.read(
+        DocumentRef(DocumentArtifactKind.NORMALIZED_DOCUMENT, document_id),
+        NormalizedDocument,
+    )
     fixture_path = REPO_ROOT / "tests" / "fixtures" / "preprocess" / "sunzi-bingfa-chapter-proposal.json"
     payload = json.loads(fixture_path.read_text(encoding="utf-8"))
     payload["documentId"] = str(document_id)
@@ -34,9 +33,12 @@ def install_sunzi_chapter_proposal(ctx: JobContext, document_id: DocumentId) -> 
     validation = ValidationReport.from_checks()
     ctx.artifacts.write_batch(
         [
-            ArtifactWrite(ref=chapter_proposal_ref(document_id), payload=proposal),
             ArtifactWrite(
-                ref=chapter_proposal_validation_ref(document_id),
+                ref=DocumentRef(DocumentArtifactKind.CHAPTER_PROPOSAL, document_id),
+                payload=proposal,
+            ),
+            ArtifactWrite(
+                ref=DocumentRef(DocumentArtifactKind.CHAPTER_PROPOSAL_VALIDATION, document_id),
                 payload=validation,
             ),
         ],

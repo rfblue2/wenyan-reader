@@ -5,7 +5,6 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
-from wenyan.core.adapters.paths import artifact_path
 from wenyan.core.ports.artifact_ref import ArtifactRef
 from wenyan.core.ports.artifact_store import ArtifactStore, ArtifactWrite
 
@@ -15,10 +14,10 @@ class FilesystemArtifactStore(ArtifactStore):
         self._repo_root = repo_root
 
     def exists(self, ref: ArtifactRef) -> bool:
-        return artifact_path(self._repo_root, ref).is_file()
+        return (self._repo_root / ref.relative_path).is_file()
 
     def read[T: BaseModel](self, ref: ArtifactRef, model: type[T]) -> T:
-        path = artifact_path(self._repo_root, ref)
+        path = self._repo_root / ref.relative_path
         data = json.loads(path.read_text(encoding="utf-8"))
         return model.model_validate(data)
 
@@ -33,7 +32,7 @@ class FilesystemArtifactStore(ArtifactStore):
         # Temp files are promoted one-by-one; a crash mid-loop can leave a partial batch.
         pending: list[tuple[Path, Path]] = []
         for write in writes:
-            final_path = artifact_path(self._repo_root, write.ref)
+            final_path = self._repo_root / write.ref.relative_path
             temp_path = self._temp_path(final_path)
             final_path.parent.mkdir(parents=True, exist_ok=True)
             temp_path.write_text(write.payload.model_dump_json(by_alias=True), encoding="utf-8")
@@ -42,11 +41,11 @@ class FilesystemArtifactStore(ArtifactStore):
             os.replace(temp_path, final_path)
 
     def delete(self, ref: ArtifactRef) -> None:
-        path = artifact_path(self._repo_root, ref)
+        path = self._repo_root / ref.relative_path
         path.unlink(missing_ok=True)
 
     def _promote(self, ref: ArtifactRef, content: str) -> None:
-        final_path = artifact_path(self._repo_root, ref)
+        final_path = self._repo_root / ref.relative_path
         temp_path = self._temp_path(final_path)
         final_path.parent.mkdir(parents=True, exist_ok=True)
         temp_path.write_text(content, encoding="utf-8")

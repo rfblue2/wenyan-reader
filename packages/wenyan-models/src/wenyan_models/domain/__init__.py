@@ -1,5 +1,4 @@
 from wenyan_models.domain.enums import (
-    ArtifactKind,
     ComponentKind,
     ReviewStatus,
     UnitStatus,
@@ -24,7 +23,6 @@ from wenyan_models.domain.spans import ChapterSpan, ParagraphSpan, SegmentShell,
 from wenyan_models.domain.validation import CheckResult, ValidationReport
 
 __all__ = [
-    "ArtifactKind",
     "ChapterId",
     "ChapterSpan",
     "CheckResult",

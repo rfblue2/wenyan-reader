@@ -6,11 +6,7 @@ from wenyan.core.gloss.glossary_draft import (
     normalize_gloss_reuse,
 )
 from wenyan.core.hashing import sha256_text
-from wenyan.core.ports.artifact_ref import (
-    segment_glosses_ref,
-    segment_input_ref,
-    segment_tokenization_ref,
-)
+from wenyan.core.ports.artifact_ref import SegmentArtifactKind, SegmentRef
 from wenyan.jobs.context import JobContext, JobOptions
 from wenyan.jobs.segment_runner import (
     SegmentAnnotateJobSpec,
@@ -42,7 +38,7 @@ def _prepare_gloss(
     if isinstance(upstream, JobFailure):
         return upstream
     tokenization, tokenization_review = upstream
-    input_ref = segment_input_ref(document_id, segment_id_value)
+    input_ref = SegmentRef(SegmentArtifactKind.INPUT, document_id, segment_id_value)
     if not ctx.artifacts.exists(input_ref):
         return JobFailure(code="missing-input", message="segment input is missing")
     input_hash = sha256_text(tokenization_review.model_dump_json(by_alias=True))
@@ -70,7 +66,7 @@ def _post_process_gloss(
 ) -> GlossesArtifact:
     del input_hash
     tokenization = ctx.artifacts.read(
-        segment_tokenization_ref(document_id, segment_id_value),
+        SegmentRef(SegmentArtifactKind.TOKENIZATION, document_id, segment_id_value),
         TokenizationArtifact,
     )
     all_candidates = load_candidate_glosses(ctx.artifacts, document_id, segment_id_value)
@@ -80,7 +76,7 @@ def _post_process_gloss(
 _GLOSS_SPEC = SegmentAnnotateJobSpec(
     prompt_name="segment-gloss",
     output_model=GlossesArtifact,
-    artifact_ref=segment_glosses_ref,
+    artifact_kind=SegmentArtifactKind.GLOSSES,
     component_kind=ComponentKind.GLOSS_SEGMENT,
     skip_reason="glosses are current",
     prepare=_prepare_gloss,

@@ -6,9 +6,10 @@ from pydantic import BaseModel
 
 from wenyan.core.ports.artifact_ref import (
     ArtifactRef,
-    paragraph_draft_ref,
-    segment_tokenization_ref,
-    segment_tokenization_review_ref,
+    ParagraphArtifactKind,
+    ParagraphRef,
+    SegmentArtifactKind,
+    SegmentRef,
 )
 from wenyan.core.run.segment_pipeline import invalidate_segment_review
 from wenyan.jobs.context import JobContext, JobOptions
@@ -56,7 +57,7 @@ def resolve_segment_ids(
         case SingleSegment(segment_id=segment_id_value):
             return [segment_id_value]
         case ParagraphBatch(paragraph_id=paragraph_id_value):
-            draft_ref = paragraph_draft_ref(document_id, paragraph_id_value)
+            draft_ref = ParagraphRef(ParagraphArtifactKind.DRAFT, document_id, paragraph_id_value)
             if not ctx.artifacts.exists(draft_ref):
                 return []
             draft = ctx.artifacts.read(draft_ref, ParagraphDraft)
@@ -72,11 +73,11 @@ def load_approved_tokenization_review(
     missing_review_message: str,
     blocked_message: str,
 ) -> JobFailure | tuple[TokenizationArtifact, TokenizationReviewArtifact]:
-    tokenization_ref = segment_tokenization_ref(document_id, segment_id_value)
+    tokenization_ref = SegmentRef(SegmentArtifactKind.TOKENIZATION, document_id, segment_id_value)
     if not ctx.artifacts.exists(tokenization_ref):
         return JobFailure(code="missing-input", message="tokenization artifact is missing")
     tokenization = ctx.artifacts.read(tokenization_ref, TokenizationArtifact)
-    review_ref = segment_tokenization_review_ref(document_id, segment_id_value)
+    review_ref = SegmentRef(SegmentArtifactKind.TOKENIZATION_REVIEW, document_id, segment_id_value)
     if not ctx.artifacts.exists(review_ref):
         return JobFailure(code="missing-input", message=missing_review_message)
     review = ctx.artifacts.read(review_ref, TokenizationReviewArtifact)
@@ -150,7 +151,7 @@ def run_segment_batch[T](
 class SegmentAnnotateJobSpec[T: BaseModel]:
     prompt_name: str
     output_model: type[T]
-    artifact_ref: Callable[[DocumentId, SegmentId], ArtifactRef]
+    artifact_kind: SegmentArtifactKind
     component_kind: ComponentKind
     skip_reason: str
     prepare: SegmentJobPrepare
@@ -161,7 +162,7 @@ class SegmentAnnotateJobSpec[T: BaseModel]:
 class SegmentReviewJobSpec[T: BaseModel]:
     prompt_name: str
     output_model: type[T]
-    review_ref: Callable[[DocumentId, SegmentId], ArtifactRef]
+    review_kind: SegmentArtifactKind
     skip_reason: str
     reject_message: str
     prepare: SegmentJobPrepare
@@ -179,7 +180,7 @@ def run_segment_annotate_job[T: BaseModel](
     if isinstance(prepared, JobFailure):
         return prepared
     input_hash, context = prepared
-    artifact_ref = spec.artifact_ref(document_id, segment_id_value)
+    artifact_ref = SegmentRef(spec.artifact_kind, document_id, segment_id_value)
     if skip := skip_if_current(
         ctx,
         artifact_ref,
@@ -223,7 +224,7 @@ def run_segment_review_job[T: BaseModel](
     if isinstance(prepared, JobFailure):
         return prepared
     input_hash, context = prepared
-    review_ref = spec.review_ref(document_id, segment_id_value)
+    review_ref = SegmentRef(spec.review_kind, document_id, segment_id_value)
     if skip := skip_if_current(
         ctx,
         review_ref,

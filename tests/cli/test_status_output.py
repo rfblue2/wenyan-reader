@@ -18,7 +18,7 @@ def test_render_document_status_lists_chapters(tmp_workspace: Path) -> None:
     source_dir = tmp_workspace / "sources" / "documents" / "sunzi-bingfa"
     doc_id = run_ingest_document(ctx, source_dir, JobOptions()).artifact  # type: ignore[union-attr]
     install_sunzi_chapter_proposal(ctx, doc_id)
-    reader = FilesystemStatusReader(ctx.artifacts, tmp_workspace)
+    reader = FilesystemStatusReader(ctx.artifacts)
     output = render_status(
         reader.document_status(doc_id),
         StatusDisplayContext(),
@@ -35,7 +35,7 @@ def test_render_chapter_status_lists_paragraphs(tmp_workspace: Path) -> None:
     chapter_proposal = install_sunzi_chapter_proposal(ctx, doc_id)
     chapter_id_value = chapter_proposal.chapters[0].id
     run_split_paragraphs(ctx, doc_id, chapter_id_value, JobOptions())
-    reader = FilesystemStatusReader(ctx.artifacts, tmp_workspace)
+    reader = FilesystemStatusReader(ctx.artifacts)
     output = render_status(
         reader.chapter_status(doc_id, chapter_id_value),
         StatusDisplayContext(chapter_handle="1"),
@@ -98,7 +98,7 @@ def test_render_paragraph_status_shows_assembly_section(tmp_workspace: Path) -> 
     from tests.jobs.assembly_helpers import prepare_paragraph_with_complete_segments
 
     ctx, doc_id, paragraph_id_value = prepare_paragraph_with_complete_segments(tmp_workspace)
-    reader = FilesystemStatusReader(ctx.artifacts, tmp_workspace)
+    reader = FilesystemStatusReader(ctx.artifacts)
     output = render_status(
         reader.paragraph_status(doc_id, paragraph_id_value),
         StatusDisplayContext(chapter_handle="1", paragraph_handle="1"),
