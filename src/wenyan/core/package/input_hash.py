@@ -1,6 +1,6 @@
 import json
 
-from wenyan.core.adapters.hashing import sha256_text
+from wenyan.core.hashing import sha256_text
 from wenyan_models.artifacts.glossary import GlossaryDraft
 from wenyan_models.domain.ids import ContentHash
 

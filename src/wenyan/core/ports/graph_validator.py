@@ -3,7 +3,7 @@ from typing import Protocol
 from pydantic import BaseModel
 
 from wenyan.core.ports.artifact_ref import ArtifactRef
-from wenyan_models.artifacts.base import DEFAULT_ARTIFACT_CONFIG
+from wenyan_models.base import DEFAULT_ARTIFACT_CONFIG
 from wenyan_models.domain.ids import ChapterId, DocumentId, ParagraphId, SegmentId
 
 

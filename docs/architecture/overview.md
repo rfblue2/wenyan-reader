@@ -36,11 +36,12 @@ content/                    committed reader packages
 .opencode/skills/           agent skills for interactive steps
 
 packages/wenyan-models/src/wenyan_models/
-  artifacts/    preprocessing artifact models; DEFAULT_ARTIFACT_CONFIG; *IdField aliases
+  base.py       DEFAULT_ARTIFACT_CONFIG
+  artifacts/    preprocessing artifact models
   reader/       reader package models
   status/       status payloads per scope
   show/         SegmentShowView (segment status)
-  domain/       ids, enums, JobOutcome, spans, targets, validation, review findings
+  domain/       ids (+ *IdField aliases), enums, JobOutcome, spans, targets, ValidationReport, review findings
   text/         tokenization text helpers
   config.py     PreprocessingConfig
   sources.py    RegistryEntry, DocumentYaml
@@ -51,7 +52,9 @@ src/wenyan/
   jobs/         one module per command; segment_runner; JobContext/JobOptions
   core/
     ports/      Protocol interfaces + ArtifactRef factories
-    adapters/   filesystem store/status/validator, YAML registry, LLM clients, hashing, paths
+    adapters/   filesystem store/status/validator, YAML registry, LLM clients, file hashing, paths
+    hashing.py  sha256_text
+    spans.py    validate_spans
     config/     config loader
     assembly/   paragraph compile, validation, input hash
     package/    document package build, validate, promote
@@ -94,7 +97,7 @@ Environment variables read: `WENYAN_MODEL_PROVIDER` (`mock` | `anthropic` | `min
 | Concern | Convention |
 |---|---|
 | Ids | Document ids are code-minted UUID v4. Chapter ids come from the editor; paragraph, segment, token, note, and gloss ids come from the model. |
-| Hashing | SHA-256, `sha256:` prefix (`core/adapters/hashing.py`). |
+| Hashing | SHA-256, `sha256:` prefix (`core/hashing.py` for text; `core/adapters/hashing.py` for files). |
 | JSON | camelCase aliases on disk; models reject unknown fields. |
 | Status | Derived from files on disk; no status store. |
 

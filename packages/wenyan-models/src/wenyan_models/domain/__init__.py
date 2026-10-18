@@ -21,7 +21,7 @@ from wenyan_models.domain.ids import (
 )
 from wenyan_models.domain.results import JobFailure, JobOutcome, Promoted, Skipped, outcome_exit_code
 from wenyan_models.domain.spans import ChapterSpan, ParagraphSpan, SegmentShell, TextSpan
-from wenyan_models.domain.validation import CheckResult, SpanValidationResult
+from wenyan_models.domain.validation import CheckResult, ValidationReport
 
 __all__ = [
     "ArtifactKind",
@@ -41,9 +41,9 @@ __all__ = [
     "SegmentShell",
     "Skipped",
     "Slug",
-    "SpanValidationResult",
     "TextSpan",
     "UnitStatus",
+    "ValidationReport",
     "ValidationStatus",
     "chapter_id",
     "document_id",

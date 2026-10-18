@@ -2,15 +2,15 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from wenyan_models.artifacts.base import (
-    DEFAULT_ARTIFACT_CONFIG,
+from wenyan_models.base import DEFAULT_ARTIFACT_CONFIG
+from wenyan_models.domain.enums import ReviewStatus
+from wenyan_models.domain.ids import (
     ChapterIdField,
     ContentHashField,
     DocumentIdField,
     ParagraphIdField,
     SegmentIdField,
 )
-from wenyan_models.domain.enums import ReviewStatus
 from wenyan_models.domain.review import ReviewFinding
 
 

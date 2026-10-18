@@ -1,3 +1,4 @@
+from wenyan.core.hashing import sha256_text
 from wenyan.core.notes.normalize_notes import normalize_grammar_notes
 from wenyan.core.ports.artifact_ref import (
     segment_grammar_notes_ref,
@@ -39,7 +40,7 @@ def _prepare_grammar(
     if not ctx.artifacts.exists(input_ref):
         return JobFailure(code="missing-input", message="segment input is missing")
     segment_input = ctx.artifacts.read(input_ref, SegmentInput)
-    input_hash = ctx.hasher.sha256_text(tokenization_review.model_dump_json(by_alias=True))
+    input_hash = sha256_text(tokenization_review.model_dump_json(by_alias=True))
     context = {
         "segment_id": str(segment_id_value),
         "segment_text": tokenization.text,

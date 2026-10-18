@@ -1,3 +1,4 @@
+from wenyan.core.hashing import sha256_text
 from wenyan.core.ports.artifact_ref import (
     chapter_proposal_ref,
     paragraph_draft_ref,
@@ -8,12 +9,12 @@ from wenyan.core.ports.artifact_ref import (
 from wenyan.core.ports.artifact_store import ArtifactWrite
 from wenyan.core.ports.prompt_context import PromptTextSlice
 from wenyan.jobs.context import JobContext, JobOptions
-from wenyan_models.artifacts.paragraph import ParagraphDraft, ParagraphValidationArtifact
+from wenyan_models.artifacts.paragraph import ParagraphDraft
 from wenyan_models.artifacts.segment import SegmentInput
-from wenyan_models.domain.enums import ValidationStatus
 from wenyan_models.artifacts.structure import ChapterProposal, ParagraphProposal
 from wenyan_models.domain.ids import DocumentId, ParagraphId, chapter_id, segment_id
 from wenyan_models.domain.results import JobFailure, JobOutcome, Promoted, Skipped
+from wenyan_models.domain.validation import ValidationReport
 
 
 def run_split_segments(
@@ -42,7 +43,7 @@ def run_split_segments(
     paragraph_end = chapter.start + paragraph_item.end
     draft_ref = paragraph_draft_ref(document_id, paragraph_id_value)
     paragraph_text = ctx.normalized_text.read_slice(document_id, paragraph_start, paragraph_end)
-    input_hash = ctx.hasher.sha256_text(paragraph_text)
+    input_hash = sha256_text(paragraph_text)
     if ctx.artifacts.exists(draft_ref) and not options.force:
         existing = ctx.artifacts.read(draft_ref, ParagraphDraft)
         if existing.input_hash == input_hash:
@@ -69,7 +70,7 @@ def run_split_segments(
             "attempts": 1,
         },
     )
-    validation = ParagraphValidationArtifact(status=ValidationStatus.PASSED, checks=())
+    validation = ValidationReport.from_checks()
     writes: list[ArtifactWrite] = [
         ArtifactWrite(ref=draft_ref, payload=draft),
         ArtifactWrite(

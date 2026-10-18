@@ -4,9 +4,8 @@ from collections.abc import Sequence
 
 from wenyan_models.artifacts.assembly import ParagraphAssemblyValidationArtifact
 from wenyan_models.artifacts.paragraph import ParagraphDraft
-from wenyan_models.domain.enums import ValidationStatus
 from wenyan_models.domain.ids import parse_content_hash
-from wenyan_models.domain.validation import CheckResult
+from wenyan_models.domain.validation import CheckResult, validation_status
 from wenyan_models.reader.paragraph import ParagraphPackage
 
 from wenyan.core.assembly.input_hash import assembly_input_hash, segment_output_hash
@@ -94,10 +93,9 @@ def validate_paragraph_package(
     segment_hashes = {
         str(output.segment_id): segment_output_hash(output) for output in outputs
     }
-    status = ValidationStatus.PASSED if not checks else ValidationStatus.FAILED
     return ParagraphAssemblyValidationArtifact(
         paragraphId=draft.paragraph_id,
         inputHash=parse_content_hash(assembly_input_hash(draft, segment_hashes)),
-        status=status,
+        status=validation_status(checks),
         checks=tuple(checks),
     )

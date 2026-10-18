@@ -1,7 +1,8 @@
 from pydantic import BaseModel, Field
 
-from wenyan_models.artifacts.base import DEFAULT_ARTIFACT_CONFIG, DocumentIdField
+from wenyan_models.base import DEFAULT_ARTIFACT_CONFIG
 from wenyan_models.domain.enums import UnitStatus
+from wenyan_models.domain.ids import DocumentIdField
 from wenyan_models.status.common import (
     ChapterProgress,
     ScopeDocument,

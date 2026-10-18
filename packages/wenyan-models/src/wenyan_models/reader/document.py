@@ -1,12 +1,8 @@
 from pydantic import BaseModel, Field
 
-from wenyan_models.artifacts.base import (
-    DEFAULT_ARTIFACT_CONFIG,
-    ChapterIdField,
-    DocumentIdField,
-    ParagraphIdField,
-)
 from wenyan_models.artifacts.segment import GlossEntry
+from wenyan_models.base import DEFAULT_ARTIFACT_CONFIG
+from wenyan_models.domain.ids import ChapterIdField, DocumentIdField, ParagraphIdField
 
 
 class ChapterNavItem(BaseModel):

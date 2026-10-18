@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from pydantic import BaseModel
 
-from wenyan_models.artifacts.base import DEFAULT_ARTIFACT_CONFIG
+from wenyan_models.base import DEFAULT_ARTIFACT_CONFIG
 from wenyan_models.domain.enums import ArtifactKind
 from wenyan_models.domain.ids import (
     ChapterId,

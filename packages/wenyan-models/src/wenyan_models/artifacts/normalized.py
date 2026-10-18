@@ -1,10 +1,7 @@
 from pydantic import BaseModel, Field
 
-from wenyan_models.artifacts.base import (
-    DEFAULT_ARTIFACT_CONFIG,
-    ContentHashField,
-    DocumentIdField,
-)
+from wenyan_models.base import DEFAULT_ARTIFACT_CONFIG
+from wenyan_models.domain.ids import ContentHashField, DocumentIdField
 
 DEFAULT_NORMALIZED_TEXT_PATH = "normalized-text.txt"
 DEFAULT_TEXT_INDEX_STRIDE = 65_536

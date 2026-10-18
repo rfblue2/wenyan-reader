@@ -18,7 +18,7 @@ from wenyan.jobs.review_segment_grammar import run_review_segment_grammar
 from wenyan.jobs.review_segment_tokenization import run_review_segment_tokenization
 from wenyan.jobs.split_segments import run_split_segments
 from wenyan.jobs.tokenize_segment import run_tokenize_segment
-from wenyan_models.artifacts.base import DEFAULT_ARTIFACT_CONFIG
+from wenyan_models.base import DEFAULT_ARTIFACT_CONFIG
 from wenyan_models.domain.enums import ComponentKind
 from wenyan_models.domain.ids import DocumentId, ParagraphId, SegmentId
 from wenyan_models.domain.results import JobFailure, JobOutcome, Promoted, Skipped, outcome_exit_code

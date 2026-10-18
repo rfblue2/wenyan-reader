@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from wenyan.core.adapters.paths import document_root
 from wenyan.core.run.work_queue import iter_segments_in_document_order, segment_text_preview
 from wenyan.core.ports.artifact_store import ArtifactStore
-from wenyan_models.artifacts.base import DEFAULT_ARTIFACT_CONFIG
+from wenyan_models.base import DEFAULT_ARTIFACT_CONFIG
 from wenyan_models.domain.ids import DocumentId, SegmentId, segment_id
 
 

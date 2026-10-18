@@ -1,14 +1,8 @@
 from pydantic import BaseModel, Field
 
-from wenyan_models.artifacts.base import (
-    DEFAULT_ARTIFACT_CONFIG,
-    ContentHashField,
-    ParagraphIdField,
-    SegmentIdField,
-)
 from wenyan_models.artifacts.segment import NoteCitation
-from wenyan_models.domain.enums import ValidationStatus
-from wenyan_models.domain.validation import CheckResult
+from wenyan_models.base import DEFAULT_ARTIFACT_CONFIG
+from wenyan_models.domain.ids import ContentHashField, ParagraphIdField, SegmentIdField
 
 
 class ParagraphContextNote(BaseModel):
@@ -40,10 +34,3 @@ class ParagraphDraft(BaseModel):
         alias="paragraphContextNotes",
     )
     draft_rationale: dict[str, object] = Field(default_factory=dict, alias="draftRationale")
-
-
-class ParagraphValidationArtifact(BaseModel):
-    model_config = DEFAULT_ARTIFACT_CONFIG
-
-    status: ValidationStatus
-    checks: tuple[CheckResult, ...] = ()

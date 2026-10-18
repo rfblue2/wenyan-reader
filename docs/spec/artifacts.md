@@ -49,7 +49,7 @@ LLM- and editor-produced artifacts carry a metadata header:
 | `inputHash` | `sha256:` hash of the job's input (see below). Drives skip-on-rerun. |
 | `attempts` | Always `1` today. |
 
-Validation artifacts share `{status: "passed" | "failed", checks: [...]}`; assembly and package validations also carry `inputHash`.
+Validation artifacts share `{status: "passed" | "failed", checks: [...]}`; assembly and package validations also carry `inputHash`. `status` is `passed` exactly when `checks` is empty; a file that disagrees fails to load.
 
 ### Input hashes
 

@@ -6,7 +6,7 @@ import yaml
 from pydantic import BaseModel, Field
 
 from wenyan.core.ports.source_registry import SourceRegistry
-from wenyan_models.artifacts.base import DEFAULT_ARTIFACT_CONFIG
+from wenyan_models.base import DEFAULT_ARTIFACT_CONFIG
 from wenyan_models.domain.ids import DocumentId, Slug, document_id, slug
 from wenyan_models.sources import DocumentYaml, RegistryEntry
 

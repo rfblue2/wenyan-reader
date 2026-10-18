@@ -1,6 +1,10 @@
+import pytest
+from pydantic import ValidationError
+
 from wenyan_models.artifacts import ChapterProposal, NormalizedDocument
 from wenyan_models.domain.enums import ValidationStatus
 from wenyan_models.domain.ids import chapter_id, document_id, parse_content_hash
+from wenyan_models.domain.validation import CheckResult, ValidationReport
 
 
 def test_normalized_document_round_trip() -> None:
@@ -48,9 +52,11 @@ def test_chapter_proposal_round_trip() -> None:
     assert restored.input_hash == parse_content_hash("sha256:input")
 
 
-def test_span_validation_artifact_round_trip() -> None:
-    from wenyan_models.artifacts.structure import SpanValidationArtifact
-
-    payload = {"status": ValidationStatus.PASSED, "checks": []}
-    model = SpanValidationArtifact.model_validate(payload)
-    assert model.status == ValidationStatus.PASSED
+def test_validation_report_status_follows_checks() -> None:
+    check = CheckResult(code="gap", message="spans must be contiguous")
+    assert ValidationReport.from_checks().status == ValidationStatus.PASSED
+    assert ValidationReport.from_checks([check]).status == ValidationStatus.FAILED
+    with pytest.raises(ValidationError):
+        ValidationReport.model_validate({"status": "passed", "checks": [check.model_dump()]})
+    with pytest.raises(ValidationError):
+        ValidationReport.model_validate({"status": "failed", "checks": []})

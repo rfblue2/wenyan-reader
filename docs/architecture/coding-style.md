@@ -13,10 +13,10 @@ cli/            Typer commands, output, exit codes
   ↓
 jobs/           application services, one module per command
   ↓
-core/<logic>/   deterministic logic (assembly, package, gloss, notes, run, status, show)
+core/<logic>/   deterministic logic (assembly, package, gloss, notes, run, status, show, hashing, spans)
 core/ports/     Protocol interfaces
   ↓
-core/adapters/  filesystem, YAML, LLM providers, hashing
+core/adapters/  filesystem, YAML, LLM providers, file hashing
   ↓
 wenyan_models/  Pydantic models, enums, branded ids
 ```
@@ -24,13 +24,14 @@ wenyan_models/  Pydantic models, enums, branded ids
 - `jobs/` imports ports, `core/` logic modules, and `wenyan_models` — never `core/adapters`, Typer, httpx, or the filesystem directly.
 - `core/ports/` holds `Protocol`s and small frozen value types (`ArtifactRef`, `ArtifactWrite`) — no I/O.
 - Non-adapter `core/` modules do no I/O and do not import adapters; they receive ports.
+- Pure, deterministic logic is a plain function that jobs call directly, not a port (e.g. `core/hashing.sha256_text`, `core/spans.validate_spans`).
 - `core/adapters/` implements ports and may use the filesystem, httpx, and YAML.
 - `wenyan_models/` imports only pydantic and the standard library.
 - `bootstrap.py` is the only composition root.
 
 ## Pydantic
 
-Default config for artifact, reader, status, and domain models is `DEFAULT_ARTIFACT_CONFIG` in `wenyan_models/artifacts/base.py`:
+Default config for artifact, reader, status, and domain models is `DEFAULT_ARTIFACT_CONFIG` in `wenyan_models/base.py` (a leaf module: pydantic only):
 
 ```python
 ConfigDict(frozen=True, populate_by_name=True, validate_by_name=True, extra="forbid")
@@ -40,7 +41,8 @@ ConfigDict(frozen=True, populate_by_name=True, validate_by_name=True, extra="for
 |---|---|
 | On-disk JSON | `Field(alias="camelCase")`; `model_dump_json(by_alias=True)` to write, `model_validate_json` to read |
 | YAML / config | load, merge dicts, then `model_validate` once; no string-key access in jobs |
-| Ids on fields | `*IdField` aliases (`Annotated[DocumentId, BeforeValidator(...)]`) |
+| Ids on fields | `*IdField` / `ContentHashField` aliases in `domain/ids.py` (`Annotated[DocumentId, BeforeValidator(...)]`) |
+| Validation results | `ValidationReport.from_checks(checks)` (`domain/validation.py`); artifacts with extra fields use `validation_status(checks)`. Status is never set by hand. |
 | Closed sets | `StrEnum` |
 | LLM output | `LLMClient.complete_model(prompt, Model) -> Model` |
 | Invariants | `@field_validator` / `@model_validator` |
@@ -76,8 +78,6 @@ Each variant has a `kind` literal. Branch with exhaustive `match`; map to exit c
 | `SourceRegistry` | `RegistryEntry`, `DocumentYaml` |
 | `LLMClient` | `complete_model` |
 | `PromptLoader` | `build_prompt(template_name, context)` |
-| `ContentHasher` | `sha256_text` |
-| `SpanValidator` | span validation results |
 | `StatusReader` | status payloads |
 | `GraphValidator` | validation report |
 
@@ -108,7 +108,7 @@ Build `ArtifactRef`s only through the per-kind factories in `core/ports/artifact
 
 Tracked in the [backlog](../backlog.md) (H6, H8):
 
-- `core/status`, `core/run`, `core/assembly`, and `core/package` import `core.adapters` (hashing, paths); `core/run/stale_assembly.py`, `core/run/orphan_segments.py`, and `core/package/promote.py` touch the filesystem directly.
+- `core/status`, `core/run`, `core/assembly`, and `core/package` import `core.adapters.paths`; `core/run/stale_assembly.py`, `core/run/orphan_segments.py`, and `core/package/promote.py` touch the filesystem directly.
 - `cli/preprocess.py` constructs `FilesystemStatusReader` and `FilesystemGraphValidator` outside `bootstrap.py`.
 - `core/status/derivation.py` builds payloads from hand-written camelCase dicts.
 - Several internal frozen dataclasses (assembly inputs, package collection, status rows) and `json.loads` use in `MockLLMClient`.
