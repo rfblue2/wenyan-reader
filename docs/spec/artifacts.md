@@ -73,7 +73,7 @@ Status is derived from files on disk at read time; there is no status database. 
 | Review component | `pending` if the draft or review is missing; `complete` if `approved`; `blocked` if `rejected`. |
 | Segment | `blocked` if any component is blocked; `complete` if all 8 are complete; `pending` if none; else `in-progress`. |
 | Paragraph structure | `complete` if `draft.json` exists. |
-| Paragraph assembly | `pending` until all segments complete or while outputs/validation are missing or failed; `stale` when the stored `inputHash` differs from the recomputed one; else `complete`. |
+| Paragraph assembly | `pending` until all segments complete; then `stale` when the stored `inputHash` differs from the recomputed one; `pending` while validation is missing or failed or the package is missing; else `complete`. |
 | Paragraph | `complete` only when assembly is complete; rolls up segments otherwise. |
 | Chapter, document | Roll up children. `stale` counts as `pending`. |
 

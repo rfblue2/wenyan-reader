@@ -1,5 +1,5 @@
 from wenyan.core.assembly.compile_paragraph import compile_paragraph_package
-from wenyan.core.assembly.load_segment_outputs import CompiledSegmentInputs
+from wenyan.core.assembly.state import SegmentOutputs
 from wenyan_models.artifacts.paragraph import ParagraphDraft
 from wenyan_models.artifacts.segment import (
     ContextNotesArtifact,
@@ -18,11 +18,10 @@ def _minimal_segment_outputs(
     extra_tokens: tuple[dict[str, object], ...] = (),
     grammar_notes: tuple[dict[str, object], ...] = (),
     context_notes: tuple[dict[str, object], ...] = (),
-) -> CompiledSegmentInputs:
+) -> SegmentOutputs:
     tokens = [{"id": token_id, "surface": "孟子", "start": 0, "end": 2}, *extra_tokens]
-    return CompiledSegmentInputs(
+    return SegmentOutputs(
         segment_id=seg,
-        text="孟子見梁惠王。",
         tokenization=TokenizationArtifact.model_validate(
             {
                 "segmentId": str(seg),

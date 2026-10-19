@@ -1,8 +1,4 @@
-from wenyan.core.assembly.input_hash import (
-    assembly_input_hash,
-    segment_output_hash,
-)
-from wenyan.core.assembly.load_segment_outputs import CompiledSegmentInputs
+from wenyan.core.assembly.state import SegmentOutputs, assembly_input_hash
 from wenyan_models.artifacts.paragraph import ParagraphDraft
 from wenyan_models.artifacts.segment import (
     ContextNotesArtifact,
@@ -18,10 +14,9 @@ def _minimal_segment_outputs(
     *,
     token_id: str = "3723a8d9-6621-40e7-b444-2fcb3dcbcdcb",
     gloss_id: str = "7d0d9c78-8307-4f11-9352-63b5d74af0fd",
-) -> CompiledSegmentInputs:
-    return CompiledSegmentInputs(
+) -> SegmentOutputs:
+    return SegmentOutputs(
         segment_id=seg,
-        text="孟子見梁惠王。",
         tokenization=TokenizationArtifact.model_validate(
             {
                 "segmentId": str(seg),
@@ -82,8 +77,5 @@ def test_assembly_input_hash_changes_when_segment_artifact_changes() -> None:
         seg,
         gloss_id="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
     )
-    baseline_hashes = {str(seg): segment_output_hash(baseline)}
-    changed_hashes = {str(seg): segment_output_hash(changed)}
 
-    assert assembly_input_hash(draft, baseline_hashes) != assembly_input_hash(draft, changed_hashes)
-    assert segment_output_hash(baseline) != segment_output_hash(changed)
+    assert assembly_input_hash(draft, (baseline,)) != assembly_input_hash(draft, (changed,))

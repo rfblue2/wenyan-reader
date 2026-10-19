@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from dataclasses import dataclass
 
+from wenyan.core.assembly.state import AssemblyState, ParagraphAssembly, inspect_paragraph_assembly
 from wenyan.core.ports.artifact_ref import (
     ChapterArtifactKind,
     ChapterRef,
@@ -20,7 +21,6 @@ from wenyan.core.run.segment_pipeline import (
     read_review_component,
 )
 from wenyan.core.run.work_queue import iter_paragraphs, segment_text_preview
-from wenyan.core.status.assembly import derive_paragraph_assembly_status
 from wenyan_models.artifacts.paragraph import ParagraphDraft
 from wenyan_models.artifacts.segment import SegmentInput
 from wenyan_models.artifacts.structure import ParagraphProposal
@@ -178,15 +178,7 @@ def derive_paragraph_status(
                 ),
             )
             statuses.append(rollup.status)
-    segments_complete = bool(segments) and all(segment.status == UnitStatus.COMPLETE for segment in segments)
-    assembly = None
-    if has_draft:
-        assembly = derive_paragraph_assembly_status(
-            artifacts,
-            document_id,
-            paragraph_id,
-            segments_complete=segments_complete,
-        )
+    assembly = _assembly_status_item(artifacts, document_id, paragraph_id) if has_draft else None
     return ParagraphStatus.model_validate(
         {
             "documentId": str(document_id),
@@ -257,6 +249,28 @@ def find_segment_location(
             if segment.id == segment_id:
                 return chapter.id, paragraph.id, segment.text
     return None
+
+
+def _assembly_status_item(
+    artifacts: ArtifactStore,
+    document_id: DocumentId,
+    paragraph_id: ParagraphId,
+) -> ComponentStatusItem:
+    match inspect_paragraph_assembly(artifacts, document_id, paragraph_id):
+        case ParagraphAssembly(state=AssemblyState.CURRENT):
+            status = UnitStatus.COMPLETE
+        case ParagraphAssembly(state=AssemblyState.STALE):
+            status = UnitStatus.STALE
+        case _:
+            status = UnitStatus.PENDING
+    package_ref = ParagraphRef(ParagraphArtifactKind.ASSEMBLY_PACKAGE, document_id, paragraph_id)
+    return ComponentStatusItem.model_validate(
+        {
+            "kind": ComponentKind.ASSEMBLE_PARAGRAPH.value,
+            "status": status.value,
+            "artifactPath": package_ref.relative_path.as_posix() if artifacts.exists(package_ref) else None,
+        },
+    )
 
 
 def _derive_segment_rollup(

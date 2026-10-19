@@ -1,46 +1,19 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
-
 from wenyan_models.artifacts.assembly import ParagraphAssemblyValidationArtifact
 from wenyan_models.artifacts.paragraph import ParagraphDraft
-from wenyan_models.domain.ids import parse_content_hash
+from wenyan_models.domain.ids import ContentHash
 from wenyan_models.domain.validation import CheckResult, validation_status
 from wenyan_models.reader.paragraph import ParagraphPackage
-
-from wenyan.core.assembly.input_hash import assembly_input_hash, segment_output_hash
-from wenyan.core.assembly.load_segment_outputs import CompiledSegmentInputs
 
 
 def validate_paragraph_package(
     draft: ParagraphDraft,
-    outputs: Sequence[CompiledSegmentInputs],
     package: ParagraphPackage,
+    *,
+    input_hash: ContentHash,
 ) -> ParagraphAssemblyValidationArtifact:
     checks: list[CheckResult] = []
-    outputs_by_id = {output.segment_id: output for output in outputs}
-    draft_segment_ids = tuple(segment.id for segment in draft.segments)
-    package_segment_ids = tuple(segment.id for segment in package.segments)
-    output_segment_ids = tuple(
-        output.segment_id
-        for draft_segment in draft.segments
-        if (output := outputs_by_id.get(draft_segment.id)) is not None
-    )
-
-    if package_segment_ids != draft_segment_ids:
-        checks.append(
-            CheckResult(
-                code="segment-order",
-                message="package segment ids do not match draft order",
-            )
-        )
-    if output_segment_ids != draft_segment_ids:
-        checks.append(
-            CheckResult(
-                code="segment-order",
-                message="output segment ids do not match draft order",
-            )
-        )
 
     draft_texts = "".join(segment.text for segment in draft.segments)
     package_texts = "".join(segment.text for segment in package.segments)
@@ -52,16 +25,9 @@ def validate_paragraph_package(
             )
         )
 
-    for draft_segment in draft.segments:
-        output = outputs_by_id.get(draft_segment.id)
-        if output is None:
-            continue
-        gloss_by_token = {
-            decision.token_id: decision.gloss_id for decision in output.glosses.gloss_decisions
-        }
-        for token in output.tokenization.tokens:
-            gloss_id = gloss_by_token.get(token.id, "")
-            if not gloss_id:
+    for segment in package.segments:
+        for token in segment.tokens:
+            if not token.gloss_id:
                 checks.append(
                     CheckResult(
                         code="token-gloss-coverage",
@@ -90,12 +56,9 @@ def validate_paragraph_package(
                         )
                     )
 
-    segment_hashes = {
-        str(output.segment_id): segment_output_hash(output) for output in outputs
-    }
     return ParagraphAssemblyValidationArtifact(
         paragraphId=draft.paragraph_id,
-        inputHash=parse_content_hash(assembly_input_hash(draft, segment_hashes)),
+        inputHash=input_hash,
         status=validation_status(checks),
         checks=tuple(checks),
     )

@@ -1,6 +1,7 @@
 from wenyan.core.assembly.compile_paragraph import compile_paragraph_package
-from wenyan.core.assembly.load_segment_outputs import CompiledSegmentInputs
+from wenyan.core.assembly.state import SegmentOutputs
 from wenyan.core.assembly.validate_package import validate_paragraph_package
+from wenyan.core.hashing import sha256_text
 from wenyan_models.artifacts.paragraph import ParagraphDraft
 from wenyan_models.artifacts.segment import (
     ContextNotesArtifact,
@@ -21,15 +22,14 @@ def _minimal_segment_outputs(
     grammar_notes: tuple[dict[str, object], ...] = (),
     context_notes: tuple[dict[str, object], ...] = (),
     gloss_decisions: list[dict[str, object]] | None = None,
-) -> CompiledSegmentInputs:
+) -> SegmentOutputs:
     tokens = [{"id": token_id, "surface": "孟子", "start": 0, "end": 2}, *extra_tokens]
     if gloss_decisions is None:
         gloss_decisions = [
             {"tokenId": token_id, "glossId": gloss_id, "decision": "reuse-existing"}
         ]
-    return CompiledSegmentInputs(
+    return SegmentOutputs(
         segment_id=seg,
-        text="孟子見梁惠王。",
         tokenization=TokenizationArtifact.model_validate(
             {
                 "segmentId": str(seg),
@@ -105,7 +105,7 @@ def test_validate_package_passes_minimal_compiled_package() -> None:
         ),
     )
     package = compile_paragraph_package(draft, outputs)
-    validation = validate_paragraph_package(draft, outputs, package)
+    validation = validate_paragraph_package(draft, package, input_hash=sha256_text("inputs"))
 
     assert validation.status == ValidationStatus.PASSED
     assert validation.paragraph_id == draft.paragraph_id
@@ -141,7 +141,7 @@ def test_validate_package_rejects_missing_gloss_on_token() -> None:
         ),
     )
     package = compile_paragraph_package(draft, outputs)
-    validation = validate_paragraph_package(draft, outputs, package)
+    validation = validate_paragraph_package(draft, package, input_hash=sha256_text("inputs"))
 
     assert validation.status == ValidationStatus.FAILED
     assert any(check.code == "token-gloss-coverage" for check in validation.checks)

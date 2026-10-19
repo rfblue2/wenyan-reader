@@ -32,13 +32,12 @@ def run_package_document(
         )
 
     glossary = load_glossary_draft(ctx.artifacts, document_id)
-    assembly_hashes = tuple(
-        (str(item.paragraph_id), item.assembly_input_hash) for item in ready_paragraphs
-    )
     input_hash = package_input_hash(
         normalized_hash=normalized.normalized_hash,
         glossary=glossary,
-        paragraph_assembly_hashes=assembly_hashes,
+        paragraph_assembly_hashes={
+            item.paragraph_id: item.assembly_input_hash for item in ready_paragraphs
+        },
     )
 
     validation_ref = DocumentRef(DocumentArtifactKind.PACKAGE_VALIDATION, document_id)
@@ -48,19 +47,16 @@ def run_package_document(
             return Skipped(reason="document package is current")
 
     gloss_index = GlossIndex(glosses=glossary.glosses)
-    manifest, chapter_packages, paragraph_index = build_document_package(
+    manifest, chapter_packages, paragraph_packages = build_document_package(
         document_id,
         normalized.title,
         ready_paragraphs,
     )
-    paragraph_packages = {
-        paragraph_id_value: item.package for paragraph_id_value, item in paragraph_index.items()
-    }
     validation = validate_document_package(
         manifest=manifest,
         gloss_index=gloss_index,
         chapter_packages=chapter_packages,
-        paragraph_index=paragraph_index,
+        paragraph_packages=paragraph_packages,
         input_hash=input_hash,
         paragraphs_packaged=len(ready_paragraphs),
     )

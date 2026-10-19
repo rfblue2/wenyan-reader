@@ -1,11 +1,5 @@
 from pathlib import Path
 
-from wenyan.core.package.paths import (
-    content_chapter_manifest_path,
-    content_document_manifest_path,
-    content_gloss_index_path,
-    content_paragraph_path,
-)
 from wenyan.core.ports.artifact_ref import DocumentArtifactKind, DocumentRef
 from wenyan.jobs.assemble_paragraph import run_assemble_paragraph
 from wenyan.jobs.context import JobOptions
@@ -33,15 +27,11 @@ def test_package_document_writes_content_files(tmp_workspace: Path) -> None:
 
     content_root = tmp_workspace / "content" / "documents" / str(doc_id)
     assert content_root.is_dir()
-    assert content_document_manifest_path(tmp_workspace, doc_id).is_file()
-    assert content_gloss_index_path(tmp_workspace, doc_id).is_file()
-    assert content_chapter_manifest_path(tmp_workspace, doc_id, chapter_id_value).is_file()
-    assert content_paragraph_path(
-        tmp_workspace,
-        doc_id,
-        chapter_id_value,
-        paragraph_id_value,
-    ).is_file()
+    assert (content_root / "document.json").is_file()
+    assert (content_root / "glosses" / "index.json").is_file()
+    chapter_root = content_root / "chapters" / str(chapter_id_value)
+    assert (chapter_root / "chapter.json").is_file()
+    assert (chapter_root / "paragraphs" / f"{paragraph_id_value}.json").is_file()
     validation = ctx.artifacts.read(
         DocumentRef(DocumentArtifactKind.PACKAGE_VALIDATION, doc_id),
         PackageValidationArtifact,
