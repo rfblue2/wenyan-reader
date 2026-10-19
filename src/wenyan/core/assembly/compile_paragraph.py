@@ -4,7 +4,7 @@ from collections.abc import Sequence
 
 from wenyan_models.artifacts.paragraph import ParagraphDraft
 from wenyan_models.artifacts.segment import ContextNoteItem, NoteCitation, NoteItem
-from wenyan_models.domain.ids import SegmentId, segment_id
+from wenyan_models.domain.ids import segment_id
 from wenyan_models.reader.paragraph import (
     ParagraphPackage,
     ReaderNote,
@@ -13,23 +13,21 @@ from wenyan_models.reader.paragraph import (
     ReaderToken,
 )
 
-from wenyan.core.assembly.load_segment_outputs import CompiledSegmentInputs
+from wenyan.core.assembly.state import SegmentOutputs
 
 
 def compile_paragraph_package(
     draft: ParagraphDraft,
-    outputs: Sequence[CompiledSegmentInputs],
+    segments: Sequence[SegmentOutputs],
 ) -> ParagraphPackage:
-    outputs_by_id = {output.segment_id: output for output in outputs}
-    segments = tuple(
-        _compile_segment(outputs_by_id[draft_segment.id])
-        for draft_segment in draft.segments
+    compiled = tuple(_compile_segment(segment) for segment in segments)
+    return ParagraphPackage(
+        id=draft.paragraph_id,
+        segments=_fold_paragraph_context_notes(draft, compiled),
     )
-    segments = _fold_paragraph_context_notes(draft, segments, outputs_by_id)
-    return ParagraphPackage(id=draft.paragraph_id, segments=segments)
 
 
-def _compile_segment(output: CompiledSegmentInputs) -> ReaderSegment:
+def _compile_segment(output: SegmentOutputs) -> ReaderSegment:
     gloss_by_token = {decision.token_id: decision.gloss_id for decision in output.glosses.gloss_decisions}
     tokens = tuple(
         ReaderToken(
@@ -47,7 +45,7 @@ def _compile_segment(output: CompiledSegmentInputs) -> ReaderSegment:
     ]
     return ReaderSegment(
         id=output.segment_id,
-        text=output.text,
+        text=output.tokenization.text,
         newGlossIds=output.glosses.new_gloss_ids,
         tokens=tokens,
         notes=tuple(notes),
@@ -89,49 +87,29 @@ def _source_to_reader(source: NoteCitation | str) -> ReaderNoteSource:
     return ReaderNoteSource(label=str(source), detail="")
 
 
-def _lowest_start_token_id(output: CompiledSegmentInputs) -> str:
-    if not output.tokenization.tokens:
-        return ""
-    return min(output.tokenization.tokens, key=lambda token: token.start).id
-
-
 def _fold_paragraph_context_notes(
     draft: ParagraphDraft,
     segments: tuple[ReaderSegment, ...],
-    outputs_by_id: dict[SegmentId, CompiledSegmentInputs],
 ) -> tuple[ReaderSegment, ...]:
-    if not draft.paragraph_context_notes:
-        return segments
-
-    segment_index = {segment.id: index for index, segment in enumerate(segments)}
-    draft_segment_ids = {str(segment.id) for segment in draft.segments}
     updated = list(segments)
-
+    index_by_id = {segment.id: index for index, segment in enumerate(segments)}
     for note in draft.paragraph_context_notes:
         if not note.anchor_segment_ids:
             raise ValueError(f"paragraph context note {note.id} has no anchor segment ids")
         target_segment_id = segment_id(note.anchor_segment_ids[0])
-        if str(target_segment_id) not in draft_segment_ids:
+        index = index_by_id.get(target_segment_id)
+        if index is None:
             raise ValueError(
                 f"paragraph context note {note.id} anchors unknown segment {target_segment_id}",
             )
-        if target_segment_id not in segment_index:
-            raise ValueError(
-                f"paragraph context note {note.id} anchors segment {target_segment_id} not in draft",
-            )
-
-        output = outputs_by_id[target_segment_id]
-        anchor_token_id = _lowest_start_token_id(output)
-        sources = tuple(_source_to_reader(source) for source in note.sources)
+        segment = updated[index]
+        anchor = min(segment.tokens, key=lambda token: token.start).id if segment.tokens else ""
         reader_note = ReaderNote(
             id=note.id,
             type="context",
-            anchorTokenIds=(anchor_token_id,),
+            anchorTokenIds=(anchor,),
             body=note.body,
-            sources=sources,
+            sources=tuple(_source_to_reader(source) for source in note.sources),
         )
-        index = segment_index[target_segment_id]
-        segment = updated[index]
         updated[index] = segment.model_copy(update={"notes": segment.notes + (reader_note,)})
-
     return tuple(updated)

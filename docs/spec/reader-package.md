@@ -111,11 +111,11 @@ Notes live in the segment they annotate.
 
 | Check | Where |
 |---|---|
-| Segment order matches the paragraph draft; segment texts concatenate to the draft | assembly |
+| Segment texts concatenate to the paragraph draft | assembly |
 | Token ids unique within a segment | assembly |
 | Every token has a gloss decision | assembly |
 | Note anchors reference tokens in the same segment | assembly, package |
 | Every `glossId` and `newGlossIds` entry exists in the gloss index | package |
-| Chapter and paragraph ids unique; paths well-formed; chapters/paragraphs reachable from the manifest | package (in memory, not on disk) |
+| Chapter and paragraph ids unique; chapters/paragraphs reachable from the manifest | package (in memory, not on disk) |
 
 Not checked: token offsets against `text`, segment/note/gloss id uniqueness across the document, existence of referenced files on disk.

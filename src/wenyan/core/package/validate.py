@@ -6,15 +6,13 @@ from wenyan_models.domain.validation import CheckResult, validation_status
 from wenyan_models.reader.document import ChapterPackage, DocumentManifest, GlossIndex
 from wenyan_models.reader.paragraph import ParagraphPackage
 
-from wenyan.core.package.collect import ReadyParagraph
-
 
 def validate_document_package(
     *,
     manifest: DocumentManifest,
     gloss_index: GlossIndex,
     chapter_packages: Mapping[ChapterId, ChapterPackage],
-    paragraph_index: Mapping[ParagraphId, ReadyParagraph],
+    paragraph_packages: Mapping[ParagraphId, ParagraphPackage],
     input_hash: ContentHash,
     paragraphs_packaged: int,
 ) -> PackageValidationArtifact:
@@ -42,13 +40,6 @@ def validate_document_package(
                 ),
             )
             continue
-        if chapter_nav.path != f"chapters/{chapter_nav.id}/chapter.json":
-            checks.append(
-                CheckResult(
-                    code="chapter-path",
-                    message=f"chapter {chapter_nav.id} has unexpected manifest path",
-                ),
-            )
         if not chapter.paragraphs:
             checks.append(
                 CheckResult(
@@ -66,16 +57,8 @@ def validate_document_package(
             )
         all_paragraph_ids.extend(paragraph_ids)
         for paragraph_nav in chapter.paragraphs:
-            expected_path = f"paragraphs/{paragraph_nav.id}.json"
-            if paragraph_nav.path != expected_path:
-                checks.append(
-                    CheckResult(
-                        code="paragraph-path",
-                        message=f"paragraph {paragraph_nav.id} has unexpected manifest path",
-                    ),
-                )
-            ready = paragraph_index.get(paragraph_nav.id)
-            if ready is None:
+            package = paragraph_packages.get(paragraph_nav.id)
+            if package is None:
                 checks.append(
                     CheckResult(
                         code="paragraph-reachability",
@@ -83,11 +66,7 @@ def validate_document_package(
                     ),
                 )
                 continue
-            _validate_paragraph_glosses_and_notes(
-                checks,
-                ready.package,
-                gloss_ids,
-            )
+            _validate_paragraph_glosses_and_notes(checks, package, gloss_ids)
 
     if len(all_paragraph_ids) != len(set(all_paragraph_ids)):
         checks.append(

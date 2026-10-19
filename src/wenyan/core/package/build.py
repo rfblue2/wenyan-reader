@@ -7,6 +7,7 @@ from wenyan_models.reader.document import (
     DocumentManifest,
     ParagraphNavItem,
 )
+from wenyan_models.reader.paragraph import ParagraphPackage
 
 from wenyan.core.package.collect import ReadyParagraph
 
@@ -23,14 +24,14 @@ def build_document_package(
     document_id: DocumentId,
     title: str,
     ready_paragraphs: tuple[ReadyParagraph, ...],
-) -> tuple[DocumentManifest, dict[ChapterId, ChapterPackage], dict[ParagraphId, ReadyParagraph]]:
+) -> tuple[DocumentManifest, dict[ChapterId, ChapterPackage], dict[ParagraphId, ParagraphPackage]]:
     chapters: OrderedDict[ChapterId, list[ReadyParagraph]] = OrderedDict()
     for item in ready_paragraphs:
         chapters.setdefault(item.chapter_id, []).append(item)
 
     chapter_nav: list[ChapterNavItem] = []
     chapter_packages: dict[ChapterId, ChapterPackage] = {}
-    paragraph_index: dict[ParagraphId, ReadyParagraph] = {}
+    paragraph_packages: dict[ParagraphId, ParagraphPackage] = {}
 
     for chapter_id, paragraph_items in chapters.items():
         chapter_title = paragraph_items[0].chapter_title
@@ -51,11 +52,11 @@ def build_document_package(
             ),
         )
         for item in paragraph_items:
-            paragraph_index[item.paragraph_id] = item
+            paragraph_packages[item.paragraph_id] = item.package
 
     manifest = DocumentManifest(
         id=document_id,
         title=title,
         chapters=tuple(chapter_nav),
     )
-    return manifest, chapter_packages, paragraph_index
+    return manifest, chapter_packages, paragraph_packages
