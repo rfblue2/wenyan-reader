@@ -1,4 +1,4 @@
-from typing import cast
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -8,7 +8,6 @@ from wenyan.core.run.work_queue import (
     find_next_segment_work,
 )
 from wenyan.jobs.context import JobContext, JobOptions
-from wenyan.jobs.runners import SegmentJobRunner, SegmentSubjobRunner
 from wenyan.jobs.annotate_segment_context import run_annotate_segment_context
 from wenyan.jobs.annotate_segment_grammar import run_annotate_segment_grammar
 from wenyan.jobs.gloss_segment import run_gloss_segment
@@ -16,94 +15,25 @@ from wenyan.jobs.review_segment_context import run_review_segment_context
 from wenyan.jobs.review_segment_gloss import run_review_segment_gloss
 from wenyan.jobs.review_segment_grammar import run_review_segment_grammar
 from wenyan.jobs.review_segment_tokenization import run_review_segment_tokenization
+from wenyan.jobs.segment_runner import SegmentJob
 from wenyan.jobs.split_segments import run_split_segments
 from wenyan.jobs.tokenize_segment import run_tokenize_segment
 from wenyan_models.base import DEFAULT_ARTIFACT_CONFIG
 from wenyan_models.domain.enums import ComponentKind
 from wenyan_models.domain.ids import DocumentId, ParagraphId, SegmentId
 from wenyan_models.domain.results import JobFailure, JobOutcome, Promoted, Skipped, outcome_exit_code
-from wenyan_models.domain.targets import single_segment_target
+from wenyan_models.domain.targets import SingleSegment
 
 
-def _wrap_segment_subjob[T](
-    runner: SegmentJobRunner[T],
-) -> SegmentSubjobRunner:
-    def wrapped(
-        ctx: JobContext,
-        doc_id: DocumentId,
-        segment_id: SegmentId,
-        options: JobOptions,
-    ) -> JobOutcome[object]:
-        return cast(JobOutcome[object], runner(ctx, doc_id, segment_id, options))
-
-    return wrapped
-
-
-_IMPLEMENTED_SUBJOBS: dict[ComponentKind, SegmentSubjobRunner] = {
-    ComponentKind.TOKENIZE_SEGMENT: _wrap_segment_subjob(
-        lambda ctx, doc_id, segment_id, options: run_tokenize_segment(
-        ctx,
-        doc_id,
-        single_segment_target(segment_id),
-        options,
-        ),
-    ),
-    ComponentKind.REVIEW_SEGMENT_TOKENIZATION: _wrap_segment_subjob(
-        lambda ctx, doc_id, segment_id, options: run_review_segment_tokenization(
-            ctx,
-            doc_id,
-            segment_id,
-            options,
-        )
-    ),
-    ComponentKind.GLOSS_SEGMENT: _wrap_segment_subjob(
-        lambda ctx, doc_id, segment_id, options: run_gloss_segment(
-        ctx,
-        doc_id,
-        single_segment_target(segment_id),
-        options,
-        ),
-    ),
-    ComponentKind.REVIEW_SEGMENT_GLOSS: _wrap_segment_subjob(
-        lambda ctx, doc_id, segment_id, options: run_review_segment_gloss(
-            ctx,
-            doc_id,
-            segment_id,
-            options,
-        )
-    ),
-    ComponentKind.ANNOTATE_SEGMENT_GRAMMAR: _wrap_segment_subjob(
-        lambda ctx, doc_id, segment_id, options: run_annotate_segment_grammar(
-            ctx,
-            doc_id,
-            single_segment_target(segment_id),
-            options,
-        )
-    ),
-    ComponentKind.REVIEW_SEGMENT_GRAMMAR: _wrap_segment_subjob(
-        lambda ctx, doc_id, segment_id, options: run_review_segment_grammar(
-            ctx,
-            doc_id,
-            segment_id,
-            options,
-        )
-    ),
-    ComponentKind.ANNOTATE_SEGMENT_CONTEXT: _wrap_segment_subjob(
-        lambda ctx, doc_id, segment_id, options: run_annotate_segment_context(
-            ctx,
-            doc_id,
-            single_segment_target(segment_id),
-            options,
-        )
-    ),
-    ComponentKind.REVIEW_SEGMENT_CONTEXT: _wrap_segment_subjob(
-        lambda ctx, doc_id, segment_id, options: run_review_segment_context(
-            ctx,
-            doc_id,
-            segment_id,
-            options,
-        )
-    ),
+_SEGMENT_JOBS: dict[ComponentKind, SegmentJob[Any]] = {
+    ComponentKind.TOKENIZE_SEGMENT: run_tokenize_segment,
+    ComponentKind.REVIEW_SEGMENT_TOKENIZATION: run_review_segment_tokenization,
+    ComponentKind.GLOSS_SEGMENT: run_gloss_segment,
+    ComponentKind.REVIEW_SEGMENT_GLOSS: run_review_segment_gloss,
+    ComponentKind.ANNOTATE_SEGMENT_GRAMMAR: run_annotate_segment_grammar,
+    ComponentKind.REVIEW_SEGMENT_GRAMMAR: run_review_segment_grammar,
+    ComponentKind.ANNOTATE_SEGMENT_CONTEXT: run_annotate_segment_context,
+    ComponentKind.REVIEW_SEGMENT_CONTEXT: run_review_segment_context,
 }
 
 
@@ -153,7 +83,7 @@ def _run_next_paragraph(
         return Skipped(reason="all paragraphs already have segment drafts")
     outcome = run_split_segments(ctx, document_id, work.paragraph_id, options)
     if outcome_exit_code(outcome) != 0:
-        return _failure_from_outcome(["split-segments"], cast(JobOutcome[object], outcome))
+        return _failure_from_outcome(["split-segments"], outcome)
     return Promoted(
         artifact=RunPlan(
             document_id=document_id,
@@ -176,7 +106,7 @@ def _run_next_segment(
         if work.segment_id is None:
             outcome = run_split_segments(ctx, document_id, work.paragraph_id, options)
             if outcome_exit_code(outcome) != 0:
-                return _failure_from_outcome(["split-segments"], cast(JobOutcome[object], outcome))
+                return _failure_from_outcome(["split-segments"], outcome)
             continue
         return _run_segment(
             ctx,
@@ -197,16 +127,8 @@ def _run_segment(
 ) -> JobOutcome[RunPlan]:
     stages_run: list[str] = []
     for component in pending_segment_subjobs(ctx.artifacts, document_id, segment_id_value):
-        runner = _IMPLEMENTED_SUBJOBS.get(component)
-        if runner is None:
-            return JobFailure(
-                code="not-implemented",
-                message=(
-                    f"stopped after {', '.join(stages_run) or 'no stages'}: "
-                    f"{component.value} is not implemented yet"
-                ),
-            )
-        outcome = runner(ctx, document_id, segment_id_value, options)
+        target = SingleSegment(segment_id=segment_id_value)
+        outcome = _SEGMENT_JOBS[component](ctx, document_id, target, options)
         stages_run.append(component.value)
         if outcome_exit_code(outcome) != 0:
             return _failure_from_outcome(stages_run, outcome)
@@ -222,9 +144,9 @@ def _run_segment(
     )
 
 
-def _failure_from_outcome(
+def _failure_from_outcome[T](
     stages_run: list[str],
-    outcome: JobOutcome[object],
+    outcome: JobOutcome[T],
 ) -> JobFailure:
     match outcome:
         case JobFailure(code=code, message=message):

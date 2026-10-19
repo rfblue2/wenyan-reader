@@ -10,7 +10,7 @@ from wenyan.jobs.split_segments import run_split_segments
 from wenyan.jobs.tokenize_segment import run_tokenize_segment
 from wenyan_models.domain.ids import paragraph_id
 from wenyan_models.domain.results import JobFailure, Promoted, Skipped, outcome_exit_code
-from wenyan_models.domain.targets import single_segment_target
+from wenyan_models.domain.targets import SingleSegment
 from wenyan_models.reader.paragraph import ParagraphPackage
 from conftest import install_sunzi_chapter_proposal
 
@@ -50,7 +50,7 @@ def test_assemble_paragraph_blocked_upstream(tmp_workspace: Path) -> None:
     paragraphs = run_split_paragraphs(ctx, doc_id, chapter_id_value, JobOptions()).artifact  # type: ignore[union-attr]
     paragraph_id_value = paragraphs.paragraphs[0].id
     draft = run_split_segments(ctx, doc_id, paragraph_id_value, JobOptions()).artifact  # type: ignore[union-attr]
-    run_tokenize_segment(ctx, doc_id, single_segment_target(draft.segments[0].id), JobOptions())
+    run_tokenize_segment(ctx, doc_id, SingleSegment(segment_id=draft.segments[0].id), JobOptions())
 
     outcome = run_assemble_paragraph(ctx, doc_id, paragraph_id_value, JobOptions())
     assert isinstance(outcome, JobFailure)

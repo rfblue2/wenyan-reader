@@ -17,13 +17,13 @@ uv run wenyan preprocess <command> [args]
 | `split-segments --paragraph` | paragraph | `draft.json`, `validation.json`, `segments/*/input.json` | yes | implemented |
 | `review-paragraph-structure --paragraph` | paragraph | — | — | stub (exit 2) |
 | `tokenize-segment --segment\|--paragraph` | segment / batch | `tokenization.json` | yes | implemented |
-| `review-segment-tokenization --segment` | segment | `tokenization-review.json` | yes | implemented |
+| `review-segment-tokenization --segment\|--paragraph` | segment / batch | `tokenization-review.json` | yes | implemented |
 | `gloss-segment --segment\|--paragraph` | segment / batch | `glosses.json` | yes | implemented |
-| `review-segment-gloss --segment` | segment | `gloss-review.json`; merges into `indexes/glossary-draft.json` on approval | yes | implemented |
+| `review-segment-gloss --segment\|--paragraph` | segment / batch | `gloss-review.json`; merges into `indexes/glossary-draft.json` on approval | yes | implemented |
 | `annotate-segment-grammar --segment\|--paragraph` | segment / batch | `grammar-notes.json` | yes | implemented |
-| `review-segment-grammar --segment` | segment | `grammar-review.json` | yes | implemented |
+| `review-segment-grammar --segment\|--paragraph` | segment / batch | `grammar-review.json` | yes | implemented |
 | `annotate-segment-context --segment\|--paragraph` | segment | — | — | stub (exit 1); use [drafting-context-notes](../../.opencode/skills/drafting-context-notes/SKILL.md) |
-| `review-segment-context --segment` | segment | — | — | stub (exit 1); use [reviewing-context-notes](../../.opencode/skills/reviewing-context-notes/SKILL.md) |
+| `review-segment-context --segment\|--paragraph` | segment | — | — | stub (exit 1); use [reviewing-context-notes](../../.opencode/skills/reviewing-context-notes/SKILL.md) |
 | `assemble-paragraph --paragraph` | paragraph | `jobs/assembly/<id>/package.json` + `validation.json` | no | implemented |
 | `package-document` | document | `content/documents/<id>/**`, `jobs/package/validation.json` | no | implemented |
 | `run` | segment / paragraph | whatever the chained jobs write | yes | implemented |

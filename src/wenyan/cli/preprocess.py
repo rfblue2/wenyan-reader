@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated
 
 import typer
 
@@ -23,7 +23,6 @@ from wenyan.cli.unit_refs import (
     paragraph_id_from_ref,
     resolve_document_context,
     resolve_document_context_with_ref,
-    run_single_segment_job,
     segment_id_from_ref,
     segment_or_paragraph_batch_target,
 )
@@ -35,7 +34,6 @@ from wenyan.jobs.package_document import run_package_document
 from wenyan.jobs.annotate_segment_context import run_annotate_segment_context
 from wenyan.jobs.annotate_segment_grammar import run_annotate_segment_grammar
 from wenyan.jobs.context import JobOptions
-from wenyan.jobs.runners import SegmentBatchJobRunner
 from wenyan.jobs.ingest_document import run_ingest_document
 from wenyan.jobs.prune_orphan_segments import run_prune_orphan_segments
 from wenyan.jobs.run_preprocess import run_preprocess
@@ -44,6 +42,7 @@ from wenyan.jobs.review_segment_context import run_review_segment_context
 from wenyan.jobs.review_segment_gloss import run_review_segment_gloss
 from wenyan.jobs.review_segment_grammar import run_review_segment_grammar
 from wenyan.jobs.review_segment_tokenization import run_review_segment_tokenization
+from wenyan.jobs.segment_runner import SegmentJob
 from wenyan.jobs.split_paragraphs import run_split_paragraphs
 from wenyan.jobs.split_segments import run_split_segments
 from wenyan.jobs.tokenize_segment import run_tokenize_segment
@@ -111,13 +110,13 @@ def split_segments_cmd(
     raise typer.Exit(outcome_exit_code(outcome))
 
 
-def _run_segment_or_paragraph_batch_cmd(
+def _run_segment_job_cmd[T](
     document: str,
     *,
     segment: str | None,
     paragraph: str | None,
     chapter: str | None,
-    runner: SegmentBatchJobRunner[Any],
+    job: SegmentJob[T],
     force: bool,
     dry_run: bool,
     as_json: bool,
@@ -130,7 +129,7 @@ def _run_segment_or_paragraph_batch_cmd(
         paragraph=paragraph,
         chapter=chapter,
     )
-    outcome = runner(ctx, doc_id, target, job_options(force, dry_run))
+    outcome = job(ctx, doc_id, target, job_options(force, dry_run))
     emit_job_outcome(outcome, as_json=as_json)
     raise typer.Exit(outcome_exit_code(outcome))
 
@@ -146,12 +145,12 @@ def tokenize_segment_cmd(
     as_json: bool = json_option,
 ) -> None:
     """Identify glossable token occurrences for one segment or a paragraph batch."""
-    _run_segment_or_paragraph_batch_cmd(
+    _run_segment_job_cmd(
         document,
         segment=segment,
         paragraph=paragraph,
         chapter=chapter,
-        runner=run_tokenize_segment,
+        job=run_tokenize_segment,
         force=force,
         dry_run=dry_run,
         as_json=as_json,
@@ -161,20 +160,20 @@ def tokenize_segment_cmd(
 @preprocess_app.command("review-segment-tokenization")
 def review_segment_tokenization_cmd(
     document: Annotated[str, typer.Argument(help="Document UUID or slug")],
-    segment: SegmentOption,
-    chapter: ChapterOption = None,
+    segment: OptionalSegmentOption = None,
     paragraph: ParagraphOption = None,
+    chapter: ChapterOption = None,
     force: bool = force_option,
     dry_run: bool = dry_run_option,
     as_json: bool = json_option,
 ) -> None:
-    """Review token boundaries and offsets for one segment tokenization."""
-    run_single_segment_job(
+    """Review token boundaries and offsets for one segment or a paragraph batch."""
+    _run_segment_job_cmd(
         document,
-        segment,
-        chapter=chapter,
+        segment=segment,
         paragraph=paragraph,
-        runner=run_review_segment_tokenization,
+        chapter=chapter,
+        job=run_review_segment_tokenization,
         force=force,
         dry_run=dry_run,
         as_json=as_json,
@@ -192,12 +191,12 @@ def gloss_segment_cmd(
     as_json: bool = json_option,
 ) -> None:
     """Select or propose glosses for reviewed token occurrences."""
-    _run_segment_or_paragraph_batch_cmd(
+    _run_segment_job_cmd(
         document,
         segment=segment,
         paragraph=paragraph,
         chapter=chapter,
-        runner=run_gloss_segment,
+        job=run_gloss_segment,
         force=force,
         dry_run=dry_run,
         as_json=as_json,
@@ -207,20 +206,20 @@ def gloss_segment_cmd(
 @preprocess_app.command("review-segment-gloss")
 def review_segment_gloss_cmd(
     document: Annotated[str, typer.Argument(help="Document UUID or slug")],
-    segment: SegmentOption,
-    chapter: ChapterOption = None,
+    segment: OptionalSegmentOption = None,
     paragraph: ParagraphOption = None,
+    chapter: ChapterOption = None,
     force: bool = force_option,
     dry_run: bool = dry_run_option,
     as_json: bool = json_option,
 ) -> None:
-    """Review gloss sense selection and homonym handling for one segment."""
-    run_single_segment_job(
+    """Review gloss sense selection and homonym handling for one segment or a paragraph batch."""
+    _run_segment_job_cmd(
         document,
-        segment,
-        chapter=chapter,
+        segment=segment,
         paragraph=paragraph,
-        runner=run_review_segment_gloss,
+        chapter=chapter,
+        job=run_review_segment_gloss,
         force=force,
         dry_run=dry_run,
         as_json=as_json,
@@ -238,12 +237,12 @@ def annotate_segment_grammar_cmd(
     as_json: bool = json_option,
 ) -> None:
     """Draft grammar notes anchored to segment tokens."""
-    _run_segment_or_paragraph_batch_cmd(
+    _run_segment_job_cmd(
         document,
         segment=segment,
         paragraph=paragraph,
         chapter=chapter,
-        runner=run_annotate_segment_grammar,
+        job=run_annotate_segment_grammar,
         force=force,
         dry_run=dry_run,
         as_json=as_json,
@@ -253,20 +252,20 @@ def annotate_segment_grammar_cmd(
 @preprocess_app.command("review-segment-grammar")
 def review_segment_grammar_cmd(
     document: Annotated[str, typer.Argument(help="Document UUID or slug")],
-    segment: SegmentOption,
-    chapter: ChapterOption = None,
+    segment: OptionalSegmentOption = None,
     paragraph: ParagraphOption = None,
+    chapter: ChapterOption = None,
     force: bool = force_option,
     dry_run: bool = dry_run_option,
     as_json: bool = json_option,
 ) -> None:
     """Review grammar notes for accuracy and usefulness."""
-    run_single_segment_job(
+    _run_segment_job_cmd(
         document,
-        segment,
-        chapter=chapter,
+        segment=segment,
         paragraph=paragraph,
-        runner=run_review_segment_grammar,
+        chapter=chapter,
+        job=run_review_segment_grammar,
         force=force,
         dry_run=dry_run,
         as_json=as_json,
@@ -284,12 +283,12 @@ def annotate_segment_context_cmd(
     as_json: bool = json_option,
 ) -> None:
     """Draft segment-local context notes with source grounding."""
-    _run_segment_or_paragraph_batch_cmd(
+    _run_segment_job_cmd(
         document,
         segment=segment,
         paragraph=paragraph,
         chapter=chapter,
-        runner=run_annotate_segment_context,
+        job=run_annotate_segment_context,
         force=force,
         dry_run=dry_run,
         as_json=as_json,
@@ -299,20 +298,20 @@ def annotate_segment_context_cmd(
 @preprocess_app.command("review-segment-context")
 def review_segment_context_cmd(
     document: Annotated[str, typer.Argument(help="Document UUID or slug")],
-    segment: SegmentOption,
-    chapter: ChapterOption = None,
+    segment: OptionalSegmentOption = None,
     paragraph: ParagraphOption = None,
+    chapter: ChapterOption = None,
     force: bool = force_option,
     dry_run: bool = dry_run_option,
     as_json: bool = json_option,
 ) -> None:
     """Review context notes for usefulness and grounding."""
-    run_single_segment_job(
+    _run_segment_job_cmd(
         document,
-        segment,
-        chapter=chapter,
+        segment=segment,
         paragraph=paragraph,
-        runner=run_review_segment_context,
+        chapter=chapter,
+        job=run_review_segment_context,
         force=force,
         dry_run=dry_run,
         as_json=as_json,

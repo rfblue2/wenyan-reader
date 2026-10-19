@@ -8,10 +8,9 @@ import typer
 from wenyan.bootstrap import build_job_context
 from wenyan.cli.status_scope import StatusScope, resolve_status_scope
 from wenyan.jobs.context import JobContext, JobOptions
-from wenyan.jobs.runners import SegmentJobRunner
 from wenyan_models.domain.ids import ChapterId, DocumentId, ParagraphId, SegmentId
-from wenyan_models.domain.results import JobFailure, JobOutcome, Promoted, Skipped, outcome_exit_code
-from wenyan_models.domain.targets import SegmentTarget, paragraph_batch_target, single_segment_target
+from wenyan_models.domain.results import JobFailure, JobOutcome, Promoted, Skipped
+from wenyan_models.domain.targets import ParagraphBatch, SegmentTarget, SingleSegment
 
 def _repo_root() -> Path:
     return Path.cwd()
@@ -115,13 +114,11 @@ def segment_or_paragraph_batch_target(
     chapter: str | None,
 ) -> SegmentTarget:
     if segment is not None:
-        return single_segment_target(
-            segment_id_from_ref(ctx, doc_id, segment, chapter=chapter, paragraph=paragraph)
-        )
+        segment_id = segment_id_from_ref(ctx, doc_id, segment, chapter=chapter, paragraph=paragraph)
+        return SingleSegment(segment_id=segment_id)
     if paragraph is not None:
-        return paragraph_batch_target(
-            paragraph_id_from_ref(ctx, doc_id, paragraph, chapter=chapter)
-        )
+        paragraph_id = paragraph_id_from_ref(ctx, doc_id, paragraph, chapter=chapter)
+        return ParagraphBatch(paragraph_id=paragraph_id)
     raise typer.BadParameter("provide --segment or --paragraph")
 
 
@@ -150,27 +147,3 @@ def emit_job_outcome[T](
         typer.echo(json.dumps({"outcome": outcome.model_dump(by_alias=True)}))
     else:
         typer.echo(outcome_message(outcome))
-
-
-def run_single_segment_job[T](
-    document: str,
-    segment: str,
-    *,
-    chapter: str | None,
-    paragraph: str | None,
-    runner: SegmentJobRunner[T],
-    force: bool,
-    dry_run: bool,
-    as_json: bool,
-) -> None:
-    ctx, doc_id = resolve_document_context(document)
-    segment_id_value = segment_id_from_ref(
-        ctx,
-        doc_id,
-        segment,
-        chapter=chapter,
-        paragraph=paragraph,
-    )
-    outcome = runner(ctx, doc_id, segment_id_value, job_options(force, dry_run))
-    emit_job_outcome(outcome, as_json=as_json)
-    raise typer.Exit(outcome_exit_code(outcome))

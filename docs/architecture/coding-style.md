@@ -84,7 +84,7 @@ Each variant has a `kind` literal. Branch with exhaustive `match`; map to exit c
 - `mypy --strict` with the Pydantic plugin passes on `packages/wenyan-models/src` and `src/wenyan` (enforced in CI).
 - No untyped defs. Avoid `Any`; isolate it behind one adapter if unavoidable.
 - Use PEP 695 generics (`def f[T: BaseModel](...)`, `type Alias[T] = ...`).
-- Name repeated or long `Callable` signatures as `type` aliases (e.g. `SegmentJobRunner[T]` in `jobs/runners.py`).
+- Name repeated or long `Callable` signatures as `type` aliases.
 
 ## Testing
 

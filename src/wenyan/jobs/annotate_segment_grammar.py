@@ -1,16 +1,16 @@
 from wenyan.core.hashing import sha256_text
 from wenyan.core.notes.normalize_notes import normalize_grammar_notes
 from wenyan.core.ports.artifact_ref import SegmentArtifactKind, SegmentRef
+from wenyan.core.run.segment_pipeline import GRAMMAR_STAGE
 from wenyan.jobs.context import JobContext, JobOptions
 from wenyan.jobs.segment_runner import (
+    Prepared,
     SegmentAnnotateJobSpec,
     load_approved_tokenization_review,
-    run_segment_annotate_job,
-    run_segment_batch,
+    run_segment_job,
 )
 from wenyan_models.artifacts.segment import GrammarNotesArtifact, SegmentInput, TokenizationArtifact
-from wenyan_models.domain.enums import ComponentKind
-from wenyan_models.domain.ids import ContentHash, DocumentId, SegmentId
+from wenyan_models.domain.ids import DocumentId, SegmentId
 from wenyan_models.domain.results import JobFailure, JobOutcome
 from wenyan_models.domain.targets import SegmentTarget
 
@@ -19,9 +19,7 @@ def _prepare_grammar(
     ctx: JobContext,
     document_id: DocumentId,
     segment_id_value: SegmentId,
-    options: JobOptions,
-) -> JobFailure | tuple[ContentHash, dict[str, str]]:
-    del options
+) -> JobFailure | Prepared:
     upstream = load_approved_tokenization_review(
         ctx,
         document_id,
@@ -44,7 +42,7 @@ def _prepare_grammar(
         "tokenization_json": tokenization.model_dump_json(by_alias=True),
         "local_context_json": segment_input.local_context.model_dump_json(by_alias=True),
     }
-    return input_hash, context
+    return Prepared(input_hash, context)
 
 
 def _post_process_grammar(
@@ -52,9 +50,7 @@ def _post_process_grammar(
     ctx: JobContext,
     document_id: DocumentId,
     segment_id_value: SegmentId,
-    input_hash: ContentHash,
 ) -> GrammarNotesArtifact:
-    del input_hash
     tokenization = ctx.artifacts.read(
         SegmentRef(SegmentArtifactKind.TOKENIZATION, document_id, segment_id_value),
         TokenizationArtifact,
@@ -70,13 +66,13 @@ def _post_process_grammar(
 
 
 _GRAMMAR_SPEC = SegmentAnnotateJobSpec(
+    stage=GRAMMAR_STAGE,
     prompt_name="segment-grammar",
     output_model=GrammarNotesArtifact,
-    artifact_kind=SegmentArtifactKind.GRAMMAR_NOTES,
-    component_kind=ComponentKind.ANNOTATE_SEGMENT_GRAMMAR,
-    skip_reason="grammar notes are current",
     prepare=_prepare_grammar,
     post_process=_post_process_grammar,
+    empty_message="no segments to annotate",
+    skip_reason="all segments already have current grammar notes",
 )
 
 
@@ -86,21 +82,4 @@ def run_annotate_segment_grammar(
     target: SegmentTarget,
     options: JobOptions,
 ) -> JobOutcome[GrammarNotesArtifact]:
-    return run_segment_batch(
-        ctx,
-        document_id,
-        target,
-        options,
-        empty_message="no segments to annotate",
-        all_skipped_reason="all segments already have current grammar notes",
-        run_one=_annotate_one,
-    )
-
-
-def _annotate_one(
-    ctx: JobContext,
-    document_id: DocumentId,
-    segment_id_value: SegmentId,
-    options: JobOptions,
-) -> JobOutcome[GrammarNotesArtifact]:
-    return run_segment_annotate_job(ctx, document_id, segment_id_value, options, _GRAMMAR_SPEC)
+    return run_segment_job(ctx, document_id, target, options, _GRAMMAR_SPEC)

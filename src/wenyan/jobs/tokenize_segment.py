@@ -1,15 +1,11 @@
 from wenyan.core.hashing import sha256_text
 from wenyan.core.ports.artifact_ref import SegmentArtifactKind, SegmentRef
+from wenyan.core.run.segment_pipeline import TOKENIZATION_STAGE
 from wenyan.jobs.context import JobContext, JobOptions
-from wenyan.jobs.segment_runner import (
-    SegmentAnnotateJobSpec,
-    run_segment_annotate_job,
-    run_segment_batch,
-)
+from wenyan.jobs.segment_runner import Prepared, SegmentAnnotateJobSpec, run_segment_job
 from wenyan_models.artifacts.segment import SegmentInput, TokenizationArtifact
 from wenyan_models.text.tokenization import drop_punctuation_tokens
-from wenyan_models.domain.enums import ComponentKind
-from wenyan_models.domain.ids import ContentHash, DocumentId, SegmentId
+from wenyan_models.domain.ids import DocumentId, SegmentId
 from wenyan_models.domain.results import JobFailure, JobOutcome
 from wenyan_models.domain.targets import SegmentTarget
 
@@ -18,9 +14,7 @@ def _prepare_tokenize(
     ctx: JobContext,
     document_id: DocumentId,
     segment_id_value: SegmentId,
-    options: JobOptions,
-) -> JobFailure | tuple[ContentHash, dict[str, str]]:
-    del options
+) -> JobFailure | Prepared:
     input_ref = SegmentRef(SegmentArtifactKind.INPUT, document_id, segment_id_value)
     if not ctx.artifacts.exists(input_ref):
         return JobFailure(code="missing-input", message="segment input is missing")
@@ -31,7 +25,7 @@ def _prepare_tokenize(
         "segment_id": str(segment_id_value),
         "input_hash": str(input_hash),
     }
-    return input_hash, context
+    return Prepared(input_hash, context)
 
 
 def _post_process_tokenize(
@@ -39,20 +33,19 @@ def _post_process_tokenize(
     ctx: JobContext,
     document_id: DocumentId,
     segment_id_value: SegmentId,
-    input_hash: ContentHash,
 ) -> TokenizationArtifact:
-    del ctx, document_id, segment_id_value, input_hash
+    del ctx, document_id, segment_id_value
     return artifact.model_copy(update={"tokens": drop_punctuation_tokens(artifact.tokens)})
 
 
 _TOKENIZE_SPEC = SegmentAnnotateJobSpec(
+    stage=TOKENIZATION_STAGE,
     prompt_name="segment-tokenization",
     output_model=TokenizationArtifact,
-    artifact_kind=SegmentArtifactKind.TOKENIZATION,
-    component_kind=ComponentKind.TOKENIZE_SEGMENT,
-    skip_reason="tokenization is current",
     prepare=_prepare_tokenize,
     post_process=_post_process_tokenize,
+    empty_message="no segments to tokenize",
+    skip_reason="all segments already tokenized",
 )
 
 
@@ -62,21 +55,4 @@ def run_tokenize_segment(
     target: SegmentTarget,
     options: JobOptions,
 ) -> JobOutcome[TokenizationArtifact]:
-    return run_segment_batch(
-        ctx,
-        document_id,
-        target,
-        options,
-        empty_message="no segments to tokenize",
-        all_skipped_reason="all segments already tokenized",
-        run_one=_tokenize_one,
-    )
-
-
-def _tokenize_one(
-    ctx: JobContext,
-    document_id: DocumentId,
-    segment_id_value: SegmentId,
-    options: JobOptions,
-) -> JobOutcome[TokenizationArtifact]:
-    return run_segment_annotate_job(ctx, document_id, segment_id_value, options, _TOKENIZE_SPEC)
+    return run_segment_job(ctx, document_id, target, options, _TOKENIZE_SPEC)

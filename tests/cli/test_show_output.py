@@ -14,7 +14,7 @@ from wenyan.jobs.split_paragraphs import run_split_paragraphs
 from wenyan.jobs.split_segments import run_split_segments
 from wenyan.jobs.tokenize_segment import run_tokenize_segment
 from wenyan_models.domain.enums import ReviewStatus, UnitStatus
-from wenyan_models.domain.targets import single_segment_target
+from wenyan_models.domain.targets import SingleSegment
 from wenyan_models.artifacts.segment import (
     ContextNotesArtifact,
     NoteItem,
@@ -35,7 +35,7 @@ def _prepare_segment_tokenized(tmp_workspace: Path) -> tuple[object, object, obj
     first_paragraph_id = paragraphs.paragraphs[0].id
     draft = run_split_segments(ctx, doc_id, first_paragraph_id, JobOptions()).artifact  # type: ignore[union-attr]
     first_segment_id = draft.segments[0].id
-    run_tokenize_segment(ctx, doc_id, single_segment_target(first_segment_id), JobOptions())
+    run_tokenize_segment(ctx, doc_id, SingleSegment(segment_id=first_segment_id), JobOptions())
     return ctx, doc_id, first_segment_id
 
 
@@ -49,10 +49,10 @@ def _prepare_segment_with_glosses(tmp_workspace: Path) -> tuple[object, object, 
     first_paragraph_id = paragraphs.paragraphs[0].id
     draft = run_split_segments(ctx, doc_id, first_paragraph_id, JobOptions()).artifact  # type: ignore[union-attr]
     first_segment_id = draft.segments[0].id
-    run_tokenize_segment(ctx, doc_id, single_segment_target(first_segment_id), JobOptions())
-    run_review_segment_tokenization(ctx, doc_id, first_segment_id, JobOptions())
-    run_gloss_segment(ctx, doc_id, single_segment_target(first_segment_id), JobOptions())
-    run_review_segment_gloss(ctx, doc_id, first_segment_id, JobOptions())
+    run_tokenize_segment(ctx, doc_id, SingleSegment(segment_id=first_segment_id), JobOptions())
+    run_review_segment_tokenization(ctx, doc_id, SingleSegment(segment_id=first_segment_id), JobOptions())
+    run_gloss_segment(ctx, doc_id, SingleSegment(segment_id=first_segment_id), JobOptions())
+    run_review_segment_gloss(ctx, doc_id, SingleSegment(segment_id=first_segment_id), JobOptions())
     return ctx, doc_id, first_segment_id
 
 
@@ -169,9 +169,9 @@ def test_render_segment_show_rejected_gloss_review(tmp_workspace: Path, monkeypa
     monkeypatch.setattr(mock_llm_client.MockLLMClient, "_gloss_review", reject_review)
 
     ctx, doc_id, segment_id_value = _prepare_segment_tokenized(tmp_workspace)
-    run_review_segment_tokenization(ctx, doc_id, segment_id_value, JobOptions())
-    run_gloss_segment(ctx, doc_id, single_segment_target(segment_id_value), JobOptions())
-    run_review_segment_gloss(ctx, doc_id, segment_id_value, JobOptions())
+    run_review_segment_tokenization(ctx, doc_id, SingleSegment(segment_id=segment_id_value), JobOptions())
+    run_gloss_segment(ctx, doc_id, SingleSegment(segment_id=segment_id_value), JobOptions())
+    run_review_segment_gloss(ctx, doc_id, SingleSegment(segment_id=segment_id_value), JobOptions())
     payload = build_segment_show_view(
         ctx.artifacts,
         document_id=doc_id,
